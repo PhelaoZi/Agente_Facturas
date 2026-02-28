@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<SetDTE>
+<DTE version="1.0" >
+  <!-- O Win32 Chrome 144 central VERSION: v20190409 -->
+<Documento ID="MiPE76308012-10795">
+    <Encabezado>
+      <IdDoc>
+        <TipoDTE>61</TipoDTE>
+        <Folio>226</Folio>
+        <FchEmis>2026-02-05</FchEmis>
+      </IdDoc>
+      <Emisor>
+        <RUTEmisor>76308012-9</RUTEmisor>
+        <RznSoc>ELABORADORA Y COMERCIALIZADORA VINTAGE SPA</RznSoc>
+        <GiroEmis>ELABORAR, COMERCIALIZAR, DISTRIBUIR CERVEZA, TRANSPORTE DE CARGA</GiroEmis>
+        <Telefono>0 0</Telefono>
+        <CorreoEmisor>CDELAFUE31@GMAIL.COM</CorreoEmisor>
+        <Acteco>492300</Acteco>
+        <CdgSIISucur>78179418</CdgSIISucur>
+        <DirOrigen>RAUL MASSONE 3085</DirOrigen>
+        <CmnaOrigen>MAIPU</CmnaOrigen>
+        <CiudadOrigen>SANTIAGO</CiudadOrigen>
+      </Emisor>
+      <Receptor>
+        <RUTRecep>76011055-8</RUTRecep>
+        <RznSocRecep>SOCIEDAD GASTRONOMICA PRIMOS LIMITADA</RznSocRecep>
+        <GiroRecep>ACTIVIDADES DE RESTAURANTES Y DE SERVICI</GiroRecep>
+        <DirRecep>VERGARA                   65</DirRecep>
+        <CmnaRecep>SANTIAGO</CmnaRecep>
+        <CiudadRecep>SANTIAGO</CiudadRecep>
+      </Receptor>
+      <Totales>
+        <MntNeto>166110</MntNeto>
+        <TasaIVA>19.00</TasaIVA>
+        <IVA>31561</IVA>
+        <ImptoReten>
+          <TipoImp>26</TipoImp>
+          <TasaImp>20.50</TasaImp>
+          <MontoImp>12300</MontoImp>
+        </ImptoReten>
+        <MntTotal>209971</MntTotal>
+      </Totales>
+    </Encabezado>
+    <Detalle>
+      <NroLinDet>1</NroLinDet>
+      <NmbItem>Barril 30L Cream Ale</NmbItem>
+      <DscItem>* Impuesto Adic.: Cervezas y Otras bebidas alcohólicas 20,5%</DscItem>
+      <QtyItem>2.00</QtyItem>
+      <PrcItem>20000.00</PrcItem>
+      <CodImpAdic>26</CodImpAdic>
+      <MontoItem>40000</MontoItem>
+    </Detalle>
+    <Detalle>
+      <NroLinDet>2</NroLinDet>
+      <NmbItem>Barril 30L Scotch Ale</NmbItem>
+      <DscItem>* Impuesto Adic.: Cervezas y Otras bebidas alcohólicas 20,5%</DscItem>
+      <QtyItem>1.00</QtyItem>
+      <PrcItem>20000.00</PrcItem>
+      <CodImpAdic>26</CodImpAdic>
+      <MontoItem>20000</MontoItem>
+    </Detalle>
+    <Detalle>
+      <NroLinDet>3</NroLinDet>
+      <NmbItem>Logistica</NmbItem>
+      <QtyItem>3.00</QtyItem>
+      <PrcItem>35370.00</PrcItem>
+      <MontoItem>106110</MontoItem>
+    </Detalle>
+    <Referencia>
+      <NroLinRef>1</NroLinRef>
+      <TpoDocRef>33</TpoDocRef>
+      <FolioRef>4582</FolioRef>
+      <FchRef>2026-02-04</FchRef>
+      <CodRef>1</CodRef>
+      <RazonRef>ANULA DOCUMENTO DE LA REFERENCIA</RazonRef>
+    </Referencia>
+<TED version="1.0"><DD><RE>76308012-9</RE><TD>61</TD><F>226</F><FE>2026-02-05</FE><RR>76011055-8</RR><RSR>SOCIEDAD GASTRONOMICA PRIMOS LIMITADA</RSR><MNT>209971</MNT><IT1>Barril 30L Cream Ale</IT1><CAF version="1.0"><DA><RE>76308012-9</RE><RS>ELABORADORA Y COMERCIALIZADORA VINTAGE S</RS><TD>61</TD><RNG><D>226</D><H>226</H></RNG><FA>2026-02-05</FA><RSAPK><M>zA3coaOJvp/A/inbWAJ1FrEiwpJRP0dCEjiR+l3Wp2N1T3DyRicemOqx4i7PAMXiRhcHKkFXNVaGCMPLFfAxdw==</M><E>Aw==</E></RSAPK><IDK>300</IDK></DA><FRMA algoritmo="SHA1withRSA">c9NWo4X1VI/PyFuKokWSolqug5WgOB0FWjqrWx28UdUksJoLSHIHeu7hwnFclU3rj7XjnP0xg/rY1UG5ZpeszA==</FRMA></CAF><TSTED>2026-02-05T16:07:47</TSTED></DD><FRMT algoritmo="SHA1withRSA">XAlqAENpcXT7aXfeiJ5DGuk2B6VoOI3H/v+fvjBtHJpVwhyZQxess2WNk/MzHuQf/XxUvnXzPbWELwXaye0BJw==</FRMT></TED>
+    <TmstFirma>2026-02-05T16:07:47</TmstFirma>
+
+  </Documento>
+<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+<SignedInfo>
+<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+<Reference URI="#MiPE76308012-10795">
+<Transforms>
+<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+</Transforms>
+<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+<DigestValue>qMzSPYkFZorBZRZtgWsFzUQImHg=</DigestValue>
+</Reference>
+</SignedInfo>
+<SignatureValue>
+S6obs+a46POh6nUsblblbw04A8p1a5/zS8pSFCD6MeCZPh4R43MQhlIVPKfx6SrINIztP3h578MZ
+2xw15ZEOPkwigWqC57XAki5ZH443J7BkCYIxwaK8PmfOSVPFj0fc+PVeR7fk0jyeTwUZ2WKPGcQB
+B6T5WUgNfm7P0MgPPCJbCsWdBOptOYIaJ5Yp811CeWz83pb33ovrSjBb+33MKSCscVD2HzAi4nDo
+Ld/ufguhgxfWCmvZ7hm1vnmqiokosFxQS3mxZ88rGptvD72m63UbokBK89i5DchPwkOUAkVkrMcv
+9SoepIG6lVaKAuQsnvQSKfJeBH6CGYSf0Sazfw==
+</SignatureValue>
+<KeyInfo>
+<KeyValue>
+<RSAKeyValue>
+<Modulus>
+rN+wlnArbQv9zcNeFXu7jqmfOT4sPpdop0Dg9OMNnXUlF3Av6L69s+6mmB1FNiRgmKg8QVIKGLmz
+2r+/p9MjOsfHDGvb5SuZnyI4V+QKIzLgAuw2rNc19Kofc4W5d5ZKtEiB09OfciwQ/w57O+Wd8u+1
+5SZfDh4MCQtRsm2D5skH6kghzIxuaiYZmSDpVQUNbSHYEy6VQNbZBXp5r/gSJsNeGrKq6yPNDsaY
+DjOKLAsA7IxHV2k9n5VX45Uxx0FZIR/TWrzTO2xgAbgHyyL7bvHasX3dniG1ZMRkPrBqI98JqhMm
+xVYSOy02MhYw6+CgbFmk0jpmkYXTkOubNZT9jw==
+</Modulus>
+<Exponent>AQAB</Exponent>
+</RSAKeyValue>
+</KeyValue>
+<X509Data>
+<X509Certificate>
+MIIH2DCCBcCgAwIBAgIKLTZBqgABAAUrwTANBgkqhkiG9w0BAQsFADCBvzELMAkGA1UEBhMCQ0wx
+HTAbBgNVBAgTFFJlZ2lvbiBNZXRyb3BvbGl0YW5hMREwDwYDVQQHEwhTYW50aWFnbzEUMBIGA1UE
+ChMLRS1DRVJUQ0hJTEUxIDAeBgNVBAsTF0F1dG9yaWRhZCBDZXJ0aWZpY2Fkb3JhMR4wHAYDVQQD
+ExVFLUNFUlRDSElMRSBDQSBGRVMgMDIxJjAkBgkqhkiG9w0BCQEWF3NjbGllbnRlQGUtY2VydGNo
+aWxlLmNsMB4XDTIzMDMxNTE1MzAxOVoXDTI2MDMxNDE1MzAxOVowgdQxCzAJBgNVBAYTAkNMMSIw
+IAYDVQQIExlNRVRST1BPTElUQU5BIERFIFNBTlRJQUdPMREwDwYDVQQHEwhTQU5USUFHTzEzMDEG
+A1UEChMqRUxBQk9SQURPUkEgWSBDT01FUkNJQUxJWkFET1JBIFZJTlRBR0UgU1BBMQowCAYDVQQL
+DAEqMSgwJgYDVQQDEx9DSFJJU1RJQU4gREUgTEEgRlVFTlRFIENBUlNURU5TMSMwIQYJKoZIhvcN
+AQkBFhRDREVMQUZVRTMxQEdNQUlMLkNPTTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+AKzfsJZwK20L/c3DXhV7u46pnzk+LD6XaKdA4PTjDZ11JRdwL+i+vbPuppgdRTYkYJioPEFSChi5
+s9q/v6fTIzrHxwxr2+UrmZ8iOFfkCiMy4ALsNqzXNfSqH3OFuXeWSrRIgdPTn3IsEP8OezvlnfLv
+teUmXw4eDAkLUbJtg+bJB+pIIcyMbmomGZkg6VUFDW0h2BMulUDW2QV6ea/4EibDXhqyqusjzQ7G
+mA4ziiwLAOyMR1dpPZ+VV+OVMcdBWSEf01q80ztsYAG4B8si+27x2rF93Z4htWTEZD6waiPfCaoT
+JsVWEjstNjIWMOvgoGxZpNI6ZpGF05DrmzWU/Y8CAwEAAaOCAr0wggK5MIIBXwYDVR0gBIIBVjCC
+AVIwggFOBggrBgEEAcNSBTCCAUAwPQYIKwYBBQUHAgEWMWh0dHBzOi8vd3d3LmUtY2VydGNoaWxl
+LmNsL3BvbGl0aWNhcy15LXByYWN0aWNhcy8wgf4GCCsGAQUFBwICMIHxHoHuAEUAbAAgAHIAZQBz
+AHAAbwBuAGQAZQByACAAZQBzAHQAZQAgAGYAbwByAG0AdQBsAGEAcgBpAG8AIABlAHMAIAB1AG4A
+IAByAGUAcQB1AGkAcwBpAHQAbwAgAGkAbgBkAGkAcwBwAGUAbgBzAGEAYgBsAGUAIABwAGEAcgBh
+ACAAZABhAHIAIABpAG4AaQBjAGkAbwAgAGEAbAAgAHAAcgBvAGMAZQBzAG8AIABkAGUAIABjAGUA
+cgB0AGkAZgBpAGMAYQBjAGkA8wBuAC4AIABQAG8AcwB0AGUAcgBpAG8AcgBtAGUAbgB0AGUALDAd
+BgNVHQ4EFgQUpgSwLbnoYmN2Y3OecbKA+1MTgS8wCwYDVR0PBAQDAgTwMCMGA1UdEQQcMBqgGAYI
+KwYBBAHBAQGgDBYKMTM0MzMwMzEtNzAfBgNVHSMEGDAWgBR01iGz9FroLXy7WQZjQ+9ptDqTBDBA
+BgNVHR8EOTA3MDWgM6Axhi9odHRwOi8vY3JsLmVjZXJ0Y2hpbGUuY2wvRS1DRVJUQ0hJTEVDQUZF
+UzAyLmNybDA9BggrBgEFBQcBAQQxMC8wLQYIKwYBBQUHMAGGIWh0dHA6Ly9vY3NwZmVzLmVjZXJ0
+Y2hpbGUuY2wvb2NzcDA8BgkrBgEEAYI3FQcELzAtBiUrBgEEAYI3FQiB3dJNl9Q6homdBoeIzm+D
+r8xgRYbS7AiGx8p9AgFkAgEHMCMGA1UdEgQcMBqgGAYIKwYBBAHBAQKgDBYKOTY5MjgxODAtNTAN
+BgkqhkiG9w0BAQsFAAOCAgEAnh+O7n3FbNQYi12HDsIeD16o6FBVr09DX5O0uSj2p777aYCcV2Is
+nWwy8ltbx9i4/Tz80K+UuRW9aU8Wuu9/g5m7LHVn9C0fSPKK+cMFfXQiv3Ob9ESyz6bzv3AaVF17
+m1ZSF29WzTOFtDsIqGm+uwh7Rbf3dw8Joqly+bYkZM4+NB2Dj9GhU7Ix4Fw3uBG7GLn6bjsy7M/V
+S44BF2iC1A79egKrnEZ2l3CMtInGiqS28NEwcgfHIcFnOXhEtsR+Sm4xQZcD6r2tsZ7UbZqtlxqO
+81OnIxKC6N/3QowmvmrpF/e+Z2HJ80Ud0WNL9dnr7BT5A7kG2YA5CdiTbAMwCZVfmQhHG2G/CdFe
+2WOouxzPOOircRtJYidns6Emr793DFGICJ1mn6eqx9psmnUTsCkw7U3qspZBUUUT0hB0YMlEsYtM
+LiBuW3Ic4ejakvHcuen0VJVb+HIwOqNqMEqNj1olx8Rr+SH65zmBiVluZIa4x5/yhFYz6fYPim61
+s4gZ2pNk6jyB9Vr/5JdWX49YWYvT0bmSTFZSiDNEpL5HswVLKKSijlIh5Ir0XTsi2aBeBh7WnTOF
+IxQLZwdzySeMFGB5tCkI+3kX/cl6/zIX3A/OZki5s+WC+irNrMRBbuG+njoDGPF3bol6f+sacSp4
+DPuEsGEiAbvzfdtTQ69bP+Q=
+</X509Certificate>
+</X509Data>
+</KeyInfo>
+</Signature></DTE>
+</SetDTE>

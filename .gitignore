@@ -1,0 +1,19 @@
+# Credenciales
+.env
+
+# Archivos temporales del pipeline
+changes.json
+.changes_validated
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+
+# MCP config (contiene credenciales en la connection string)
+.mcp.json
+
+# Claude Code local settings
+.claude/settings.local.json
