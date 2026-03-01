@@ -1,67 +1,92 @@
 ---
 name: sync-nc
-description: Sincroniza Notas de Crédito DTE (tipo 61) desde un archivo XML del SII a PostgreSQL (Zigurat ERP). Lee desde la carpeta "Notas de Credito\". Ejecuta parse, validación e inserción en secuencia. Usar cuando se mencione sincronizar notas de crédito, procesar NC, cargar DTE tipo 61.
-argument-hint: "[NOMBRE_ARCHIVO.xml]"
+description: Sincroniza Notas de Crédito DTE (tipo 61) desde XMLs del SII a PostgreSQL (Zigurat ERP). Sin argumento detecta y procesa automáticamente todos los XMLs pendientes en "Notas de Credito/". Con argumento procesa ese archivo específico. Usar cuando se mencione sincronizar notas de crédito, procesar NC, cargar DTE tipo 61, o cuando se quiera saber si hay NCs pendientes.
+argument-hint: "[NOMBRE_ARCHIVO.xml] (opcional — sin argumento procesa todos los pendientes)"
 context: fork
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash(python *)
 ---
 
 # Sync Notas de Crédito — Zigurat ERP
 
-> SKILL DE PROYECTO: Esta skill es específica del proyecto Zigurat ERP.
-> Los scripts en `scripts/` son el núcleo del proyecto y residen en la
-> raíz del repositorio por diseño. DEBES ejecutar esta skill desde el
-> directorio raíz del proyecto (`Agente_Facturas\`).
+> SKILL DE PROYECTO: Ejecutar siempre desde el directorio raíz `Agente_Facturas\`.
 
 ## Reglas
 
 - NUNCA pedir confirmación antes de ejecutar
 - NUNCA saltar la validación
 - NUNCA continuar si cualquier paso falla
-- SIEMPRE verificar que $ARGUMENTS no esté vacío antes de ejecutar
+- Si se pasa argumento → modo específico. Si no → modo automático.
 
-## Paso 0 — Validar argumento
+---
 
-Si `$ARGUMENTS` está vacío o no fue proporcionado:
-Reportar: "ERROR: Debes indicar el nombre del archivo. Uso correcto: /sync-nc NOMBRE_ARCHIVO.xml"
-Detener el proceso aquí. NO continuar.
+## Modo automático (sin argumento)
 
-Si `$ARGUMENTS` tiene valor: continuar al Paso 1 de inmediato.
-
-## Paso 1 — Ejecutar inmediatamente
+### Paso A1 — Detectar XMLs pendientes
 
 ```bash
-python scripts/parse_dte.py "Notas de Credito/$ARGUMENTS"
+python -X utf8 .claude/skills/sync-nc/scripts/detectar_pendientes_nc.py
 ```
 
-Si falla: reportar error y detener todo.
-Si exitoso: ejecutar Paso 2 de inmediato.
+- Si la línea `__PENDIENTES__:` viene vacía → reportar "✅ Todo sincronizado. No hay XMLs pendientes en 'Notas de Credito/'." y detener.
+- Si viene con archivos → continuar con cada uno en orden.
 
-## Paso 2 — Ejecutar inmediatamente
+### Paso A2 — Procesar cada pendiente
+
+Para cada archivo en `__PENDIENTES__`, ejecutar los 3 pasos en secuencia:
 
 ```bash
-python scripts/validate_changes.py changes.json
+python -X utf8 scripts/parse_dte.py "Notas de Credito/ARCHIVO.xml"
 ```
-
-Si retorna exit code 1: mostrar errores y detener todo. NUNCA continuar si hay errores.
-Si exitoso: ejecutar Paso 3 de inmediato.
-
-## Paso 3 — Ejecutar inmediatamente
+Si falla → reportar error y pasar al siguiente archivo.
 
 ```bash
-python scripts/sync_db.py changes.json
+python -X utf8 scripts/validate_changes.py changes.json
 ```
+Si falla → reportar errores y pasar al siguiente archivo.
 
-Si falla: reportar error.
-Si exitoso: mostrar resumen del Paso 4.
+```bash
+python -X utf8 scripts/sync_db.py changes.json
+```
+Si falla → reportar error.
 
-## Paso 4 — Mostrar resumen final
+### Paso A3 — Resumen final
 
-Reportar al usuario:
-- Archivo procesado: `Notas de Credito/$ARGUMENTS`
-- Notas de Crédito insertadas
-- Productos insertados
-- Folios duplicados omitidos (si hubo)
-- Facturas referenciadas ajustadas (folios actualizados con descuento)
-- Tiempo total del proceso
+Mostrar:
+- Archivos procesados exitosamente
+- Archivos con errores (si hubo)
+- Total de NCs insertadas y facturas ajustadas
+
+---
+
+## Modo específico (con argumento)
+
+### Paso E1 — Validar argumento
+
+Si `$ARGUMENTS` está vacío → modo automático (ir al Paso A1).
+Si tiene valor → continuar.
+
+### Paso E2 — Pipeline sobre el archivo indicado
+
+```bash
+python -X utf8 scripts/parse_dte.py "Notas de Credito/$ARGUMENTS"
+```
+Si falla → reportar error y detener.
+
+```bash
+python -X utf8 scripts/validate_changes.py changes.json
+```
+Si falla → mostrar errores y detener.
+
+```bash
+python -X utf8 scripts/sync_db.py changes.json
+```
+Si falla → reportar error.
+
+### Paso E3 — Resumen final
+
+Reportar:
+- Archivo procesado
+- NCs insertadas / duplicados omitidos
+- Facturas referenciadas ajustadas
+- Tiempo total
