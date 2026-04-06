@@ -22,7 +22,8 @@ python .claude/skills/consultar-ventas/scripts/query_ventas.py <tipo> [opciones]
 
 ranking   [--limit N]                              Top N clientes (default 10)
 cliente   --nombre "NOMBRE"                        Ventas de un cliente
-periodo   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Ventas por rango de fechas
+periodo   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Ventas por rango de fechas (agrupado por cliente)
+listado   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Facturas individuales por rango (folio por folio)
 facturas  --nombre "NOMBRE"                        Facturas de un cliente
 total                                              Total global vendido
 producto  --nombre "NOMBRE"                        Buscar por producto
@@ -37,11 +38,17 @@ Analiza la pregunta del usuario y elige el comando apropiado:
 - "cuanto vendio [nombre]?" → `cliente --nombre "nombre"`
 - "top N clientes" → `ranking --limit N`
 - "ventas de [mes]" → `periodo --desde YYYY-MM-DD --hasta YYYY-MM-DD`
+- "todas las facturas de [mes]" → `listado --desde YYYY-MM-DD --hasta YYYY-MM-DD`
+- "dame los folios de [mes]" → `listado --desde YYYY-MM-DD --hasta YYYY-MM-DD`
+- "listado de facturas de [periodo]" → `listado --desde YYYY-MM-DD --hasta YYYY-MM-DD`
+- "que facturas emiti en [mes]" → `listado --desde YYYY-MM-DD --hasta YYYY-MM-DD`
 - "facturas de [nombre]" → `facturas --nombre "nombre"`
 - "total vendido" → `total`
 - "busca [producto]" → `producto --nombre "producto"`
 - "factura [folio]" → `detalle --folio FOLIO`
 - "resumen" → `resumen`
+
+**Regla clave:** Cuando el usuario pida facturas individuales (folios, listado, "todas las facturas de X mes") usar `listado`. Cuando pida totales o resumen por cliente de un periodo, usar `periodo`.
 
 Ejecuta el comando de inmediato. NUNCA construyas SQL manualmente — SIEMPRE usa el script.
 

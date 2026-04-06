@@ -7,6 +7,7 @@ Tipos:
   ranking   [--limit N]                              Top N clientes
   cliente   --nombre NOMBRE                          Ventas de un cliente
   periodo   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Ventas por rango
+  listado   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Facturas individuales por rango
   facturas  --nombre NOMBRE                          Facturas de un cliente
   total                                              Total global vendido
   producto  --nombre NOMBRE                          Buscar por producto
@@ -152,6 +153,25 @@ def q_periodo(cur, desde, hasta):
     print(f"\nTotal periodo: {fmt(sum(r[2] for r in rows))}")
 
 
+def q_listado(cur, desde, hasta):
+    """Lista todas las facturas individuales en un rango de fechas."""
+    cur.execute("""
+        SELECT v.folio, v.fecha, c.razon_social,
+               COALESCE(v.monto_total_ajustado, v.monto_total) AS total_real
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61 AND v.fecha BETWEEN %s AND %s
+        ORDER BY v.fecha, v.folio::integer
+    """, (desde, hasta))
+    rows = cur.fetchall()
+    if not rows:
+        print(f"No se encontraron facturas entre {desde} y {hasta}.")
+        return
+    print(f"Facturas emitidas ({desde} a {hasta}):\n")
+    table(["Folio", "Fecha", "Cliente", "Total Real"], rows, mcols=[3])
+    print(f"\nTotal: {len(rows)} facturas | {fmt(sum(r[3] for r in rows))}")
+
+
 def q_facturas(cur, nombre):
     cur.execute("""
         SELECT v.folio, v.fecha, v.monto_neto, v.iva, v.monto_total,
@@ -256,8 +276,9 @@ def q_resumen(cur):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("tipo", choices=["ranking", "cliente", "periodo", "facturas",
-                                     "total", "producto", "detalle", "resumen"])
+    p.add_argument("tipo", choices=["ranking", "cliente", "periodo", "listado",
+                                     "facturas", "total", "producto", "detalle",
+                                     "resumen"])
     p.add_argument("--nombre", "-n")
     p.add_argument("--limit", "-l", type=int, default=10)
     p.add_argument("--desde")
@@ -278,6 +299,10 @@ def main():
             if not args.desde or not args.hasta:
                 print("ERROR: --desde y --hasta requeridos", file=sys.stderr); sys.exit(1)
             q_periodo(cur, args.desde, args.hasta)
+        elif args.tipo == "listado":
+            if not args.desde or not args.hasta:
+                print("ERROR: --desde y --hasta requeridos", file=sys.stderr); sys.exit(1)
+            q_listado(cur, args.desde, args.hasta)
         elif args.tipo == "facturas":
             if not args.nombre:
                 print("ERROR: --nombre requerido", file=sys.stderr); sys.exit(1)
