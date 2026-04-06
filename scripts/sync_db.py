@@ -135,6 +135,8 @@ def aplicar_nota_credito(cur, venta):
     Cuando se inserta una NC (tipo 61), descuenta su monto de la factura
     original referenciada actualizando monto_neto_ajustado / monto_total_ajustado.
     Si ya existe un ajuste previo (otra NC sobre la misma factura), acumula.
+    Si la NC deja la factura en $0 (anulación total), cierra la factura
+    asignando fecha_pago = fecha de la NC para que no aparezca como pendiente.
     """
     folio_ref = venta.get("folio_referencia")
     tipo_ref  = venta.get("tipo_documento_referencia")
@@ -155,7 +157,73 @@ def aplicar_nota_credito(cur, venta):
         folio_ref,
         tipo_ref,
     ))
+
+    # Si la NC anuló completamente la factura (monto_total_ajustado <= 0),
+    # marcarla como cerrada con la fecha de la NC para excluirla de cobros pendientes
+    cur.execute("""
+        UPDATE ventas
+        SET fecha_pago = %s
+        WHERE folio          = %s
+          AND tipo_documento = %s
+          AND COALESCE(monto_total_ajustado, monto_total) <= 0
+          AND fecha_pago IS NULL
+    """, (venta["fecha"], folio_ref, tipo_ref))
+
     return cur.rowcount > 0
+
+
+# ─── Aplicar NCs pendientes sobre factura recién insertada ───────────────────
+
+def aplicar_nc_pendientes(cur, venta):
+    """
+    Al insertar una factura, verifica si ya existen NCs en la BD
+    que la referencien. Si las hay, aplica el ajuste retroactivo.
+    Esto resuelve el caso donde la NC se sincronizó antes que la factura.
+    Si el ajuste deja la factura en $0, la cierra con la fecha de la NC más reciente.
+    Retorna la cantidad de NCs aplicadas.
+    """
+    folio = venta["folio"]
+    tipo = venta["tipo_documento"]
+
+    # Buscar NCs que referencien esta factura (incluyendo fecha para el cierre)
+    cur.execute("""
+        SELECT monto_neto, monto_total, fecha
+        FROM ventas
+        WHERE tipo_documento = 61
+          AND folio_referencia = %s
+          AND tipo_documento_referencia = %s
+        ORDER BY fecha DESC
+    """, (folio, tipo))
+
+    ncs = cur.fetchall()
+    if not ncs:
+        return 0
+
+    # Sumar todos los montos de NC (ya son negativos desde parse_dte.py)
+    total_neto  = sum(nc[0] for nc in ncs)
+    total_monto = sum(nc[1] for nc in ncs)
+    fecha_nc_reciente = ncs[0][2]  # la NC más reciente para el cierre
+
+    # Aplicar ajuste: monto original + sum(NCs negativas)
+    cur.execute("""
+        UPDATE ventas
+        SET monto_neto_ajustado  = monto_neto  + %s,
+            monto_total_ajustado = monto_total + %s
+        WHERE folio          = %s
+          AND tipo_documento = %s
+    """, (total_neto, total_monto, folio, tipo))
+
+    # Si la(s) NC(s) anularon completamente la factura, cerrarla
+    cur.execute("""
+        UPDATE ventas
+        SET fecha_pago = %s
+        WHERE folio          = %s
+          AND tipo_documento = %s
+          AND COALESCE(monto_total_ajustado, monto_total) <= 0
+          AND fecha_pago IS NULL
+    """, (fecha_nc_reciente, folio, tipo))
+
+    return len(ncs)
 
 
 # ─── Insertar venta ───────────────────────────────────────────────────────────
@@ -163,6 +231,7 @@ def aplicar_nota_credito(cur, venta):
 def insertar_venta(cur, venta):
     """
     Inserta una venta en la tabla ventas.
+    razon_social_receptor se inyecta desde cliente.razon_social en el loop principal.
     """
     cur.execute("""
         INSERT INTO ventas (
@@ -170,6 +239,7 @@ def insertar_venta(cur, venta):
             tipo_documento,
             fecha,
             rut_cliente,
+            razon_social_receptor,
             monto_neto,
             iva,
             impuesto_adicional,
@@ -177,12 +247,13 @@ def insertar_venta(cur, venta):
             folio_referencia,
             tipo_documento_referencia,
             razon_referencia
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         venta["folio"],
         venta["tipo_documento"],
         venta["fecha"],
         venta["rut_cliente"],
+        venta.get("razon_social_receptor"),   # viene de cliente.razon_social
         venta["monto_neto"],
         venta["iva"],
         venta.get("impuesto_adicional", 0),
@@ -295,6 +366,9 @@ def sincronizar(changes):
 
                 folio = venta["folio"]
 
+                # Inyectar razon_social_receptor desde el objeto cliente
+                venta["razon_social_receptor"] = cliente.get("razon_social")
+
                 # Upsert cliente (puede que ya exista)
                 upsert_cliente(cur, cliente)
 
@@ -316,7 +390,12 @@ def sincronizar(changes):
                     if not ajustada:
                         ref_info += " (factura ref. no encontrada en BD)"
                 else:
-                    ref_info = ""
+                    # Buscar NCs pendientes que referencien esta factura
+                    nc_count = aplicar_nc_pendientes(cur, venta)
+                    if nc_count > 0:
+                        ref_info = f" → {nc_count} NC pendiente(s) aplicada(s)"
+                    else:
+                        ref_info = ""
 
                 insertados += 1
                 productos_insertados += len(productos)
