@@ -121,6 +121,91 @@ def fmt_fecha(d):
     return d.strftime("%Y-%m-%d")
 
 
+# ─── Queries de datos de cliente ──────────────────────────────────────────────
+
+def obtener_datos_cliente(cur, rut):
+    """Ejecuta 6 queries y retorna un dict con toda la info del cliente."""
+
+    # 1. Datos maestros
+    cur.execute(
+        "SELECT razon_social, estado, direccion, comuna "
+        "FROM clientes WHERE rut_cliente = %s",
+        (rut,)
+    )
+    row = cur.fetchone()
+    if row is None:
+        return None
+    razon_social, estado, direccion, comuna = row
+
+    # 2. Total vendido (facturas, excluyendo NC)
+    cur.execute(
+        "SELECT COUNT(*), COALESCE(SUM(COALESCE(monto_total_ajustado, monto_total)), 0) "
+        "FROM ventas WHERE rut_cliente = %s AND tipo_documento != '61'",
+        (rut,)
+    )
+    facturas_emitidas, total_vendido = cur.fetchone()
+
+    # 3. Facturas pendientes (sin fecha_pago)
+    cur.execute(
+        "SELECT COUNT(*), COALESCE(SUM(COALESCE(monto_total_ajustado, monto_total)), 0) "
+        "FROM ventas WHERE rut_cliente = %s AND tipo_documento != '61' AND fecha_pago IS NULL",
+        (rut,)
+    )
+    facturas_pendientes, deuda_pendiente = cur.fetchone()
+
+    # 4. Promedio días pago y último pago
+    cur.execute(
+        "SELECT AVG(dias_pago), MAX(fecha_pago) "
+        "FROM ventas WHERE rut_cliente = %s AND tipo_documento != '61' AND fecha_pago IS NOT NULL",
+        (rut,)
+    )
+    promedio_dias_pago, ultimo_pago = cur.fetchone()
+
+    # 5. Top 3 productos más comprados
+    cur.execute(
+        "SELECT p.nombre_producto, SUM(p.cantidad) "
+        "FROM productos p "
+        "JOIN ventas v ON v.folio::text = p.folio::text AND v.tipo_documento = p.tipo_documento "
+        "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
+        "GROUP BY p.nombre_producto "
+        "ORDER BY SUM(cantidad) DESC LIMIT 3",
+        (rut,)
+    )
+    top_productos = [
+        {"nombre": row[0], "cantidad": float(row[1]) if row[1] else 0}
+        for row in cur.fetchall()
+    ]
+
+    # 6. Cliente desde (primera factura)
+    cur.execute(
+        "SELECT MIN(fecha) FROM ventas WHERE rut_cliente = %s AND tipo_documento != '61'",
+        (rut,)
+    )
+    cliente_desde = cur.fetchone()[0]
+
+    return {
+        "rut": rut,
+        "razon_social": razon_social,
+        "estado": estado,
+        "direccion": direccion,
+        "comuna": comuna,
+        "facturas_emitidas": facturas_emitidas or 0,
+        "total_vendido": total_vendido or 0,
+        "facturas_pendientes": facturas_pendientes or 0,
+        "deuda_pendiente": deuda_pendiente or 0,
+        "promedio_dias_pago": round(promedio_dias_pago) if promedio_dias_pago else None,
+        "ultimo_pago": ultimo_pago,
+        "top_productos": top_productos,
+        "cliente_desde": cliente_desde,
+    }
+
+
+def obtener_ruts_todos(cur):
+    """Retorna lista de todos los RUTs de la tabla clientes."""
+    cur.execute("SELECT rut_cliente FROM clientes ORDER BY razon_social")
+    return [row[0] for row in cur.fetchall()]
+
+
 # ─── Argumentos CLI ───────────────────────────────────────────────────────────
 
 def parse_args():
@@ -172,3 +257,55 @@ if __name__ == "__main__":
     if args.origen:
         print(f"  Origen: {args.origen}")
     print()
+
+    # Conectar a la base de datos
+    conn = conectar()
+    cur = conn.cursor()
+    print("[OK] Conectado a PostgreSQL")
+
+    # Obtener lista de RUTs según el modo
+    if args.todos:
+        ruts = obtener_ruts_todos(cur)
+    elif args.ruts:
+        ruts = [r.strip() for r in args.ruts.split(",")]
+    elif args.cliente:
+        # Buscar por razón social parcial (case-insensitive)
+        cur.execute(
+            "SELECT rut_cliente FROM clientes "
+            "WHERE UPPER(razon_social) LIKE UPPER(%s) "
+            "ORDER BY razon_social",
+            (f"%{args.cliente}%",)
+        )
+        ruts = [row[0] for row in cur.fetchall()]
+        if not ruts:
+            print(f"  No se encontraron clientes con '{args.cliente}'")
+            cur.close()
+            conn.close()
+            sys.exit(0)
+
+    print(f"  Clientes a procesar: {len(ruts)}")
+    print("-" * 60)
+
+    # Procesar cada cliente
+    for rut in ruts:
+        datos = obtener_datos_cliente(cur, rut)
+        if datos is None:
+            print(f"  [{rut}] — no encontrado en tabla clientes")
+            continue
+
+        # Imprimir resumen del cliente
+        estado_tag = f" [{datos['estado']}]" if datos['estado'] else ""
+        pendiente_tag = f" | Pendiente: {fmt_monto(datos['deuda_pendiente'])}" if datos['facturas_pendientes'] > 0 else ""
+        print(
+            f"  {datos['razon_social']}{estado_tag} | "
+            f"{datos['facturas_emitidas']} fact. | "
+            f"Total: {fmt_monto(datos['total_vendido'])}"
+            f"{pendiente_tag}"
+        )
+
+    print("-" * 60)
+    print(f"  Procesados: {len(ruts)} clientes")
+    print()
+
+    cur.close()
+    conn.close()
