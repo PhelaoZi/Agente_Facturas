@@ -33,10 +33,18 @@ Empresa: Elaboradora y Comercializadora Vintage SPA (Zigurat Brewery).
 /flujo-caja                       # 3. Proyección 4 semanas
 /agregar-gasto "desc" monto YYYY-MM-DD [proveedor] [categoría]
 
+# Wiki de clientes (brain compilado estilo Karpathy)
+/wiki-init                        # Genera todas las fichas de clientes desde cero
+/perfil-cliente <nombre>          # Muestra perfil narrativo de un cliente
+/wiki-lint                        # Audita consistencia wiki ↔ BD
+
 # Ejecutar scripts individuales (solo para debug, nunca en producción)
 python scripts/parse_dte.py facturas/DTE_DDMMYYYY
 python scripts/validate_changes.py changes.json
 python scripts/sync_db.py changes.json
+python scripts/wiki_update.py --ruts RUT1,RUT2 --origen "debug"
+python scripts/wiki_update.py --todos --origen "debug"
+python scripts/wiki_lint.py
 
 # Migración de esquema (idempotente)
 python scripts/migrate_flujo_caja.py
@@ -87,15 +95,24 @@ scripts/                    # Scripts Python del pipeline (NO mover ni renombrar
   conciliar_banco.py        # Cruza transferencias con facturas
   flujo_caja.py             # Proyección 4 semanas
   migrate_flujo_caja.py     # Migración de esquema (idempotente)
+  wiki_update.py            # Genera/actualiza fichas en wiki/clientes/
+  wiki_lint.py              # Audita consistencia wiki ↔ BD
 facturas/                   # XMLs del SII (formato DTE_DDMMYYYY)
 Notas de Credito/           # XMLs de Notas de Crédito
 transferencias/             # Excel de transferencias Itaú
 logs/                       # Logs de ejecución
-.claude/skills/             # Skills de Claude Code (9 activas)
+wiki/                       # Brain compilado de clientes (Markdown + Obsidian)
+  index.md                  # Índice general (auto-generado)
+  log.md                    # Registro cronológico de operaciones
+  clientes/                 # Ficha ejecutiva por cliente (.md)
+.claude/skills/             # Skills de Claude Code (12 activas)
   consultar-ventas/scripts/query_ventas.py  # Queries hardcodeadas
   monitoreo-facturas/scripts/detectar_pendientes.py
   reporte-semanal/scripts/reporte.py
   agregar-gasto/scripts/agregar_gasto.py
+  wiki-init/                # Genera todas las fichas desde cero
+  perfil-cliente/           # Consulta narrativa de ficha + BD
+  wiki-lint/                # Audita consistencia
 ```
 
 ---
@@ -174,6 +191,47 @@ Las NC se guardan con **montos negativos** en `ventas`. Al sincronizar una NC, `
 ```
 
 RUTs en `movimientos_banco` se normalizan al formato `77126823-4` (con guión, sin puntos).
+
+---
+
+## Wiki de clientes (Karpathy LLM Wiki)
+
+Brain compilado en Markdown que funciona como alternativa a RAG: cada cliente
+tiene una ficha ejecutiva (~30 líneas) con métricas, patrón de pago, y notas
+del agente. Las fichas se consultan con `/perfil-cliente` y son compatibles
+con Obsidian (graph view, backlinks).
+
+### Flujo de actualización
+
+```
+1. /wiki-init                 → genera TODAS las fichas desde BD (una sola vez)
+2. Cada sync/conciliación     → actualiza solo los RUTs afectados (auto, no-bloqueante)
+3. /perfil-cliente <nombre>   → lee ficha + complementa con BD en tiempo real
+4. /wiki-lint                 → audita: fichas faltantes, huérfanas o desactualizadas
+```
+
+### Regeneración vs preservación
+
+`wiki_update.py` regenera completamente cada ficha excepto la sección
+**"Notas del agente"**, que es append-only. Los eventos notables (facturas
+vencidas >30 días, multi-pagos en misma transferencia, cliente inactivo >60
+días) se detectan automáticamente con `detectar_eventos()` y se anexan como
+viñetas con fecha.
+
+### Integración en skills existentes
+
+Las skills `/sync-facturas`, `/sync-nc`, `/monitoreo-facturas` y
+`/conciliar-banco` llaman a `wiki_update.py --ruts` como **último paso
+no-bloqueante**: si falla solo muestra warning, no rompe el pipeline de datos.
+
+### Estructura de ficha
+
+Cada `wiki/clientes/<slug>.md` tiene:
+- Frontmatter YAML: `rut`, `razon_social`, `estado`, `ultima_actualizacion`
+- Métricas: total facturado, ticket promedio, nº facturas, primera/última venta
+- Estado de cuenta: pendiente, al día, vencido
+- Patrón de pago: días promedio, comportamiento descriptivo
+- Notas del agente: append-only, preserva observaciones entre regeneraciones
 
 ---
 

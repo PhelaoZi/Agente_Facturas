@@ -2,7 +2,7 @@
 rut: 76364354-9
 razon_social: "A & C SERVICIOS GASTRONOMICOS LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-09
 ---
 
 # A & C SERVICIOS GASTRONOMICOS LIMITADA
@@ -31,4 +31,5 @@ ultima_actualizacion: 2026-04-08
 
 ## Notas del agente
 
+- 2026-04-09: ⚠️ 5 factura(s) vencida(s) (>30 días): #3999, #4054, #4538, #4606, #4601 por $300.006.
 - 2026-04-08: ⚠️ 5 factura(s) vencida(s) (>30 días): #3999, #4054, #4538, #4606, #4601 por $300.006.
