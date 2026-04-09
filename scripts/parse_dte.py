@@ -19,6 +19,10 @@ from pathlib import Path
 from datetime import datetime
 
 
+# ─── Items que son parte del costo pero NO son productos del catálogo ─────────
+# Se excluyen de la tabla `productos` pero siguen sumando en monto_total de la venta.
+ITEMS_NO_CATALOGO = {"logistica"}
+
 # ─── Tipos de documento DTE ───────────────────────────────────────────────────
 TIPOS_DTE = {
     "33": "Factura Afecta",
@@ -119,6 +123,10 @@ def parsear_documento(doc_xml):
         cantidad = extraer_float(r'<QtyItem>(.*?)</QtyItem>', det, 1.0)
         precio   = extraer_float(r'<PrcItem>(.*?)</PrcItem>', det, 0.0)
         total    = extraer_int(r'<MontoItem>(.*?)</MontoItem>', det, 0)
+
+        # Excluir items que son costos operativos, no productos del catálogo
+        if (nombre or "").lower().strip() in ITEMS_NO_CATALOGO:
+            continue
 
         productos.append({
             "nombre_producto": nombre,
