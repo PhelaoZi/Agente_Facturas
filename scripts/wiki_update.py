@@ -208,6 +208,141 @@ def obtener_ruts_todos(cur):
 
 # ─── Argumentos CLI ───────────────────────────────────────────────────────────
 
+# ─── Generación de fichas Markdown ───────────────────────────────────────────
+
+def generar_patron(datos):
+    """Genera bullets de patrón de comportamiento del cliente."""
+    lineas = []
+
+    # Desde cuándo es cliente
+    if datos["cliente_desde"]:
+        lineas.append(f"- Cliente desde **{fmt_fecha(datos['cliente_desde'])}**")
+
+    # Frecuencia de compra
+    if datos["cliente_desde"] and datos["facturas_emitidas"] > 1:
+        dias_activo = (date.today() - datos["cliente_desde"]).days
+        if dias_activo > 0:
+            frecuencia = dias_activo / datos["facturas_emitidas"]
+            lineas.append(f"- Frecuencia de compra: ~1 factura cada **{int(round(frecuencia))} días**")
+    elif datos["facturas_emitidas"] == 1:
+        lineas.append("- Solo 1 compra registrada")
+
+    # Velocidad de pago
+    dias = datos["promedio_dias_pago"]
+    if dias is not None:
+        if dias <= 15:
+            velocidad = "rápido"
+        elif dias <= 30:
+            velocidad = "bueno"
+        elif dias <= 45:
+            velocidad = "normal"
+        else:
+            velocidad = "lento"
+        lineas.append(f"- Comportamiento de pago: **{velocidad}** ({dias} días promedio)")
+
+    # Producto principal
+    if datos["top_productos"]:
+        prod = datos["top_productos"][0]
+        lineas.append(f"- Producto principal: **{prod['nombre']}**")
+
+    # Estado incobrable
+    if datos["estado"] == "incobrable":
+        lineas.append("- ⚠ **Cliente marcado como incobrable**")
+
+    return "\n".join(lineas) if lineas else "- Sin datos suficientes para generar patrón"
+
+
+def generar_ficha(datos):
+    """Genera contenido Markdown completo para la ficha de un cliente."""
+    hoy = date.today().isoformat()
+
+    # YAML frontmatter
+    lineas = [
+        "---",
+        f"rut: {datos['rut']}",
+        f"razon_social: \"{datos['razon_social']}\"",
+        f"estado: {datos['estado'] or 'activo'}",
+        f"ultima_actualizacion: {hoy}",
+        "---",
+        "",
+        f"# {datos['razon_social']}",
+        "",
+        "## Métricas clave",
+        "",
+        "| Indicador | Valor |",
+        "| --- | --- |",
+        f"| Total vendido | {fmt_monto(datos['total_vendido'])} |",
+        f"| Facturas emitidas | {datos['facturas_emitidas']} |",
+        f"| Facturas pendientes | {datos['facturas_pendientes']} ({fmt_monto(datos['deuda_pendiente'])}) |",
+        f"| Promedio días de pago | {datos['promedio_dias_pago'] or '—'} |",
+        f"| Último pago | {fmt_fecha(datos['ultimo_pago'])} |",
+        "",
+    ]
+
+    # Estado de cuenta
+    lineas.append("## Estado de cuenta")
+    lineas.append("")
+    if datos["facturas_pendientes"] > 0:
+        lineas.append(f"- {datos['facturas_pendientes']} factura(s) pendiente(s) por {fmt_monto(datos['deuda_pendiente'])}")
+        if datos["ultimo_pago"]:
+            lineas.append(f"- Último pago registrado: {fmt_fecha(datos['ultimo_pago'])}")
+        else:
+            lineas.append("- Sin pagos registrados")
+    else:
+        lineas.append("- Sin facturas pendientes de pago")
+    lineas.append("")
+
+    # Patrón de comportamiento
+    lineas.append("## Patrón de comportamiento")
+    lineas.append("")
+    lineas.append(generar_patron(datos))
+    lineas.append("")
+
+    # Notas del agente (sección vacía para llenado posterior)
+    lineas.append("## Notas del agente")
+    lineas.append("")
+
+    return "\n".join(lineas)
+
+
+def escribir_ficha(datos):
+    """Escribe ficha .md del cliente. Preserva 'Notas del agente' si ya existe."""
+    slug = slugify(datos["razon_social"])
+    filepath = CLIENTES_DIR / f"{slug}.md"
+
+    # Si ya existe, preservar la sección 'Notas del agente'
+    notas_existentes = ""
+    if filepath.exists():
+        contenido_actual = filepath.read_text(encoding="utf-8")
+        # Buscar todo después del heading '## Notas del agente'
+        match = re.search(r"## Notas del agente\n(.*)", contenido_actual, re.DOTALL)
+        if match:
+            notas_existentes = match.group(1)
+
+    # Generar ficha nueva
+    contenido = generar_ficha(datos)
+
+    # Reemplazar la sección de notas con la preservada (si había)
+    if notas_existentes.strip():
+        contenido = contenido.rstrip("\n") + "\n"
+        # Reemplazar desde '## Notas del agente' en adelante
+        contenido = re.sub(
+            r"## Notas del agente\n.*",
+            f"## Notas del agente\n{notas_existentes}",
+            contenido,
+            flags=re.DOTALL,
+        )
+
+    # Asegurar que el directorio existe
+    CLIENTES_DIR.mkdir(parents=True, exist_ok=True)
+    filepath.write_text(contenido, encoding="utf-8")
+
+    return str(filepath), slug
+
+
+
+# ─── Argumentos CLI ───────────────────────────────────────────────────────────
+
 def parse_args():
     """Parsea argumentos de línea de comandos."""
     parser = argparse.ArgumentParser(
@@ -286,26 +421,36 @@ if __name__ == "__main__":
     print(f"  Clientes a procesar: {len(ruts)}")
     print("-" * 60)
 
-    # Procesar cada cliente
+    # Procesar cada cliente: generar ficha Markdown
+    actualizados = []
+    errores = 0
+
     for rut in ruts:
         datos = obtener_datos_cliente(cur, rut)
         if datos is None:
             print(f"  [{rut}] — no encontrado en tabla clientes")
+            errores += 1
             continue
+
+        # Escribir ficha .md
+        filepath, slug = escribir_ficha(datos)
+        actualizados.append(datos)
 
         # Imprimir resumen del cliente
         estado_tag = f" [{datos['estado']}]" if datos['estado'] else ""
         pendiente_tag = f" | Pendiente: {fmt_monto(datos['deuda_pendiente'])}" if datos['facturas_pendientes'] > 0 else ""
         print(
-            f"  {datos['razon_social']}{estado_tag} | "
+            f"  ✓ {datos['razon_social']}{estado_tag} | "
             f"{datos['facturas_emitidas']} fact. | "
             f"Total: {fmt_monto(datos['total_vendido'])}"
             f"{pendiente_tag}"
         )
 
     print("-" * 60)
-    print(f"  Procesados: {len(ruts)} clientes")
-    print()
+    print(f"  Fichas generadas: {len(actualizados)}")
+    if errores > 0:
+        print(f"  Errores: {errores}")
 
+    print()
     cur.close()
     conn.close()
