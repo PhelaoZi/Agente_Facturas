@@ -29,3 +29,5 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril Pet 30 litros**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4211 por $1.033.176.

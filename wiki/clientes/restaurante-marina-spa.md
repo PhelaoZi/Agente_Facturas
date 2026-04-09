@@ -30,3 +30,5 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Cream Ale**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 9 factura(s) vencida(s) (>30 días): #4165, #4173, #4222, #4491, #4570, #4568, #4558, #4592, #4580 por $787.303.

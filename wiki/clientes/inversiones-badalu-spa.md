@@ -30,3 +30,5 @@ ultima_actualizacion: 2026-04-08
 - ⚠ **Cliente marcado como incobrable**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 4 factura(s) vencida(s) (>30 días): #3928, #3949, #4044, #4043 por $341.410.

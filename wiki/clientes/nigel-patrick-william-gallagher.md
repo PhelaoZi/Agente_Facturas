@@ -30,3 +30,5 @@ ultima_actualizacion: 2026-04-08
 - ⚠ **Cliente marcado como incobrable**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4287 por $285.670.

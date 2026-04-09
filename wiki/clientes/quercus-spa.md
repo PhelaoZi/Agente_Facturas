@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Imp. Scotch**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4383 por $88.000.
+- 2026-04-08: ⚠️ Cliente inactivo — 259 días sin nueva factura (última: 2025-07-23).

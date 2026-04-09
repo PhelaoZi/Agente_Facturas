@@ -29,3 +29,5 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Logistica**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 10 factura(s) vencida(s) (>30 días): #3925, #3963, #4037, #4074, #4219, #4427, #4461, #4490, #4546, #4590 por $1.024.049.

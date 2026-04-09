@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Lata 470cc Session IPA**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 3 factura(s) vencida(s) (>30 días): #3961, #3978, #4034 por $124.702.
+- 2026-04-08: ⚠️ Cliente inactivo — 699 días sin nueva factura (última: 2024-05-09).

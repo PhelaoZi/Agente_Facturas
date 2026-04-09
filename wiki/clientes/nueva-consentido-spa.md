@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Arriendo maquina schopera**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #4353, #4354 por $140.200.
+- 2026-04-08: ⚠️ Cliente inactivo — 290 días sin nueva factura (última: 2025-06-22).

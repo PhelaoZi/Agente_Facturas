@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Wee Heavy**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4289 por $231.260.
+- 2026-04-08: ⚠️ Cliente inactivo — 369 días sin nueva factura (última: 2025-04-04).

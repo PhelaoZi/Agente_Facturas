@@ -212,6 +212,74 @@ def obtener_ruts_todos(cur):
 
 # ─── Generación de fichas Markdown ───────────────────────────────────────────
 
+def detectar_eventos(cur, datos):
+    """Detecta eventos notables para un cliente y retorna lista de strings.
+
+    Cada string tiene formato: '- YYYY-MM-DD: [emoji] Descripción.'
+    Eventos detectados:
+      1. Facturas vencidas (>30 días sin pago)
+      2. Pago múltiple (>1 factura pagada el mismo día, últimos 7 días)
+      3. Cliente inactivo (>60 días sin factura nueva)
+    """
+    hoy = date.today()
+    eventos = []
+    rut = datos["rut"]
+
+    # 1. Facturas vencidas (>30 días sin pago)
+    cur.execute(
+        "SELECT folio, COALESCE(monto_total_ajustado, monto_total) "
+        "FROM ventas "
+        "WHERE rut_cliente = %s AND tipo_documento != '61' "
+        "  AND fecha_pago IS NULL "
+        "  AND fecha < CURRENT_DATE - INTERVAL '30 days'",
+        (rut,)
+    )
+    vencidas = cur.fetchall()
+    if vencidas:
+        folios = ", ".join(f"#{row[0]}" for row in vencidas)
+        total = sum(row[1] for row in vencidas if row[1])
+        eventos.append(
+            f"- {hoy.isoformat()}: ⚠️ {len(vencidas)} factura(s) vencida(s) "
+            f"(>30 días): {folios} por {fmt_monto(total)}."
+        )
+
+    # 2. Pago múltiple (>1 factura pagada el mismo día, últimos 7 días)
+    cur.execute(
+        "SELECT fecha_pago, COUNT(*) "
+        "FROM ventas "
+        "WHERE rut_cliente = %s AND tipo_documento != '61' "
+        "  AND fecha_pago IS NOT NULL "
+        "  AND fecha_pago >= CURRENT_DATE - INTERVAL '7 days' "
+        "GROUP BY fecha_pago "
+        "HAVING COUNT(*) > 1",
+        (rut,)
+    )
+    pagos_multiples = cur.fetchall()
+    for fecha_pago, cantidad in pagos_multiples:
+        eventos.append(
+            f"- {hoy.isoformat()}: 💰 Pagó {cantidad} facturas juntas "
+            f"el {fmt_fecha(fecha_pago)}."
+        )
+
+    # 3. Cliente inactivo (>60 días sin factura nueva)
+    cur.execute(
+        "SELECT MAX(fecha) FROM ventas "
+        "WHERE rut_cliente = %s AND tipo_documento != '61'",
+        (rut,)
+    )
+    row = cur.fetchone()
+    ultima_factura = row[0] if row else None
+    if ultima_factura and datos.get("estado") != "incobrable":
+        dias_inactivo = (hoy - ultima_factura).days
+        if dias_inactivo > 60:
+            eventos.append(
+                f"- {hoy.isoformat()}: ⚠️ Cliente inactivo — {dias_inactivo} días "
+                f"sin nueva factura (última: {fmt_fecha(ultima_factura)})."
+            )
+
+    return eventos
+
+
 def generar_patron(datos):
     """Genera bullets de patrón de comportamiento del cliente."""
     lineas = []
@@ -307,8 +375,12 @@ def generar_ficha(datos):
     return "\n".join(lineas)
 
 
-def escribir_ficha(datos):
-    """Escribe ficha .md del cliente. Preserva 'Notas del agente' si ya existe."""
+def escribir_ficha(datos, cur=None):
+    """Escribe ficha .md del cliente. Preserva 'Notas del agente' si ya existe.
+
+    Si se pasa cur (cursor de BD), detecta eventos notables y los agrega
+    como notas del agente, evitando duplicados.
+    """
     slug = slugify(datos["razon_social"])
     filepath = CLIENTES_DIR / f"{slug}.md"
 
@@ -320,6 +392,23 @@ def escribir_ficha(datos):
         match = re.search(r"## Notas del agente\n(.*)", contenido_actual, re.DOTALL)
         if match:
             notas_existentes = match.group(1)
+
+    # Detectar eventos notables si hay cursor disponible
+    if cur is not None:
+        nuevos_eventos = detectar_eventos(cur, datos)
+        if nuevos_eventos:
+            # Filtrar duplicados: solo agregar eventos cuyo texto no exista ya
+            eventos_a_agregar = [
+                ev for ev in nuevos_eventos
+                if ev.strip() not in notas_existentes
+            ]
+            if eventos_a_agregar:
+                # Prepend nuevos eventos (más recientes arriba)
+                bloque_nuevo = "\n".join(eventos_a_agregar)
+                if notas_existentes.strip():
+                    notas_existentes = "\n" + bloque_nuevo + "\n" + notas_existentes.lstrip("\n")
+                else:
+                    notas_existentes = "\n" + bloque_nuevo + "\n"
 
     # Generar ficha nueva
     contenido = generar_ficha(datos)
@@ -544,8 +633,8 @@ if __name__ == "__main__":
             errores += 1
             continue
 
-        # Escribir ficha .md
-        filepath, slug = escribir_ficha(datos)
+        # Escribir ficha .md (con detección de eventos si hay cursor)
+        filepath, slug = escribir_ficha(datos, cur=cur)
         actualizados.append(datos)
 
         # Imprimir resumen del cliente

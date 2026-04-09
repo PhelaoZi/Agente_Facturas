@@ -29,3 +29,5 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Sout Cafe**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 7 factura(s) vencida(s) (>30 días): #4529, #4541, #4565, #4575, #4587, #4552, #4553 por $1.360.320.

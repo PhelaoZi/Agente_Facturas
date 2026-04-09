@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **30L Sour Berries**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3955 por $120.390.
+- 2026-04-08: ⚠️ Cliente inactivo — 798 días sin nueva factura (última: 2024-01-31).

@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Sour P/L**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #4516, #4517 por $94.375.
+- 2026-04-08: ⚠️ Cliente inactivo — 127 días sin nueva factura (última: 2025-12-02).

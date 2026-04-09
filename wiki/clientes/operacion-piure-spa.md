@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Sour Berries**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3964 por $105.015.
+- 2026-04-08: ⚠️ Cliente inactivo — 788 días sin nueva factura (última: 2024-02-10).

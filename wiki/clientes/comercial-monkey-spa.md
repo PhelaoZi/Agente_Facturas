@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Logistica**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 12 factura(s) vencida(s) (>30 días): #4190, #4214, #4252, #4257, #4016, #4281, #4305, #4339, #4340, #4347, #4360, #4379 por $1.001.660.
+- 2026-04-08: ⚠️ Cliente inactivo — 265 días sin nueva factura (última: 2025-07-17).

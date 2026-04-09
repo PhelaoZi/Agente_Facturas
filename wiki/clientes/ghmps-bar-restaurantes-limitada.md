@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Black IPA**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #4082, #4083 por $110.110.
+- 2026-04-08: ⚠️ Cliente inactivo — 614 días sin nueva factura (última: 2024-08-02).

@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Lata 470cc Cream Ale**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3956 por $53.670.
+- 2026-04-08: ⚠️ Cliente inactivo — 798 días sin nueva factura (última: 2024-01-31).

@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Lata 470cc Sour Berries**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3962 por $30.774.
+- 2026-04-08: ⚠️ Cliente inactivo — 791 días sin nueva factura (última: 2024-02-07).

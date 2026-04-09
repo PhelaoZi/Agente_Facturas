@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3972 por $0.
+- 2026-04-08: ⚠️ Cliente inactivo — 783 días sin nueva factura (última: 2024-02-15).

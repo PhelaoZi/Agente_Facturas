@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Lata 470cc RedHouse**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 8 factura(s) vencida(s) (>30 días): #4019, #4077, #4133, #4161, #4017, #4418, #4486, #4554 por $4.989.351.
+- 2026-04-08: ⚠️ Cliente inactivo — 93 días sin nueva factura (última: 2026-01-05).

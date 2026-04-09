@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barriles Pet 30L**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3965 por $473.600.
+- 2026-04-08: ⚠️ Cliente inactivo — 786 días sin nueva factura (última: 2024-02-12).

@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Sour Pi�a**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3952 por $110.110.
+- 2026-04-08: ⚠️ Cliente inactivo — 803 días sin nueva factura (última: 2024-01-26).

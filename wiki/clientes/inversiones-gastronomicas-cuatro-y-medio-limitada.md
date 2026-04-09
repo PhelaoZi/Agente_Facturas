@@ -29,3 +29,6 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Logistica Scotch Ale**
 
 ## Notas del agente
+
+- 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #4286, #4518 por $474.514.
+- 2026-04-08: ⚠️ Cliente inactivo — 127 días sin nueva factura (última: 2025-12-02).
