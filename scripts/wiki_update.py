@@ -340,6 +340,116 @@ def escribir_ficha(datos):
     return str(filepath), slug
 
 
+# ─── index.md y log.md ──────────────────────────────────────────────────────
+
+def actualizar_index(cur):
+    """Regenera wiki/index.md con tabla de clientes activos e incobrables."""
+    hoy = date.today().isoformat()
+
+    # Query: todos los clientes con su deuda pendiente en una sola consulta
+    cur.execute(
+        "SELECT c.razon_social, c.rut_cliente, c.estado, "
+        "  COALESCE(SUM(CASE WHEN v.tipo_documento != '61' AND v.fecha_pago IS NULL "
+        "    THEN COALESCE(v.monto_total_ajustado, v.monto_total) ELSE 0 END), 0) AS deuda "
+        "FROM clientes c "
+        "LEFT JOIN ventas v ON v.rut_cliente = c.rut_cliente "
+        "GROUP BY c.rut_cliente, c.razon_social, c.estado "
+        "ORDER BY c.razon_social"
+    )
+    rows = cur.fetchall()
+
+    activos = []
+    incobrables = []
+    for razon_social, rut, estado, deuda in rows:
+        entry = {"razon_social": razon_social, "rut": rut, "deuda": deuda}
+        if estado == "incobrable":
+            incobrables.append(entry)
+        else:
+            activos.append(entry)
+
+    total = len(activos) + len(incobrables)
+
+    lineas = [
+        f"# Wiki Zigurat — Índice de Clientes",
+        "",
+        f"Actualizado: {hoy} | {total} clientes ({len(activos)} activos, {len(incobrables)} incobrables)",
+        "",
+        "## Clientes activos",
+        "",
+        "| Cliente | RUT | Deuda pendiente | Última actualización |",
+        "| --- | --- | --- | --- |",
+    ]
+    for e in activos:
+        lineas.append(
+            f"| [[{e['razon_social']}]] | {e['rut']} | {fmt_monto(e['deuda'])} | {hoy} |"
+        )
+
+    # Sección de incobrables solo si hay alguno
+    if incobrables:
+        lineas.append("")
+        lineas.append("## Clientes incobrables")
+        lineas.append("")
+        lineas.append("| Cliente | RUT | Deuda histórica | Última actualización |")
+        lineas.append("| --- | --- | --- | --- |")
+        for e in incobrables:
+            lineas.append(
+                f"| [[{e['razon_social']}]] | {e['rut']} | {fmt_monto(e['deuda'])} | {hoy} |"
+            )
+
+    lineas.append("")
+
+    WIKI_DIR.mkdir(parents=True, exist_ok=True)
+    INDEX_PATH.write_text("\n".join(lineas), encoding="utf-8")
+    return total
+
+
+def actualizar_log(actualizados, origen):
+    """Agrega entrada al log de operaciones wiki/log.md.
+
+    actualizados: lista de dicts con 'razon_social'
+    origen: etiqueta de origen (ej: 'test', 'sync-facturas')
+    """
+    hoy = date.today().isoformat()
+    hora = datetime.now().strftime("%H:%M")
+    origen = origen or "manual"
+
+    # Nombres de clientes actualizados
+    nombres = [d["razon_social"] for d in actualizados]
+    n = len(nombres)
+    if n == 0:
+        return
+
+    # Si son más de 5, mostrar solo los primeros 5
+    if n > 5:
+        lista_texto = ", ".join(nombres[:5]) + f" y {n - 5} más"
+    else:
+        lista_texto = ", ".join(nombres)
+
+    entrada = f"- **{origen}** ({hora}): Actualizadas {n} ficha(s): {lista_texto}"
+
+    log_path = WIKI_DIR / "log.md"
+    WIKI_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Leer contenido existente o crear header
+    if log_path.exists():
+        contenido = log_path.read_text(encoding="utf-8")
+    else:
+        contenido = "# Wiki Zigurat — Log de Operaciones\n"
+
+    # Buscar si ya existe la sección del día
+    heading_dia = f"## {hoy}"
+    if heading_dia in contenido:
+        # Agregar la entrada después del heading del día
+        contenido = contenido.replace(
+            heading_dia + "\n",
+            heading_dia + "\n" + entrada + "\n",
+        )
+    else:
+        # Agregar nueva sección al final
+        contenido = contenido.rstrip("\n") + "\n\n" + heading_dia + "\n" + entrada + "\n"
+
+    log_path.write_text(contenido, encoding="utf-8")
+
 
 # ─── Argumentos CLI ───────────────────────────────────────────────────────────
 
@@ -450,6 +560,15 @@ if __name__ == "__main__":
     print(f"  Fichas generadas: {len(actualizados)}")
     if errores > 0:
         print(f"  Errores: {errores}")
+
+    # Actualizar index.md
+    total_index = actualizar_index(cur)
+    print(f"  [OK] index.md actualizado ({total_index} clientes)")
+
+    # Actualizar log.md
+    if actualizados:
+        actualizar_log(actualizados, args.origen)
+        print(f"  [OK] log.md actualizado")
 
     print()
     cur.close()
