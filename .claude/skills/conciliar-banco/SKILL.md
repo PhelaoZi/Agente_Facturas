@@ -40,3 +40,15 @@ Si falla: reportar error y detener.
 
 Despues de completar, sugerir al usuario:
 - `/flujo-caja` para ver la proyeccion actualizada
+
+## Paso 3 — Actualizar wiki (no-bloqueante)
+
+Si la conciliación fue exitosa (se guardaron cambios en BD), parsear los RUTs
+de los clientes conciliados del output del script.
+
+```bash
+python scripts/wiki_update.py --ruts RUT1,RUT2,RUT3 --origen "conciliar-banco"
+```
+
+Si falla: mostrar warning "⚠️ No se pudo actualizar la wiki" pero NO fallar el proceso.
+La conciliación ya se completó exitosamente.

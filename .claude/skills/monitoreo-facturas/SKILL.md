@@ -55,3 +55,15 @@ Mostrar al usuario:
 - Archivos procesados exitosamente
 - Archivos con errores (si hubo)
 - Total de facturas insertadas
+
+## Paso 4 — Actualizar wiki (no-bloqueante)
+
+Parsear los RUTs únicos de los clientes afectados del output de `sync_db.py`
+de todos los archivos procesados exitosamente.
+
+```bash
+python scripts/wiki_update.py --ruts RUT1,RUT2,RUT3 --origen "monitoreo-facturas"
+```
+
+Si falla: mostrar warning "⚠️ No se pudo actualizar la wiki" pero NO fallar el proceso.
+La sincronización de facturas ya se completó exitosamente.

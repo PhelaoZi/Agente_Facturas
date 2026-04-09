@@ -57,6 +57,16 @@ Mostrar:
 - Archivos con errores (si hubo)
 - Total de NCs insertadas y facturas ajustadas
 
+### Paso A4 — Actualizar wiki (no-bloqueante)
+
+Parsear los RUTs de los clientes afectados del output de sync_db.py.
+
+```bash
+python scripts/wiki_update.py --ruts RUT1,RUT2,RUT3 --origen "sync-nc"
+```
+
+Si falla: mostrar warning pero NO fallar el proceso.
+
 ---
 
 ## Modo específico (con argumento)

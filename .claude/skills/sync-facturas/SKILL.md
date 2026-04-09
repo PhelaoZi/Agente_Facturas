@@ -64,3 +64,17 @@ Reportar al usuario:
 - Productos insertados
 - Folios duplicados omitidos (si hubo)
 - Tiempo total del proceso
+
+## Paso 5 — Actualizar wiki (no-bloqueante)
+
+Parsear los RUTs de clientes del output del Paso 3. Las líneas con formato
+`✓ Folio XXXX | NOMBRE | $MONTO | N producto(s)` indican clientes procesados.
+Extraer los RUTs únicos consultando el output. Si no se pueden parsear,
+usar `--todos` como fallback.
+
+```bash
+python scripts/wiki_update.py --ruts RUT1,RUT2,RUT3 --origen "sync-facturas"
+```
+
+Si falla: mostrar warning "⚠️ No se pudo actualizar la wiki" pero NO fallar el proceso.
+La sincronización de facturas ya se completó exitosamente.
