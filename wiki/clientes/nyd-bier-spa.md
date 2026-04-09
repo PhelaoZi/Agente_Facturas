@@ -1,0 +1,32 @@
+---
+rut: 76938534-7
+razon_social: "NYD BIER SPA"
+estado: incobrable
+ultima_actualizacion: 2026-04-08
+---
+
+# NYD BIER SPA
+
+## Métricas clave
+
+| Indicador | Valor |
+| --- | --- |
+| Total vendido | $193.872 |
+| Facturas emitidas | 1 |
+| Facturas pendientes | 1 ($193.872) |
+| Promedio días de pago | — |
+| Último pago | — |
+
+## Estado de cuenta
+
+- 1 factura(s) pendiente(s) por $193.872
+- Sin pagos registrados
+
+## Patrón de comportamiento
+
+- Cliente desde **2025-09-26**
+- Solo 1 compra registrada
+- Producto principal: **Malta.Boortmalt.Pilsen 25**
+- ⚠ **Cliente marcado como incobrable**
+
+## Notas del agente

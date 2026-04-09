@@ -60,15 +60,17 @@ BASE_DIR = Path(__file__).parent.parent
 WIKI_DIR = BASE_DIR / "wiki"
 CLIENTES_DIR = WIKI_DIR / "clientes"
 INDEX_PATH = WIKI_DIR / "index.md"
-LOG_PATH = BASE_DIR / "logs" / "wiki_update.log"
+LOG_PATH = WIKI_DIR / "log.md"
 
 
 # ─── Conexión ─────────────────────────────────────────────────────────────────
 
 def conectar():
-    """Establece conexión a PostgreSQL."""
+    """Establece conexión a PostgreSQL con encoding UTF-8."""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
+        # Forzar encoding UTF-8 para que los caracteres con tilde se lean correctamente
+        conn.set_client_encoding('UTF8')
         return conn
     except psycopg2.OperationalError as e:
         print(f"ERROR: No se pudo conectar a PostgreSQL:")
@@ -427,12 +429,12 @@ def actualizar_log(actualizados, origen):
 
     entrada = f"- **{origen}** ({hora}): Actualizadas {n} ficha(s): {lista_texto}"
 
-    log_path = WIKI_DIR / "log.md"
-    WIKI_DIR.mkdir(parents=True, exist_ok=True)
+    # Usar constante LOG_PATH para consistencia con el resto del módulo
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     # Leer contenido existente o crear header
-    if log_path.exists():
-        contenido = log_path.read_text(encoding="utf-8")
+    if LOG_PATH.exists():
+        contenido = LOG_PATH.read_text(encoding="utf-8")
     else:
         contenido = "# Wiki Zigurat — Log de Operaciones\n"
 
@@ -448,7 +450,7 @@ def actualizar_log(actualizados, origen):
         # Agregar nueva sección al final
         contenido = contenido.rstrip("\n") + "\n\n" + heading_dia + "\n" + entrada + "\n"
 
-    log_path.write_text(contenido, encoding="utf-8")
+    LOG_PATH.write_text(contenido, encoding="utf-8")
 
 
 # ─── Argumentos CLI ───────────────────────────────────────────────────────────

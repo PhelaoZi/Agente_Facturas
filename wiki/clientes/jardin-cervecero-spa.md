@@ -1,0 +1,31 @@
+---
+rut: 78121649-6
+razon_social: "JARDIN CERVECERO SPA"
+estado: activo
+ultima_actualizacion: 2026-04-08
+---
+
+# JARDIN CERVECERO SPA
+
+## Métricas clave
+
+| Indicador | Valor |
+| --- | --- |
+| Total vendido | $94.375 |
+| Facturas emitidas | 2 |
+| Facturas pendientes | 2 ($94.375) |
+| Promedio días de pago | — |
+| Último pago | — |
+
+## Estado de cuenta
+
+- 2 factura(s) pendiente(s) por $94.375
+- Sin pagos registrados
+
+## Patrón de comportamiento
+
+- Cliente desde **2025-12-02**
+- Frecuencia de compra: ~1 factura cada **64 días**
+- Producto principal: **Barril 30L Sour P/L**
+
+## Notas del agente
