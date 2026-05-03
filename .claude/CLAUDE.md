@@ -38,16 +38,29 @@ Empresa: Elaboradora y Comercializadora Vintage SPA (Zigurat Brewery).
 /perfil-cliente <nombre>          # Muestra perfil narrativo de un cliente
 /wiki-lint                        # Audita consistencia wiki ↔ BD
 
+# Costos de producción (capa B)
+/actualizar-precio-insumo "Lupulo Citra" gr 9500 lupulo
+/cargar-receta                    # Carga/actualiza receta + BOM desde JSON
+/costos-sku                       # Tabla de costo unitario por SKU
+/costos-sku --sku CREAM-330-C12   # Costo de un SKU específico
+/costos-sku --receta "Cream Ale"  # Costos de todos los formatos de una cerveza
+
 # Ejecutar scripts individuales (solo para debug, nunca en producción)
 python scripts/parse_dte.py facturas/DTE_DDMMYYYY
 python scripts/validate_changes.py changes.json
 python scripts/sync_db.py changes.json
 python scripts/wiki_update.py --ruts RUT1,RUT2 --origen "debug"
 python scripts/wiki_update.py --todos --origen "debug"
+python scripts/wiki_snapshot.py --todos            # refresh masivo de raw/clientes/
 python scripts/wiki_lint.py
+python scripts/actualizar_insumo.py "nombre" unidad precio cat
+python scripts/cargar_receta.py recipe.json
+python scripts/cargar_sku.py sku.json
+python scripts/costo_sku.py [--sku COD | --receta NOMBRE]
 
 # Migración de esquema (idempotente)
 python scripts/migrate_flujo_caja.py
+python scripts/migrate_costos_v2.py                # Migración esquema costos (capa B)
 ```
 
 ---
@@ -95,16 +108,22 @@ scripts/                    # Scripts Python del pipeline (NO mover ni renombrar
   conciliar_banco.py        # Cruza transferencias con facturas
   flujo_caja.py             # Proyección 4 semanas
   migrate_flujo_caja.py     # Migración de esquema (idempotente)
-  wiki_update.py            # Genera/actualiza fichas en wiki/clientes/
+  wiki_update.py            # Genera/actualiza fichas en wiki/clientes/ (+ snapshot raw/)
+  wiki_snapshot.py          # Refresh masivo de snapshots en raw/clientes/
   wiki_lint.py              # Audita consistencia wiki ↔ BD
 facturas/                   # XMLs del SII (formato DTE_DDMMYYYY)
 Notas de Credito/           # XMLs de Notas de Crédito
 transferencias/             # Excel de transferencias Itaú
 logs/                       # Logs de ejecución
+raw/                        # Capa inmutable del patrón Karpathy (snapshots)
+  clientes/                 # {rut}.json — sobrescribibles solo desde código
 wiki/                       # Brain compilado de clientes (Markdown + Obsidian)
-  index.md                  # Índice general (auto-generado)
+  index.md                  # Índice maestro corto con links a sub-índices
   log.md                    # Registro cronológico de operaciones
   clientes/                 # Ficha ejecutiva por cliente (.md)
+  indices/                  # Sub-índices escalables: activos, morosos, incobrables
+  conceptos/                # Páginas agregadas (top, morosos, inactivos)
+    productos/              # Un concepto por producto principal
 .claude/skills/             # Skills de Claude Code (12 activas)
   consultar-ventas/scripts/query_ventas.py  # Queries hardcodeadas
   monitoreo-facturas/scripts/detectar_pendientes.py
@@ -218,6 +237,22 @@ vencidas >30 días, multi-pagos en misma transferencia, cliente inactivo >60
 días) se detectan automáticamente con `detectar_eventos()` y se anexan como
 viñetas con fecha.
 
+### Capa raw/ — snapshots inmutables (fuente de verdad histórica)
+
+Siguiendo el patrón Karpathy, `raw/clientes/<rut>.json` contiene un snapshot
+de los datos crudos del cliente cada vez que se regenera su ficha. Estos
+archivos son **sobrescribibles solo desde código** (`wiki_update.py` o
+`wiki_snapshot.py`) y **nunca se editan a mano**. Commiteables a git para
+obtener `git diff` del estado del negocio entre ingestas.
+
+`detectar_cambios_snapshot()` compara el snapshot anterior con los datos
+actuales y emite eventos adicionales: cambio de estado, facturas nuevas,
+caída en total vendido (posible NC no registrada), o aumento significativo
+de deuda pendiente. Estos eventos se anexan a "Notas del agente" como los
+demás.
+
+Refresh masivo independiente del pipeline: `python scripts/wiki_snapshot.py --todos`.
+
 ### Integración en skills existentes
 
 Las skills `/sync-facturas`, `/sync-nc`, `/monitoreo-facturas` y
@@ -231,7 +266,71 @@ Cada `wiki/clientes/<slug>.md` tiene:
 - Métricas: total facturado, ticket promedio, nº facturas, primera/última venta
 - Estado de cuenta: pendiente, al día, vencido
 - Patrón de pago: días promedio, comportamiento descriptivo
+- Relacionados: `[[wikilinks]]` a 5 clientes que comparten el producto principal
+- Inconsistencias: contra-argumentos detectados (incobrable con ventas recientes,
+  notas contradictorias con BD, cambio de patrón de compra, etc.). "Ninguna detectada"
+  si no hay problemas.
 - Notas del agente: append-only, preserva observaciones entre regeneraciones
+
+### Conceptos y sub-índices
+
+Además de las fichas por cliente, `wiki_update.py` regenera:
+- `wiki/conceptos/clientes-top.md` — top 10 por ventas
+- `wiki/conceptos/clientes-morosos.md` — vencidas >30 días
+- `wiki/conceptos/clientes-inactivos.md` — >60 días sin compra
+- `wiki/conceptos/productos/<slug>.md` — un archivo por producto con sus top 10 compradores
+- `wiki/indices/{activos,morosos,incobrables}.md` — sub-índices escalables
+
+El `index.md` principal es un resumen corto que enlaza a los sub-índices y conceptos.
+Preparado para escalar a 500+ clientes sin saturar contexto.
+
+---
+
+## Costos de producción (capa B)
+
+Calcula el costo unitario real de cada SKU vendible (cerveza × formato)
+combinando insumos de líquido + envasado + mano de obra + servicios
+variables del lote.
+
+### Tablas
+
+| Tabla | Propósito |
+|-------|-----------|
+| `maestro_insumos` | Catálogo de insumos con `categoria` (malta, lupulo, levadura, adjunto, clarificante, envase, tapa, etiqueta, caja) y `precio_neto_unitario`. |
+| `recetas` | Una fila por cerveza, con `costo_mano_obra_lote`, `costo_servicios_lote` y `merma_porcentaje`. |
+| `receta_detalle` | BOM de líquido por receta. |
+| `formatos` | Catálogo plano: Botella 330ml / Barril 30L acero / Barril 30L PET. |
+| `sku` | Una fila por (receta, formato, unidades_caja). Caja 12 y caja 24 son SKUs distintos. |
+| `sku_envasado` | BOM de envasado por SKU. Vacío para barriles retornables. |
+
+### Vista
+
+`vista_costo_sku` entrega `costo_liquido_unitario`, `costo_envasado_unitario`
+y `costo_total_unitario` por cada SKU activo. **Nunca calcular costo a mano** — consultar siempre la vista.
+
+### Flujo de uso
+
+```
+/actualizar-precio-insumo  → mantiene maestro_insumos
+/cargar-receta             → mantiene recetas + receta_detalle
+/cargar-sku (CLI)          → mantiene sku + sku_envasado
+/costos-sku                → consulta vista_costo_sku
+```
+
+### Parámetros estándar (lote 540 L, 4 lotes/mes)
+
+- Mano de obra: $300.000/lote (retiros tuyo + socio).
+- Servicios variables (agua/luz/gas): $185.000/lote.
+- Merma de envasado: 5%.
+
+Editables por receta.
+
+### Lo que NO hace esta capa
+
+- No descuenta inventario al producir.
+- No registra órdenes de producción.
+- No prorratea costos fijos / overhead (capa C).
+- No procesa DTEs recibidos (sub-proyecto aparte).
 
 ---
 
