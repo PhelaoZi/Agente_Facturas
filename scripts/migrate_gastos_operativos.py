@@ -64,8 +64,8 @@ def main():
 
     try:
         with conn:
-            cur = conn.cursor()
-            cur.execute(SQL)
+            with conn.cursor() as cur:
+                cur.execute(SQL)
         print("OK — tabla gastos_operativos lista (idempotente).")
     except psycopg2.Error as e:
         print(f"ERROR: {e}")
