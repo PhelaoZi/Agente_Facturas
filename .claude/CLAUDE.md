@@ -21,6 +21,9 @@ Empresa: Elaboradora y Comercializadora Vintage SPA (Zigurat Brewery).
 # Procesar Notas de Crédito
 /sync-nc NOMBRE_ARCHIVO
 
+# Procesar facturas de compra
+/sync-compras                     # Procesa XMLs en facturas-compras/ → actualiza precios + gastos_operativos
+
 # Detectar y sincronizar XMLs pendientes
 /monitoreo-facturas
 
@@ -61,6 +64,10 @@ python scripts/costo_sku.py [--sku COD | --receta NOMBRE]
 # Migración de esquema (idempotente)
 python scripts/migrate_flujo_caja.py
 python scripts/migrate_costos_v2.py                # Migración esquema costos (capa B)
+python scripts/migrate_gastos_operativos.py   # Crea tabla gastos_operativos
+python scripts/migrate_costos_v3.py           # Corrige precios maestro_insumos + agrega insumos
+python scripts/cargar_recetas_v2.py           # Recarga 4 recetas desde Recetas.xlsx
+python scripts/sync_compras.py                # Procesa XMLs de compras (usar /sync-compras)
 ```
 
 ---
