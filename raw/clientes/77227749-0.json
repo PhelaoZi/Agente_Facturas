@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-06-18",
+  "comuna": "LAS CONDES",
+  "deuda_pendiente": 140200.0,
+  "direccion": "BADAJOZ 100 OF 107 PS 1",
+  "estado": "activo",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "NUEVA CONSENTIDO SPA",
+  "rut": "77227749-0",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Arriendo maquina schopera"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Scotch Ale"
+    }
+  ],
+  "total_vendido": 140200.0,
+  "ultimo_pago": null
+}

@@ -60,7 +60,7 @@ def get_folios_from_xml(xml_path):
                 folios.append((int(folio.group(1).strip()), tipo.group(1).strip()))
         return folios
     except Exception as e:
-        print(f"  ⚠  Error leyendo {xml_path.name}: {e}")
+        print(f"  [!] Error leyendo {xml_path.name}: {e}")
         return []
 
 
@@ -94,7 +94,7 @@ def main():
     for xml_path in xmls:
         folios = get_folios_from_xml(xml_path)
         if not folios:
-            print(f"  ⚠  {xml_path.name}: no se pudo leer o no tiene documentos")
+            print(f"  [!] {xml_path.name}: no se pudo leer o no tiene documentos")
             continue
 
         # Consultar cuántos folios ya existen en la BD
@@ -110,9 +110,9 @@ def main():
         if count_existing < len(folios):
             faltantes = len(folios) - count_existing
             pendientes.append(xml_path.name)
-            print(f"  ⏳ {xml_path.name}: {faltantes}/{len(folios)} folio(s) pendiente(s)")
+            print(f"  [PENDIENTE] {xml_path.name}: {faltantes}/{len(folios)} folio(s) pendiente(s)")
         else:
-            print(f"  ✓  {xml_path.name}: sincronizado ({len(folios)} folio(s))")
+            print(f"  [OK] {xml_path.name}: sincronizado ({len(folios)} folio(s))")
 
     conn.close()
     print()
@@ -125,7 +125,7 @@ def main():
         # Línea especial para que el skill pueda parsear los pendientes
         print("__PENDIENTES__:" + ",".join(pendientes))
     else:
-        print("✅ Todo sincronizado. No hay facturas nuevas.")
+        print("[OK] Todo sincronizado. No hay facturas nuevas.")
         print("__PENDIENTES__:")
 
     print("=" * 60)

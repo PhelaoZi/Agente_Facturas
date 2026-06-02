@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-07-23",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 324380.0,
+  "direccion": "SAN IGNACIO 30",
+  "estado": "activo",
+  "facturas_emitidas": 3,
+  "facturas_pendientes": 3,
+  "promedio_dias_pago": null,
+  "razon_social": "COMERCIALIZADORA DE CERVEZAS JRB LIMITADA",
+  "rut": "76773284-8",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Cream  Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Wee Heavy"
+    }
+  ],
+  "total_vendido": 324380.0,
+  "ultimo_pago": null
+}

@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-04-04",
+  "comuna": "VINA DEL MAR",
+  "deuda_pendiente": 231260.0,
+  "direccion": "AGUA SANTA 41 LC 2   2",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "FB & AL HNOS. SPA",
+  "rut": "77208023-9",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Wee Heavy"
+    }
+  ],
+  "total_vendido": 231260.0,
+  "ultimo_pago": null
+}

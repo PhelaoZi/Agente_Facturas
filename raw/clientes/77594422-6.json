@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-07-30",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 1330375.0,
+  "direccion": "BRASIL 552",
+  "estado": "incobrable",
+  "facturas_emitidas": 18,
+  "facturas_pendientes": 10,
+  "promedio_dias_pago": 32,
+  "razon_social": "SOCIEDAD GASTRONOMICA BARVEDA LIMITADA",
+  "rut": "77594422-6",
+  "top_productos": [
+    {
+      "cantidad": 17.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 9.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L West Coast IPA"
+    }
+  ],
+  "total_vendido": 2329579.0,
+  "ultimo_pago": "2025-01-14"
+}

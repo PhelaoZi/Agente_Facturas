@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-17",
+  "comuna": "NUNOA",
+  "deuda_pendiente": 107340.0,
+  "direccion": "SIMON BOLIVAR 3175",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "MAS PUNTO PAIS SPA",
+  "rut": "77303179-7",
+  "top_productos": [
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc Cream Ale"
+    },
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc Scotch Ale"
+    }
+  ],
+  "total_vendido": 107340.0,
+  "ultimo_pago": null
+}

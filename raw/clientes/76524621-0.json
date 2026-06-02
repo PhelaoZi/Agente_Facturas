@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-31",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 0,
+  "direccion": "PDTE BULNES 367  LC 7",
+  "estado": "activo",
+  "facturas_emitidas": 13,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": 47,
+  "razon_social": "RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.",
+  "rut": "76524621-0",
+  "top_productos": [
+    {
+      "cantidad": 5.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L West Coast IPA"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 1761083.0,
+  "ultimo_pago": "2026-04-02"
+}

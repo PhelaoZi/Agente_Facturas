@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-24",
+  "comuna": "NUNOA",
+  "deuda_pendiente": 0,
+  "direccion": "JORGE WASHINGTON 176",
+  "estado": "activo",
+  "facturas_emitidas": 39,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 10,
+  "razon_social": "SOC COMERCIAL EBANO LIMITADA",
+  "rut": "77352780-6",
+  "top_productos": [
+    {
+      "cantidad": 26.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 21.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Logistic"
+    }
+  ],
+  "total_vendido": 5990973.0,
+  "ultimo_pago": "2026-04-09"
+}

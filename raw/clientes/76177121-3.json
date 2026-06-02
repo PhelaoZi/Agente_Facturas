@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-04-19",
+  "comuna": "VITACURA",
+  "deuda_pendiente": 602231.0,
+  "direccion": "GERONIMO DE ALDERETE 1603",
+  "estado": "activo",
+  "facturas_emitidas": 5,
+  "facturas_pendientes": 5,
+  "promedio_dias_pago": null,
+  "razon_social": "MAZACCONE SPA",
+  "rut": "76177121-3",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Black IPA"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Sour P/L"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 602231.0,
+  "ultimo_pago": null
+}

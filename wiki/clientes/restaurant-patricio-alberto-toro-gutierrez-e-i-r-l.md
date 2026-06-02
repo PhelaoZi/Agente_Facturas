@@ -2,7 +2,7 @@
 rut: 76524621-0
 razon_social: "RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L."
 estado: activo
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-12
 ---
 
 # RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.
@@ -13,22 +13,38 @@ ultima_actualizacion: 2026-04-08
 | --- | --- |
 | Total vendido | $1.761.083 |
 | Facturas emitidas | 13 |
-| Facturas pendientes | 11 ($1.367.233) |
-| Promedio días de pago | 62 |
-| Último pago | 2024-09-03 |
+| Facturas pendientes | 1 ($0) |
+| Promedio días de pago | 47 |
+| Último pago | 2026-04-02 |
 
 ## Estado de cuenta
 
-- 11 factura(s) pendiente(s) por $1.367.233
-- Último pago registrado: 2024-09-03
+- 1 factura(s) pendiente(s) por $0
+- Último pago registrado: 2026-04-02
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-31**
-- Frecuencia de compra: ~1 factura cada **61 días**
-- Comportamiento de pago: **lento** (62 días promedio)
-- Producto principal: **Logistica**
+- Frecuencia de compra: ~1 factura cada **62 días**
+- Comportamiento de pago: **lento** (47 días promedio)
+- Producto principal: **Barril 30L Scotch Ale**
+
+## Relacionados
+
+Clientes que también compran **Barril 30L Scotch Ale**:
+
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
+- [[VDT SPA]] (77220069-2)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+
+## Inconsistencias
+
+- Producto principal histórico = **Barril 30L Scotch Ale**, pero en las últimas 3 facturas predomina **Barril 20L Sour Lima/Pina**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.
+- 2026-04-12: ⚠️ 11 factura(s) vencida(s) (>30 días): #4205, #4250, #4316, #4323, #4331, #4376, #4445, #4477, #4494, #4551, #4595 por $1.367.233.
 - 2026-04-08: ⚠️ 11 factura(s) vencida(s) (>30 días): #4205, #4250, #4316, #4323, #4331, #4376, #4445, #4477, #4494, #4551, #4595 por $1.367.233.

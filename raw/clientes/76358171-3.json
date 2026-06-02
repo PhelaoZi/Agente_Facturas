@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-31",
+  "comuna": "LAS CONDES",
+  "deuda_pendiente": 53670.0,
+  "direccion": "AVENIDA VITACURA 2935  102",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "IMPORTADORA LES DIX VINS SPA",
+  "rut": "76358171-3",
+  "top_productos": [
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Cream Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Scotch Ale"
+    }
+  ],
+  "total_vendido": 53670.0,
+  "ultimo_pago": null
+}

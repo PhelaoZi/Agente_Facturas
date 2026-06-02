@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-03",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 341410.0,
+  "direccion": "AVENIDA ITALIA 1228",
+  "estado": "incobrable",
+  "facturas_emitidas": 4,
+  "facturas_pendientes": 4,
+  "promedio_dias_pago": null,
+  "razon_social": "INVERSIONES BADALU SPA",
+  "rut": "77101813-0",
+  "top_productos": [
+    {
+      "cantidad": 5.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 341410.0,
+  "ultimo_pago": null
+}

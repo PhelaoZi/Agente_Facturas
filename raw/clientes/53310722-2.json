@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-17",
+  "comuna": "LAS CONDES",
+  "deuda_pendiente": 111033.0,
+  "direccion": "LOS DOMINICOS             8134",
+  "estado": "activo",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "SUCESION GERMAN GARCIA GARIN",
+  "rut": "53310722-2",
+  "top_productos": [
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc Scotch Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Cream Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Sour Berries"
+    }
+  ],
+  "total_vendido": 111033.0,
+  "ultimo_pago": null
+}

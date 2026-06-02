@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-03-01",
+  "comuna": "VALPARAISO",
+  "deuda_pendiente": 61500.0,
+  "direccion": "urriola 393",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "SOCIEDAD CUENCA SUR INVERSIONES LIMITADA",
+  "rut": "76145092-1",
+  "top_productos": [
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc Sour Berries"
+    }
+  ],
+  "total_vendido": 61500.0,
+  "ultimo_pago": null
+}

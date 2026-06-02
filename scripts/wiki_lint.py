@@ -111,6 +111,29 @@ def main():
                             f"{match_fecha.group(1)} ({dias} días) con {count} movimiento(s) nuevo(s)"
                         )
 
+    # 4. Fichas con sección "Inconsistencias" no vacía (Mejora 3)
+    for ficha in CLIENTES_DIR.glob("*.md"):
+        contenido = ficha.read_text(encoding="utf-8")
+        match = re.search(
+            r"## Inconsistencias\n(.*?)(?=\n## |\Z)",
+            contenido,
+            re.DOTALL,
+        )
+        if match:
+            bloque = match.group(1).strip()
+            # "Ninguna detectada" = OK; cualquier otro contenido = problema
+            if bloque and "Ninguna detectada" not in bloque:
+                # Contar bullets reales
+                bullets = [
+                    l for l in bloque.splitlines()
+                    if l.strip().startswith("-") and "Ninguna detectada" not in l
+                ]
+                if bullets:
+                    problemas.append(
+                        f"  [INCONSISTENCIA] {ficha.name} — "
+                        f"{len(bullets)} inconsistencia(s) detectada(s)"
+                    )
+
     conn.close()
 
     # Reporte

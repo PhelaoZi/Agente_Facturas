@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-13",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 64990.0,
+  "direccion": "ORREGO LUCO 034",
+  "estado": "activo",
+  "facturas_emitidas": 20,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": -12,
+  "razon_social": "GASTRONOMICA SUR SPA.",
+  "rut": "76730367-K",
+  "top_productos": [
+    {
+      "cantidad": 16.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 20L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 20L Mincay"
+    }
+  ],
+  "total_vendido": 1486984.0,
+  "ultimo_pago": "2025-12-12"
+}

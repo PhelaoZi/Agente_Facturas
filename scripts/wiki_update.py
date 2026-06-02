@@ -11,6 +11,7 @@ Uso:
 
 import argparse
 import io
+import json
 import os
 import re
 import sys
@@ -59,8 +60,17 @@ DB_CONFIG = {
 BASE_DIR = Path(__file__).parent.parent
 WIKI_DIR = BASE_DIR / "wiki"
 CLIENTES_DIR = WIKI_DIR / "clientes"
+CONCEPTOS_DIR = WIKI_DIR / "conceptos"
+PRODUCTOS_DIR = CONCEPTOS_DIR / "productos"
+INDICES_DIR = WIKI_DIR / "indices"
 INDEX_PATH = WIKI_DIR / "index.md"
 LOG_PATH = WIKI_DIR / "log.md"
+
+# Capa "raw" del patrón Karpathy: fuente de verdad histórica (snapshots).
+# Los JSON aquí son sobrescribibles desde código pero NUNCA se editan a mano.
+# Commiteables a git para obtener `git diff` del estado del negocio entre ingestas.
+RAW_DIR = BASE_DIR / "raw"
+RAW_CLIENTES_DIR = RAW_DIR / "clientes"
 
 
 # ─── Conexión ─────────────────────────────────────────────────────────────────
@@ -208,7 +218,101 @@ def obtener_ruts_todos(cur):
     return [row[0] for row in cur.fetchall()]
 
 
-# ─── Argumentos CLI ───────────────────────────────────────────────────────────
+# ─── Snapshots raw/ (capa inmutable del patrón Karpathy) ──────────────────────
+
+def _serializar_datos(datos):
+    """Convierte dict de datos a JSON-safe (date/datetime → ISO, Decimal → float)."""
+    from decimal import Decimal
+
+    def conv(v):
+        if isinstance(v, (date, datetime)):
+            return v.isoformat()
+        if isinstance(v, Decimal):
+            return float(v)
+        if isinstance(v, list):
+            return [
+                {k: conv(vv) for k, vv in item.items()} if isinstance(item, dict) else conv(item)
+                for item in v
+            ]
+        return v
+    return {k: conv(v) for k, v in datos.items()}
+
+
+def cargar_snapshot(rut):
+    """Lee snapshot previo de raw/clientes/{rut}.json. Retorna dict o None."""
+    path = RAW_CLIENTES_DIR / f"{rut}.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def guardar_snapshot(datos):
+    """Escribe snapshot JSON en raw/clientes/{rut}.json (sobrescribe)."""
+    RAW_CLIENTES_DIR.mkdir(parents=True, exist_ok=True)
+    path = RAW_CLIENTES_DIR / f"{datos['rut']}.json"
+    serializado = _serializar_datos(datos)
+    serializado["_snapshot_fecha"] = date.today().isoformat()
+    path.write_text(
+        json.dumps(serializado, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def detectar_cambios_snapshot(previo, datos):
+    """Compara snapshot anterior con datos actuales y retorna eventos notables.
+
+    Umbrales:
+      - Cambio de estado (activo/incobrable): siempre
+      - Facturas nuevas: siempre que diff > 0
+      - Caída en total_vendido: diff > $1 (debería ser monotónico)
+      - Aumento de deuda_pendiente: diff > $100.000
+    """
+    if previo is None:
+        return []
+    hoy = date.today().isoformat()
+    eventos = []
+
+    # Cambio de estado
+    estado_prev = previo.get("estado") or "activo"
+    estado_act = datos.get("estado") or "activo"
+    if estado_prev != estado_act:
+        eventos.append(
+            f"- {hoy}: 🔄 Cambio de estado: '{estado_prev}' → '{estado_act}'."
+        )
+
+    # Nuevas facturas desde el snapshot previo
+    fact_prev = previo.get("facturas_emitidas", 0) or 0
+    fact_act = datos.get("facturas_emitidas", 0) or 0
+    diff_fact = fact_act - fact_prev
+    if diff_fact > 0:
+        fecha_ref = previo.get("_snapshot_fecha", "snapshot previo")
+        eventos.append(
+            f"- {hoy}: 📄 {diff_fact} factura(s) nueva(s) desde {fecha_ref}."
+        )
+
+    # Caída en ventas totales (posible NC o ajuste manual)
+    tot_prev = float(previo.get("total_vendido", 0) or 0)
+    tot_act = float(datos.get("total_vendido", 0) or 0)
+    if tot_act < tot_prev - 1:
+        eventos.append(
+            f"- {hoy}: ⚠️ Total vendido bajó en {fmt_monto(tot_prev - tot_act)} "
+            f"(posible NC o ajuste)."
+        )
+
+    # Deuda pendiente creció significativamente
+    deuda_prev = float(previo.get("deuda_pendiente", 0) or 0)
+    deuda_act = float(datos.get("deuda_pendiente", 0) or 0)
+    if deuda_act - deuda_prev > 100000:
+        eventos.append(
+            f"- {hoy}: 📈 Deuda pendiente aumentó en "
+            f"{fmt_monto(deuda_act - deuda_prev)}."
+        )
+
+    return eventos
+
 
 # ─── Generación de fichas Markdown ───────────────────────────────────────────
 
@@ -322,7 +426,115 @@ def generar_patron(datos):
     return "\n".join(lineas) if lineas else "- Sin datos suficientes para generar patrón"
 
 
-def generar_ficha(datos):
+# ─── Relacionados (Mejora 2: wikilinks entre clientes) ───────────────────────
+
+def obtener_relacionados(cur, datos):
+    """Retorna lista de hasta 5 clientes que comparten el producto principal.
+
+    Usa el top_producto ya calculado en `datos` para evitar una query extra.
+    """
+    if not datos.get("top_productos"):
+        return []
+    producto_principal = datos["top_productos"][0]["nombre"]
+    cur.execute(
+        "SELECT c.razon_social, c.rut_cliente, SUM(p.cantidad) AS total "
+        "FROM productos p "
+        "JOIN ventas v ON v.folio::text = p.folio::text "
+        "  AND v.tipo_documento = p.tipo_documento "
+        "JOIN clientes c ON c.rut_cliente = v.rut_cliente "
+        "WHERE p.nombre_producto = %s "
+        "  AND v.rut_cliente != %s "
+        "  AND v.tipo_documento != '61' "
+        "GROUP BY c.razon_social, c.rut_cliente "
+        "ORDER BY total DESC LIMIT 5",
+        (producto_principal, datos["rut"]),
+    )
+    return [
+        {"razon_social": r[0], "rut": r[1], "producto": producto_principal}
+        for r in cur.fetchall()
+    ]
+
+
+# ─── Inconsistencias (Mejora 3: contra-argumentos vs cámara de eco) ──────────
+
+def detectar_inconsistencias(cur, datos, notas_existentes=""):
+    """Detecta contradicciones entre datos duros (BD) y observaciones blandas.
+
+    Retorna lista de strings (una por inconsistencia). Vacía si no hay.
+    """
+    hoy = date.today()
+    rut = datos["rut"]
+    resultados = []
+
+    # 1. Marcado incobrable pero con facturas recientes (últimos 60 días)
+    if datos.get("estado") == "incobrable":
+        cur.execute(
+            "SELECT COUNT(*) FROM ventas "
+            "WHERE rut_cliente = %s AND tipo_documento != '61' "
+            "  AND fecha > CURRENT_DATE - INTERVAL '60 days'",
+            (rut,),
+        )
+        recientes = cur.fetchone()[0]
+        if recientes and recientes > 0:
+            resultados.append(
+                f"- Estado en BD = **incobrable**, pero hay {recientes} "
+                f"factura(s) emitida(s) en los últimos 60 días."
+            )
+
+    # 2. Notas mencionan 'incobrable' pero BD dice activo
+    if notas_existentes and "incobrable" in notas_existentes.lower():
+        if datos.get("estado") != "incobrable":
+            resultados.append(
+                "- Notas del agente mencionan 'incobrable' pero estado en BD "
+                "no es 'incobrable'. Revisar manualmente."
+            )
+
+    # 3. Top producto (global) diferente al producto de las últimas 3 facturas
+    if datos.get("top_productos"):
+        top_global = datos["top_productos"][0]["nombre"]
+        cur.execute(
+            "SELECT p.nombre_producto, SUM(p.cantidad) "
+            "FROM productos p "
+            "JOIN ventas v ON v.folio::text = p.folio::text "
+            "  AND v.tipo_documento = p.tipo_documento "
+            "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
+            "  AND v.folio IN ( "
+            "    SELECT folio FROM ventas "
+            "    WHERE rut_cliente = %s AND tipo_documento != '61' "
+            "    ORDER BY fecha DESC LIMIT 3 "
+            "  ) "
+            "GROUP BY p.nombre_producto "
+            "ORDER BY SUM(p.cantidad) DESC LIMIT 1",
+            (rut, rut),
+        )
+        row = cur.fetchone()
+        if row and row[0] and row[0] != top_global:
+            resultados.append(
+                f"- Producto principal histórico = **{top_global}**, pero "
+                f"en las últimas 3 facturas predomina **{row[0]}**. "
+                f"Posible cambio de patrón de compra."
+            )
+
+    # 4. Sin pagos nunca y deuda pendiente > 0 y cliente con >6 meses de antigüedad
+    if (
+        datos.get("deuda_pendiente", 0)
+        and datos["deuda_pendiente"] > 0
+        and datos.get("ultimo_pago") is None
+        and datos.get("cliente_desde")
+    ):
+        dias_antiguo = (hoy - datos["cliente_desde"]).days
+        if dias_antiguo > 180:
+            resultados.append(
+                f"- Cliente desde hace {dias_antiguo} días (>{180}), sin "
+                f"ningún pago registrado y con deuda de "
+                f"{fmt_monto(datos['deuda_pendiente'])}. Revisar si falta "
+                f"conciliar o es cliente moroso crónico."
+            )
+
+    return resultados
+
+
+def generar_ficha(datos, relacionados=None, inconsistencias=None):
     """Genera contenido Markdown completo para la ficha de un cliente."""
     hoy = date.today().isoformat()
 
@@ -368,6 +580,28 @@ def generar_ficha(datos):
     lineas.append(generar_patron(datos))
     lineas.append("")
 
+    # Relacionados (Mejora 2: wikilinks entre clientes con mismo producto)
+    lineas.append("## Relacionados")
+    lineas.append("")
+    if relacionados:
+        prod = relacionados[0]["producto"]
+        lineas.append(f"Clientes que también compran **{prod}**:")
+        lineas.append("")
+        for r in relacionados:
+            lineas.append(f"- [[{r['razon_social']}]] ({r['rut']})")
+    else:
+        lineas.append("- Sin clientes relacionados detectados")
+    lineas.append("")
+
+    # Inconsistencias (Mejora 3: contra-argumentos entre SQL y notas)
+    lineas.append("## Inconsistencias")
+    lineas.append("")
+    if inconsistencias:
+        lineas.extend(inconsistencias)
+    else:
+        lineas.append("- Ninguna detectada")
+    lineas.append("")
+
     # Notas del agente (sección vacía para llenado posterior)
     lineas.append("## Notas del agente")
     lineas.append("")
@@ -393,9 +627,21 @@ def escribir_ficha(datos, cur=None):
         if match:
             notas_existentes = match.group(1)
 
+    # Cargar snapshot previo (capa raw/) para detectar cambios temporales
+    snapshot_previo = cargar_snapshot(datos["rut"])
+
+    # Calcular relacionados e inconsistencias (Mejoras 2 y 3)
+    relacionados = []
+    inconsistencias = []
+    if cur is not None:
+        relacionados = obtener_relacionados(cur, datos)
+        inconsistencias = detectar_inconsistencias(cur, datos, notas_existentes)
+
     # Detectar eventos notables si hay cursor disponible
     if cur is not None:
         nuevos_eventos = detectar_eventos(cur, datos)
+        # Agregar eventos derivados de comparar con snapshot anterior
+        nuevos_eventos.extend(detectar_cambios_snapshot(snapshot_previo, datos))
         if nuevos_eventos:
             # Filtrar duplicados: solo agregar eventos cuyo texto no exista ya
             eventos_a_agregar = [
@@ -411,7 +657,9 @@ def escribir_ficha(datos, cur=None):
                     notas_existentes = "\n" + bloque_nuevo + "\n"
 
     # Generar ficha nueva
-    contenido = generar_ficha(datos)
+    contenido = generar_ficha(
+        datos, relacionados=relacionados, inconsistencias=inconsistencias
+    )
 
     # Reemplazar la sección de notas con la preservada (si había)
     if notas_existentes.strip():
@@ -428,13 +676,30 @@ def escribir_ficha(datos, cur=None):
     CLIENTES_DIR.mkdir(parents=True, exist_ok=True)
     filepath.write_text(contenido, encoding="utf-8")
 
+    # Guardar snapshot en raw/ (fuente histórica inmutable desde código)
+    guardar_snapshot(datos)
+
     return str(filepath), slug
 
 
 # ─── index.md y log.md ──────────────────────────────────────────────────────
 
+def _tabla_clientes(rows, col_deuda="Deuda pendiente"):
+    """Convierte lista de rows (razon_social, rut, deuda) en tabla Markdown."""
+    hoy = date.today().isoformat()
+    lineas = [
+        f"| Cliente | RUT | {col_deuda} | Última actualización |",
+        "| --- | --- | --- | --- |",
+    ]
+    for e in rows:
+        lineas.append(
+            f"| [[{e['razon_social']}]] | {e['rut']} | {fmt_monto(e['deuda'])} | {hoy} |"
+        )
+    return lineas
+
+
 def actualizar_index(cur):
-    """Regenera wiki/index.md con tabla de clientes activos e incobrables."""
+    """Regenera wiki/index.md (resumen) + sub-índices en wiki/indices/ (Mejora 4)."""
     hoy = date.today().isoformat()
 
     # Query: todos los clientes con su deuda pendiente en una sola consulta
@@ -451,47 +716,218 @@ def actualizar_index(cur):
 
     activos = []
     incobrables = []
+    morosos = []
     for razon_social, rut, estado, deuda in rows:
         entry = {"razon_social": razon_social, "rut": rut, "deuda": deuda}
         if estado == "incobrable":
             incobrables.append(entry)
         else:
             activos.append(entry)
+            if deuda and deuda > 0:
+                morosos.append(entry)
 
     total = len(activos) + len(incobrables)
 
-    lineas = [
-        f"# Wiki Zigurat — Índice de Clientes",
-        "",
-        f"Actualizado: {hoy} | {total} clientes ({len(activos)} activos, {len(incobrables)} incobrables)",
-        "",
-        "## Clientes activos",
-        "",
-        "| Cliente | RUT | Deuda pendiente | Última actualización |",
-        "| --- | --- | --- | --- |",
-    ]
-    for e in activos:
-        lineas.append(
-            f"| [[{e['razon_social']}]] | {e['rut']} | {fmt_monto(e['deuda'])} | {hoy} |"
-        )
-
-    # Sección de incobrables solo si hay alguno
-    if incobrables:
-        lineas.append("")
-        lineas.append("## Clientes incobrables")
-        lineas.append("")
-        lineas.append("| Cliente | RUT | Deuda histórica | Última actualización |")
-        lineas.append("| --- | --- | --- | --- |")
-        for e in incobrables:
-            lineas.append(
-                f"| [[{e['razon_social']}]] | {e['rut']} | {fmt_monto(e['deuda'])} | {hoy} |"
-            )
-
-    lineas.append("")
-
+    # Asegurar directorios
     WIKI_DIR.mkdir(parents=True, exist_ok=True)
+    INDICES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Sub-índice: activos
+    sub_activos = [
+        "# Clientes activos",
+        "",
+        f"Actualizado: {hoy} | {len(activos)} clientes",
+        "",
+    ] + _tabla_clientes(activos) + [""]
+    (INDICES_DIR / "activos.md").write_text("\n".join(sub_activos), encoding="utf-8")
+
+    # Sub-índice: morosos (activos con deuda > 0)
+    morosos.sort(key=lambda e: -e["deuda"])
+    sub_morosos = [
+        "# Clientes morosos",
+        "",
+        f"Actualizado: {hoy} | {len(morosos)} clientes con deuda pendiente",
+        "",
+    ] + (_tabla_clientes(morosos) if morosos else ["- Ninguno"]) + [""]
+    (INDICES_DIR / "morosos.md").write_text("\n".join(sub_morosos), encoding="utf-8")
+
+    # Sub-índice: incobrables
+    sub_inc = [
+        "# Clientes incobrables",
+        "",
+        f"Actualizado: {hoy} | {len(incobrables)} clientes",
+        "",
+    ] + (_tabla_clientes(incobrables, col_deuda="Deuda histórica") if incobrables else ["- Ninguno"]) + [""]
+    (INDICES_DIR / "incobrables.md").write_text("\n".join(sub_inc), encoding="utf-8")
+
+    # Índice maestro: corto, enlaza a sub-índices y conceptos
+    lineas = [
+        "# Wiki Zigurat — Índice de Clientes",
+        "",
+        f"Actualizado: {hoy} | **{total}** clientes "
+        f"({len(activos)} activos, {len(morosos)} morosos, {len(incobrables)} incobrables)",
+        "",
+        "## Sub-índices por estado",
+        "",
+        f"- [[indices/activos|Clientes activos]] ({len(activos)})",
+        f"- [[indices/morosos|Clientes morosos]] ({len(morosos)})",
+        f"- [[indices/incobrables|Clientes incobrables]] ({len(incobrables)})",
+        "",
+        "## Conceptos",
+        "",
+        "- [[conceptos/clientes-top|Top 10 por ventas]]",
+        "- [[conceptos/clientes-morosos|Morosos (>30 días)]]",
+        "- [[conceptos/clientes-inactivos|Inactivos (>60 días)]]",
+        "- Ver también `wiki/conceptos/productos/` — un concepto por producto principal",
+        "",
+    ]
     INDEX_PATH.write_text("\n".join(lineas), encoding="utf-8")
     return total
+
+
+def actualizar_conceptos(cur):
+    """Regenera páginas de conceptos en wiki/conceptos/ (Mejora 2).
+
+    Genera:
+      - clientes-top.md       Top 10 por ventas totales
+      - clientes-morosos.md   Con facturas vencidas >30 días
+      - clientes-inactivos.md Sin compras en los últimos 60 días
+      - productos/<slug>.md   Un archivo por producto principal
+    """
+    hoy = date.today().isoformat()
+    CONCEPTOS_DIR.mkdir(parents=True, exist_ok=True)
+    PRODUCTOS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 1. Top 10 por ventas
+    cur.execute(
+        "SELECT c.razon_social, v.rut_cliente, "
+        "  SUM(COALESCE(v.monto_total_ajustado, v.monto_total)) AS total "
+        "FROM ventas v JOIN clientes c ON c.rut_cliente = v.rut_cliente "
+        "WHERE v.tipo_documento != '61' "
+        "GROUP BY v.rut_cliente, c.razon_social "
+        "ORDER BY total DESC LIMIT 10"
+    )
+    top = cur.fetchall()
+    lineas = [
+        "# Top 10 clientes por ventas",
+        "",
+        f"Actualizado: {hoy}",
+        "",
+        "| # | Cliente | RUT | Total vendido |",
+        "| --- | --- | --- | --- |",
+    ]
+    for i, (razon, rut, total) in enumerate(top, 1):
+        lineas.append(f"| {i} | [[{razon}]] | {rut} | {fmt_monto(total)} |")
+    lineas.append("")
+    (CONCEPTOS_DIR / "clientes-top.md").write_text("\n".join(lineas), encoding="utf-8")
+
+    # 2. Morosos (facturas vencidas >30 días)
+    cur.execute(
+        "SELECT c.razon_social, v.rut_cliente, "
+        "  COUNT(*) AS vencidas, "
+        "  SUM(COALESCE(v.monto_total_ajustado, v.monto_total)) AS deuda "
+        "FROM ventas v JOIN clientes c ON c.rut_cliente = v.rut_cliente "
+        "WHERE v.tipo_documento != '61' AND v.fecha_pago IS NULL "
+        "  AND v.fecha < CURRENT_DATE - INTERVAL '30 days' "
+        "GROUP BY v.rut_cliente, c.razon_social "
+        "ORDER BY deuda DESC"
+    )
+    morosos = cur.fetchall()
+    lineas = [
+        "# Clientes morosos (>30 días vencidos)",
+        "",
+        f"Actualizado: {hoy} | {len(morosos)} clientes con deuda vencida",
+        "",
+    ]
+    if morosos:
+        lineas.append("| Cliente | RUT | Facturas vencidas | Deuda |")
+        lineas.append("| --- | --- | --- | --- |")
+        for razon, rut, nv, deuda in morosos:
+            lineas.append(f"| [[{razon}]] | {rut} | {nv} | {fmt_monto(deuda)} |")
+    else:
+        lineas.append("- Sin morosos actualmente")
+    lineas.append("")
+    (CONCEPTOS_DIR / "clientes-morosos.md").write_text("\n".join(lineas), encoding="utf-8")
+
+    # 3. Inactivos (>60 días sin factura nueva, excluyendo incobrables)
+    cur.execute(
+        "SELECT c.razon_social, v.rut_cliente, MAX(v.fecha) AS ultima "
+        "FROM ventas v JOIN clientes c ON c.rut_cliente = v.rut_cliente "
+        "WHERE v.tipo_documento != '61' "
+        "  AND (c.estado IS NULL OR c.estado != 'incobrable') "
+        "GROUP BY v.rut_cliente, c.razon_social "
+        "HAVING MAX(v.fecha) < CURRENT_DATE - INTERVAL '60 days' "
+        "ORDER BY ultima ASC"
+    )
+    inactivos = cur.fetchall()
+    lineas = [
+        "# Clientes inactivos (>60 días sin compra)",
+        "",
+        f"Actualizado: {hoy} | {len(inactivos)} clientes inactivos",
+        "",
+    ]
+    if inactivos:
+        lineas.append("| Cliente | RUT | Última factura |")
+        lineas.append("| --- | --- | --- |")
+        for razon, rut, ultima in inactivos:
+            lineas.append(f"| [[{razon}]] | {rut} | {fmt_fecha(ultima)} |")
+    else:
+        lineas.append("- Sin inactivos")
+    lineas.append("")
+    (CONCEPTOS_DIR / "clientes-inactivos.md").write_text("\n".join(lineas), encoding="utf-8")
+
+    # 4. Productos: un archivo por producto con top 10 clientes que lo compran
+    cur.execute(
+        "SELECT p.nombre_producto, SUM(p.cantidad) AS cant "
+        "FROM productos p "
+        "JOIN ventas v ON v.folio::text = p.folio::text "
+        "  AND v.tipo_documento = p.tipo_documento "
+        "WHERE v.tipo_documento != '61' "
+        "GROUP BY p.nombre_producto "
+        "ORDER BY cant DESC LIMIT 15"
+    )
+    productos = [r[0] for r in cur.fetchall()]
+
+    # Limpiar productos viejos (regeneramos desde cero)
+    for f in PRODUCTOS_DIR.glob("*.md"):
+        f.unlink()
+
+    for nombre in productos:
+        cur.execute(
+            "SELECT c.razon_social, v.rut_cliente, SUM(p.cantidad) AS cant "
+            "FROM productos p "
+            "JOIN ventas v ON v.folio::text = p.folio::text "
+            "  AND v.tipo_documento = p.tipo_documento "
+            "JOIN clientes c ON c.rut_cliente = v.rut_cliente "
+            "WHERE p.nombre_producto = %s AND v.tipo_documento != '61' "
+            "GROUP BY c.razon_social, v.rut_cliente "
+            "ORDER BY cant DESC LIMIT 10",
+            (nombre,),
+        )
+        compradores = cur.fetchall()
+        slug = slugify(nombre) or "producto"
+        lineas = [
+            f"# Producto: {nombre}",
+            "",
+            f"Actualizado: {hoy}",
+            "",
+            "## Clientes que lo compran",
+            "",
+            "| Cliente | RUT | Cantidad total |",
+            "| --- | --- | --- |",
+        ]
+        for razon, rut, cant in compradores:
+            cant_fmt = f"{float(cant):.0f}" if cant else "0"
+            lineas.append(f"| [[{razon}]] | {rut} | {cant_fmt} |")
+        lineas.append("")
+        (PRODUCTOS_DIR / f"{slug}.md").write_text("\n".join(lineas), encoding="utf-8")
+
+    return {
+        "top": len(top),
+        "morosos": len(morosos),
+        "inactivos": len(inactivos),
+        "productos": len(productos),
+    }
 
 
 def actualizar_log(actualizados, origen):
@@ -652,9 +1088,17 @@ if __name__ == "__main__":
     if errores > 0:
         print(f"  Errores: {errores}")
 
-    # Actualizar index.md
+    # Actualizar index.md + sub-índices
     total_index = actualizar_index(cur)
-    print(f"  [OK] index.md actualizado ({total_index} clientes)")
+    print(f"  [OK] index.md + sub-índices actualizados ({total_index} clientes)")
+
+    # Actualizar páginas de conceptos (Mejora 2)
+    stats = actualizar_conceptos(cur)
+    print(
+        f"  [OK] conceptos actualizados: top={stats['top']}, "
+        f"morosos={stats['morosos']}, inactivos={stats['inactivos']}, "
+        f"productos={stats['productos']}"
+    )
 
     # Actualizar log.md
     if actualizados:

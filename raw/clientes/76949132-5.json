@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-10",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 1017085.0,
+  "direccion": "AVENIDA ITALIA 1175",
+  "estado": "activo",
+  "facturas_emitidas": 29,
+  "facturas_pendientes": 8,
+  "promedio_dias_pago": 10,
+  "razon_social": "LEIVA, MC CARTHY Y SALAS SPA",
+  "rut": "76949132-5",
+  "top_productos": [
+    {
+      "cantidad": 51.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scoth Ale"
+    }
+  ],
+  "total_vendido": 4187526.0,
+  "ultimo_pago": "2025-01-27"
+}

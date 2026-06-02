@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-02-19",
+  "comuna": "MACHALI",
+  "deuda_pendiente": 139981.0,
+  "direccion": "AV. SAN JUAN 2043",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "ALPINO LIMITADA",
+  "rut": "77605437-2",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 139981.0,
+  "ultimo_pago": null
+}

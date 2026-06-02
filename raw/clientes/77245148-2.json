@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-03",
+  "comuna": "SAN MIGUEL",
+  "deuda_pendiente": 1164030.0,
+  "direccion": "10A AVDA 1229 ATACAMA",
+  "estado": "activo",
+  "facturas_emitidas": 11,
+  "facturas_pendientes": 11,
+  "promedio_dias_pago": null,
+  "razon_social": "BROTHERWOOD LA TIENDA SPA",
+  "rut": "77245148-2",
+  "top_productos": [
+    {
+      "cantidad": 15.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Sour Berries"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril Mincay"
+    }
+  ],
+  "total_vendido": 1164030.0,
+  "ultimo_pago": null
+}

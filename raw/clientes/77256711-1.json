@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-10",
+  "comuna": "PICHILEMU",
+  "deuda_pendiente": 105015.0,
+  "direccion": "PUNTA DE LOBOS LOTE 33 PUNTA DE LOBOS",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "OPERACIÓN PIURE SPA",
+  "rut": "77256711-1",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Sour Berries"
+    }
+  ],
+  "total_vendido": 105015.0,
+  "ultimo_pago": null
+}

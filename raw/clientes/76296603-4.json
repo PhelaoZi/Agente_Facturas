@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-03",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 1573220.0,
+  "direccion": "DARDIGNAC 0192",
+  "estado": "activo",
+  "facturas_emitidas": 19,
+  "facturas_pendientes": 19,
+  "promedio_dias_pago": null,
+  "razon_social": "UNCLE FLETCH CHILE SPA",
+  "rut": "76296603-4",
+  "top_productos": [
+    {
+      "cantidad": 13.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 4.0,
+      "nombre": "Barril 30L Session IPA"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 1573220.0,
+  "ultimo_pago": null
+}

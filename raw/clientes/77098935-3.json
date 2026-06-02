@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-07",
+  "comuna": "LA CISTERNA",
+  "deuda_pendiente": 124702.0,
+  "direccion": "INDUSTRIAS 8445 BIAUT",
+  "estado": "activo",
+  "facturas_emitidas": 3,
+  "facturas_pendientes": 3,
+  "promedio_dias_pago": null,
+  "razon_social": "CERVEZAS DEL MUNDO SPA",
+  "rut": "77098935-3",
+  "top_productos": [
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc Session IPA"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Scotch Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Sour Berries"
+    }
+  ],
+  "total_vendido": 124702.0,
+  "ultimo_pago": null
+}

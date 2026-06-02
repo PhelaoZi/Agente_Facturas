@@ -2,7 +2,7 @@
 rut: 77568635-9
 razon_social: "RPG ALIMENTOS SPA"
 estado: incobrable
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-12
 ---
 
 # RPG ALIMENTOS SPA
@@ -29,6 +29,21 @@ ultima_actualizacion: 2026-04-08
 - Producto principal: **Barril 30L Cream Ale**
 - ⚠ **Cliente marcado como incobrable**
 
+## Relacionados
+
+Clientes que también compran **Barril 30L Cream Ale**:
+
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
+- [[VDT SPA]] (77220069-2)
+
+## Inconsistencias
+
+- Cliente desde hace 821 días (>180), sin ningún pago registrado y con deuda de $1.313.167. Revisar si falta conciliar o es cliente moroso crónico.
+
 ## Notas del agente
 
+- 2026-04-12: ⚠️ 10 factura(s) vencida(s) (>30 días): #3937, #3941, #3948, #3970, #3986, #4005, #4104, #4113, #4128, #4134 por $1.313.167.
 - 2026-04-08: ⚠️ 10 factura(s) vencida(s) (>30 días): #3937, #3941, #3948, #3970, #3986, #4005, #4104, #4113, #4128, #4134 por $1.313.167.

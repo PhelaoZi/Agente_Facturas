@@ -2,7 +2,7 @@
 rut: 76145092-1
 razon_social: "SOCIEDAD CUENCA SUR INVERSIONES LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-12
 ---
 
 # SOCIEDAD CUENCA SUR INVERSIONES LIMITADA
@@ -28,7 +28,22 @@ ultima_actualizacion: 2026-04-08
 - Solo 1 compra registrada
 - Producto principal: **Lata 470cc Sour Berries**
 
+## Relacionados
+
+Clientes que también compran **Lata 470cc Sour Berries**:
+
+- [[SUCESION GERMAN GARCIA GARIN]] (53310722-2)
+- [[CERVEZAS DEL MUNDO SPA]] (77098935-3)
+- [[THE FLOWERS BROTHERS SPA]] (77127778-0)
+- [[BROTHERWOOD LA TIENDA SPA]] (77245148-2)
+
+## Inconsistencias
+
+- Cliente desde hace 772 días (>180), sin ningún pago registrado y con deuda de $61.500. Revisar si falta conciliar o es cliente moroso crónico.
+
 ## Notas del agente
 
+- 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3985 por $61.500.
+- 2026-04-12: ⚠️ Cliente inactivo — 772 días sin nueva factura (última: 2024-03-01).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3985 por $61.500.
 - 2026-04-08: ⚠️ Cliente inactivo — 768 días sin nueva factura (última: 2024-03-01).

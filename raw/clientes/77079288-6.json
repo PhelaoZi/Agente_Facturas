@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-19",
+  "comuna": "LA FLORIDA",
+  "deuda_pendiente": 177200.0,
+  "direccion": "SALVADOR SANFUENTES 150  22",
+  "estado": "activo",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "SERVICIOS CULTURALES CECILIA LONCOMILLA QUINTUL E.I.R.L.",
+  "rut": "77079288-6",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Scotch Ale"
+    }
+  ],
+  "total_vendido": 177200.0,
+  "ultimo_pago": null
+}

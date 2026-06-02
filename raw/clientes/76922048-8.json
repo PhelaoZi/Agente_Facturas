@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-04-23",
+  "comuna": "ANTOFAGASTA",
+  "deuda_pendiente": 4989351.0,
+  "direccion": "ANGAMOS 1309",
+  "estado": "activo",
+  "facturas_emitidas": 8,
+  "facturas_pendientes": 8,
+  "promedio_dias_pago": null,
+  "razon_social": "INVERSIONES BARDOS SPA",
+  "rut": "76922048-8",
+  "top_productos": [
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc Mincay"
+    },
+    {
+      "cantidad": 24.0,
+      "nombre": "Lata 470cc RedHouse"
+    },
+    {
+      "cantidad": 23.0,
+      "nombre": "Barril Pet 30L"
+    }
+  ],
+  "total_vendido": 4989351.0,
+  "ultimo_pago": null
+}

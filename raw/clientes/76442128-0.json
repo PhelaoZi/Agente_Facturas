@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-08-13",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 588790.0,
+  "direccion": "SALVADOR SAN FUENTE 2175 2179",
+  "estado": "activo",
+  "facturas_emitidas": 5,
+  "facturas_pendientes": 5,
+  "promedio_dias_pago": null,
+  "razon_social": "RESTAURANT S&S LIMITADA",
+  "rut": "76442128-0",
+  "top_productos": [
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L IPA W.C"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Wee Heavy"
+    }
+  ],
+  "total_vendido": 588790.0,
+  "ultimo_pago": null
+}

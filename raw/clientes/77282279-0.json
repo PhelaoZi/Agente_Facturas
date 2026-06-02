@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-08-01",
+  "comuna": "CONCEPCION",
+  "deuda_pendiente": 110110.0,
+  "direccion": "LOS OLMOS 1280",
+  "estado": "activo",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "GHMPS BAR RESTAURANTES LIMITADA",
+  "rut": "77282279-0",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Black IPA"
+    }
+  ],
+  "total_vendido": 110110.0,
+  "ultimo_pago": null
+}

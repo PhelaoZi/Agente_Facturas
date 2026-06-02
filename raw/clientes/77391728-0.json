@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-04",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 828824.0,
+  "direccion": "ALONSO DE OVALLE 884 DP 1209",
+  "estado": "activo",
+  "facturas_emitidas": 8,
+  "facturas_pendientes": 8,
+  "promedio_dias_pago": null,
+  "razon_social": "BEBIDA SOCIAL SPA",
+  "rut": "77391728-0",
+  "top_productos": [
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470 cc Sour Berries"
+    },
+    {
+      "cantidad": 5.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Logistica Latas"
+    }
+  ],
+  "total_vendido": 828824.0,
+  "ultimo_pago": null
+}

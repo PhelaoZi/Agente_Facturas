@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-03-15",
+  "comuna": "COPIAPO",
+  "deuda_pendiente": 1254571.0,
+  "direccion": "INFANTE 631",
+  "estado": "activo",
+  "facturas_emitidas": 6,
+  "facturas_pendientes": 6,
+  "promedio_dias_pago": null,
+  "razon_social": "CAUR BAR SPA",
+  "rut": "78019027-2",
+  "top_productos": [
+    {
+      "cantidad": 8.0,
+      "nombre": "Barril Pet 30L"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Stout Cafe"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L IPA W.C"
+    }
+  ],
+  "total_vendido": 1254571.0,
+  "ultimo_pago": null
+}

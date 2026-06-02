@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-12-02",
+  "comuna": "VALPARAISO",
+  "deuda_pendiente": 94375.0,
+  "direccion": "PILCOMAYO 591 C ALEGRE",
+  "estado": "activo",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "JARDIN CERVECERO SPA",
+  "rut": "78121649-6",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Sour P/L"
+    }
+  ],
+  "total_vendido": 94375.0,
+  "ultimo_pago": null
+}

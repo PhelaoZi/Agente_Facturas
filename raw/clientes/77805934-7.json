@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-07-23",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 88000.0,
+  "direccion": "SANTA MAGDALENA 61 LC 6",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "QUERCUS SPA",
+  "rut": "77805934-7",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Imp. Scotch"
+    }
+  ],
+  "total_vendido": 88000.0,
+  "ultimo_pago": null
+}

@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-07",
+  "comuna": "LAS CONDES",
+  "deuda_pendiente": 30774.0,
+  "direccion": "Avenida Apoquindo 4900  60",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "THE FLOWERS BROTHERS SPA",
+  "rut": "77127778-0",
+  "top_productos": [
+    {
+      "cantidad": 12.0,
+      "nombre": "Lata 470cc Sour Berries"
+    }
+  ],
+  "total_vendido": 30774.0,
+  "ultimo_pago": null
+}

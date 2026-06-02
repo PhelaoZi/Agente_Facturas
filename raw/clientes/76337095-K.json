@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-07-08",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 839885.0,
+  "direccion": "JOSE RAMON GUTIERREZ 277 DPA   B",
+  "estado": "activo",
+  "facturas_emitidas": 5,
+  "facturas_pendientes": 5,
+  "promedio_dias_pago": null,
+  "razon_social": "SOCIEDAD GASTRONOMICA SAER SPA",
+  "rut": "76337095-K",
+  "top_productos": [
+    {
+      "cantidad": 8.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 4.0,
+      "nombre": "Barril 30L Scotch Ale"
+    }
+  ],
+  "total_vendido": 839885.0,
+  "ultimo_pago": null
+}

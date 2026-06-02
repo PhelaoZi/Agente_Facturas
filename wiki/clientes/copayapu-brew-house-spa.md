@@ -2,7 +2,7 @@
 rut: 76586346-5
 razon_social: "COPAYAPU BREW-HOUSE SPA"
 estado: activo
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-12
 ---
 
 # COPAYAPU BREW-HOUSE SPA
@@ -25,10 +25,26 @@ ultima_actualizacion: 2026-04-08
 ## Patrón de comportamiento
 
 - Cliente desde **2024-07-30**
-- Frecuencia de compra: ~1 factura cada **206 días**
-- Producto principal: **Logistica**
+- Frecuencia de compra: ~1 factura cada **207 días**
+- Producto principal: **Barril 30L Black IPA**
+
+## Relacionados
+
+Clientes que también compran **Barril 30L Black IPA**:
+
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[VDT SPA]] (77220069-2)
+- [[BAR CERVECERÍA ORIGINAL SPA]] (77042203-5)
+- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
+- [[INVERSIONES BARDOS SPA]] (76922048-8)
+
+## Inconsistencias
+
+- Cliente desde hace 621 días (>180), sin ningún pago registrado y con deuda de $254.016. Revisar si falta conciliar o es cliente moroso crónico.
 
 ## Notas del agente
 
+- 2026-04-12: ⚠️ 3 factura(s) vencida(s) (>30 días): #4076, #4084, #4303 por $254.016.
+- 2026-04-12: ⚠️ Cliente inactivo — 347 días sin nueva factura (última: 2025-04-30).
 - 2026-04-08: ⚠️ 3 factura(s) vencida(s) (>30 días): #4076, #4084, #4303 por $254.016.
 - 2026-04-08: ⚠️ Cliente inactivo — 343 días sin nueva factura (última: 2025-04-30).

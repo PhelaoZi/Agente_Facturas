@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-10",
+  "comuna": "VITACURA",
+  "deuda_pendiente": 177200.0,
+  "direccion": "VITACURA 8133",
+  "estado": "incobrable",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "SOCIEDAD DE RESTAURANTES CERVECEROS SABUGO HERMANOS LIMITADA",
+  "rut": "77029032-5",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 177200.0,
+  "ultimo_pago": null
+}

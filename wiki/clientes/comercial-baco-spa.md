@@ -2,7 +2,7 @@
 rut: 76407717-2
 razon_social: "COMERCIAL BACO SPA"
 estado: activo
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-12
 ---
 
 # COMERCIAL BACO SPA
@@ -28,6 +28,15 @@ ultima_actualizacion: 2026-04-08
 - Frecuencia de compra: ~1 factura cada **15 días**
 - Producto principal: **Barril 30L Sout Cafe**
 
+## Relacionados
+
+- Sin clientes relacionados detectados
+
+## Inconsistencias
+
+- Ninguna detectada
+
 ## Notas del agente
 
+- 2026-04-12: ⚠️ 7 factura(s) vencida(s) (>30 días): #4529, #4541, #4565, #4575, #4587, #4552, #4553 por $1.360.320.
 - 2026-04-08: ⚠️ 7 factura(s) vencida(s) (>30 días): #4529, #4541, #4565, #4575, #4587, #4552, #4553 por $1.360.320.

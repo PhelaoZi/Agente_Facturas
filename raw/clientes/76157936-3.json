@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-10",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 569150.0,
+  "direccion": "CONSTITUCION 136",
+  "estado": "activo",
+  "facturas_emitidas": 5,
+  "facturas_pendientes": 5,
+  "promedio_dias_pago": null,
+  "razon_social": "COMERCIAL PEUMAYEN LIMITADA",
+  "rut": "76157936-3",
+  "top_productos": [
+    {
+      "cantidad": 4.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Session IPA"
+    }
+  ],
+  "total_vendido": 569150.0,
+  "ultimo_pago": null
+}

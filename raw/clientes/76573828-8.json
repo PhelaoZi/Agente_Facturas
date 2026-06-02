@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-01-22",
+  "comuna": "NUNOA",
+  "deuda_pendiente": 991300.0,
+  "direccion": "IRARRAZAVAL 689",
+  "estado": "activo",
+  "facturas_emitidas": 8,
+  "facturas_pendientes": 8,
+  "promedio_dias_pago": null,
+  "razon_social": "BROTHERS SPA",
+  "rut": "76573828-8",
+  "top_productos": [
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L RIS cafe/cacao"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L West Coast IPA"
+    }
+  ],
+  "total_vendido": 991300.0,
+  "ultimo_pago": null
+}

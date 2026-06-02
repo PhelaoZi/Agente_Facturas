@@ -2,7 +2,7 @@
 rut: 77805934-7
 razon_social: "QUERCUS SPA"
 estado: activo
-ultima_actualizacion: 2026-04-08
+ultima_actualizacion: 2026-04-12
 ---
 
 # QUERCUS SPA
@@ -28,7 +28,17 @@ ultima_actualizacion: 2026-04-08
 - Solo 1 compra registrada
 - Producto principal: **Barril 30L Imp. Scotch**
 
+## Relacionados
+
+- Sin clientes relacionados detectados
+
+## Inconsistencias
+
+- Cliente desde hace 263 días (>180), sin ningún pago registrado y con deuda de $88.000. Revisar si falta conciliar o es cliente moroso crónico.
+
 ## Notas del agente
 
+- 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4383 por $88.000.
+- 2026-04-12: ⚠️ Cliente inactivo — 263 días sin nueva factura (última: 2025-07-23).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4383 por $88.000.
 - 2026-04-08: ⚠️ Cliente inactivo — 259 días sin nueva factura (última: 2025-07-23).

@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-07-23",
+  "comuna": "SAN MIGUEL",
+  "deuda_pendiente": 69990.0,
+  "direccion": "CHILO� 3575",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "INVERSIONES FDL SPA",
+  "rut": "76990452-2",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Scotch Ale"
+    }
+  ],
+  "total_vendido": 69990.0,
+  "ultimo_pago": null
+}

@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-08-13",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 342952.0,
+  "direccion": "HUERFANOS 2979 2987",
+  "estado": "activo",
+  "facturas_emitidas": 4,
+  "facturas_pendientes": 4,
+  "promedio_dias_pago": null,
+  "razon_social": "INVERSIONES GASTRONÓMICAS LOS PUTAMADRE LIMITADA",
+  "rut": "78130985-0",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scotch"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 342952.0,
+  "ultimo_pago": null
+}

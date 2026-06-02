@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-12",
+  "comuna": "TEMUCO",
+  "deuda_pendiente": 473600.0,
+  "direccion": "LOS GANADEROS 03326 X BIERGARTEN KLEIN",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "PRODUCTOS SIBARITAS DEL SUR SPA",
+  "rut": "76315087-9",
+  "top_productos": [
+    {
+      "cantidad": 4.0,
+      "nombre": "Barriles Pet 30L"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Sour Berries"
+    }
+  ],
+  "total_vendido": 473600.0,
+  "ultimo_pago": null
+}

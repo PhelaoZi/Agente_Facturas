@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-03",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 5202669.0,
+  "direccion": "ANTONIO VARAS 443",
+  "estado": "activo",
+  "facturas_emitidas": 84,
+  "facturas_pendientes": 48,
+  "promedio_dias_pago": 37,
+  "razon_social": "VDT SPA",
+  "rut": "77220069-2",
+  "top_productos": [
+    {
+      "cantidad": 45.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 33.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 5.0,
+      "nombre": "Logistica Cream Ale"
+    }
+  ],
+  "total_vendido": 9047152.0,
+  "ultimo_pago": "2026-03-27"
+}

@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-01-08",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 114440.0,
+  "direccion": "GENERAL FLORES 51",
+  "estado": "incobrable",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "INVERSIONES KOME LIMITADA",
+  "rut": "76720168-0",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L West Coast IPA"
+    }
+  ],
+  "total_vendido": 114440.0,
+  "ultimo_pago": null
+}

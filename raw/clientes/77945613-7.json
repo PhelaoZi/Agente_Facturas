@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-11-19",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 69990.0,
+  "direccion": "ANTONIO BELLET 193 OF 1210 12P",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "MONTESPINO TRANSPORTES SPA",
+  "rut": "77945613-7",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Baril 30L Scotch Ale"
+    }
+  ],
+  "total_vendido": 69990.0,
+  "ultimo_pago": null
+}

@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-06",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 258084.0,
+  "direccion": "SANTA ISABEL 0261   BARRIO ITALIA",
+  "estado": "incobrable",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "PEPPERLAND BAR SPA",
+  "rut": "76568508-7",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Sour Berries"
+    }
+  ],
+  "total_vendido": 258084.0,
+  "ultimo_pago": null
+}

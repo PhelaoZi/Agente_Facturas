@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-02-15",
+  "comuna": "SANTIAGO",
+  "deuda_pendiente": 0,
+  "direccion": "V MANUEL 2298   7",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "PRODUCCIÓN Y SERVICIOS CULTURALES NEWEN WILLICHE SPA",
+  "rut": "76883673-6",
+  "top_productos": [
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Scotch Ale"
+    }
+  ],
+  "total_vendido": 0,
+  "ultimo_pago": null
+}

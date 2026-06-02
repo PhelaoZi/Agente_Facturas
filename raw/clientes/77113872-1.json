@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-04-04",
+  "comuna": "VINA DEL MAR",
+  "deuda_pendiente": 474514.0,
+  "direccion": "AV.BORGO�O 14650  9 Re�aca",
+  "estado": "activo",
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": null,
+  "razon_social": "INVERSIONES GASTRONÓMICAS CUATRO Y MEDIO LIMITADA",
+  "rut": "77113872-1",
+  "top_productos": [
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Logistica Scotch Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Baril 30L Sour P/L"
+    }
+  ],
+  "total_vendido": 474514.0,
+  "ultimo_pago": null
+}

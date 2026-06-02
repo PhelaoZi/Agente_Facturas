@@ -1,0 +1,21 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-12-12",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 1700400.0,
+  "direccion": "BUSTOS 2549",
+  "estado": "activo",
+  "facturas_emitidas": 8,
+  "facturas_pendientes": 8,
+  "promedio_dias_pago": null,
+  "razon_social": "COMERCIAL BACO SPA",
+  "rut": "76407717-2",
+  "top_productos": [
+    {
+      "cantidad": 25.0,
+      "nombre": "Barril 30L Sout Cafe"
+    }
+  ],
+  "total_vendido": 1700400.0,
+  "ultimo_pago": null
+}

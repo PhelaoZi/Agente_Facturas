@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2025-03-19",
+  "comuna": "LA REINA",
+  "deuda_pendiente": 764450.0,
+  "direccion": "CARLOS OSSANDON 125",
+  "estado": "activo",
+  "facturas_emitidas": 8,
+  "facturas_pendientes": 8,
+  "promedio_dias_pago": null,
+  "razon_social": "CAFETERIA FYLGJA LIMITADA",
+  "rut": "77854791-0",
+  "top_productos": [
+    {
+      "cantidad": 4.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Paint it Black"
+    }
+  ],
+  "total_vendido": 764450.0,
+  "ultimo_pago": null
+}

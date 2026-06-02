@@ -1,0 +1,29 @@
+{
+  "_snapshot_fecha": "2026-04-12",
+  "cliente_desde": "2024-01-03",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 1264356.0,
+  "direccion": "SEMINARIO 515",
+  "estado": "activo",
+  "facturas_emitidas": 22,
+  "facturas_pendientes": 13,
+  "promedio_dias_pago": 5,
+  "razon_social": "RESTOBAR RUBIK LIMITADA",
+  "rut": "76231880-6",
+  "top_productos": [
+    {
+      "cantidad": 5.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Black IPA"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Cream Ale"
+    }
+  ],
+  "total_vendido": 2118755.0,
+  "ultimo_pago": "2025-01-13"
+}
