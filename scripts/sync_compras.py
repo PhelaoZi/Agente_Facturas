@@ -48,23 +48,69 @@ LOG_PROCESADOS = CARPETA / ".procesados.json"
 PROVEEDORES_INSUMOS = {
     "76045387-0": "Mundo Cervecero",
     "76448126-7": "Almacén Cervecero",
-    "77103092-0": "Petainer Chile",    # barriles — sin mapeo de items por ahora
+    "77103092-0": "Petainer Chile",       # barriles — sin mapeo de items por ahora
+    "77755083-7": "Bucarest",             # principal proveedor de maltas base (30 días)
+    "76518077-5": "MACC SPA",             # maltas, lúpulos, adjuntos, clarificantes
+    "76069212-3": "Gourmet Select",       # adjuntos especiales (nibs cacao, etc.)
+    "76013386-8": "Clean Ice SA",         # CO2
 }
 
 # RUT → (nombre legible, categoría). Sus documentos van a gastos_operativos.
 PROVEEDORES_GASTOS = {
     "76052927-3": ("Autopista Nueva Vespucio Sur", "transporte"),
+    "96945440-8": ("Autopista Central",             "transporte"),
+    "76496130-7": ("Costanera Norte",               "transporte"),
+    "77630439-5": ("Operadora Sistemas Electronicos", "transporte"),  # peajes Stgo-San Antonio
+    "76989164-1": ("Bonta Publicidad",              "servicios"),     # etiquetas e impresión
+    "97023000-9": ("Banco Itau Chile",              "servicios"),     # comisiones bancarias
+    "76120331-2": ("Comercial CL",                  "combustible"),   # diésel
 }
 
 # Substring del NmbItem (lowercase) → (nombre en maestro_insumos, unidades_por_paquete)
 # precio_neto_unitario = PrcItem / unidades_por_paquete
 ITEM_MAP = {
-    "malta chocolate":        ("Malta Chocolate",                       1),
-    "malta caraaroma":        ("Malta Cara Aroma",                      1),
+    # ── Almacén Cervecero ──────────────────────────────────────────────────────
     "fermoale ay4":           ("Levadura AY4",                        500),
     "lupulo100gr magnum":     ("Lupulo Magnum",                       100),
     "polyclar brewbrite":     ("Clarificante Polyclar coccion",        100),
     "polyclar10":             ("Clarificante Polyclar 10 maduracion",  100),
+
+    # ── Mundo Cervecero (precios por kg directamente) ─────────────────────────
+    "malta chocolate":        ("Malta Chocolate",                        1),
+    "malta caraaroma":        ("Malta Cara Aroma",                       1),
+    "trigo malteado claro":   ("Trigo Malteado claro",                   1),
+    "trigo malteado best malz": ("Trigo Malteado claro",                 1),
+    "dextrosa":               ("Dextrosa",                               1),
+
+    # ── Bucarest (bolsas de 25 kg, PrcItem = precio por bolsa) ───────────────
+    "malta uma - pilsen":     ("Malta Pilsen",                          25),
+    "malta uma - pale ale":   ("Malta Pale Ale",                        25),
+    "malta uma - munich":     ("Malta Munich",                          25),
+    "malta uma - caradex":    ("Malta Caradex",                         25),
+    "malta uma - extra pale": ("Malta Extra Pale Ale",                  25),
+
+    # ── MACC SPA ──────────────────────────────────────────────────────────────
+    "pale ale patagonia malt 25":              ("Malta Pale Ale",        25),
+    "munich patagonia malt 25":                ("Malta Munich",          25),
+    "chocolate malt - crisp":                  ("Malta Chocolate",        1),
+    "carafa especial tipo 2 weyermann 10 kilo":("Malta Carafa 2",        10),
+    "carafa especial tipo 2 weyermann 1 kilo": ("Malta Carafa 2",         1),
+    "roast barley":                            ("Cebada Tostada",         1),
+    "avena 10 kilos":                          ("Avena",                 10),
+    "avena 1 kilo":                            ("Avena",                  1),
+    "hojuelas de cebada 10":                   ("Hojuela de Cebada",     10),
+    "hojuelas de cebada 1 kilo":               ("Hojuela de Cebada",      1),
+    "lupulo hallertau magnum 500":             ("Lupulo Magnum",         500),
+    "lupulo el dorado 1 kilo":                 ("Lupulo El Dorado",     1000),
+    "lupulo citra 1 kilo":                     ("Lupulo Citra",         1000),
+    "cola de pescado 100":                     ("Cola de Pescado",       100),
+    "cola de pescado 50":                      ("Cola de Pescado",        50),
+
+    # ── Gourmet Select ────────────────────────────────────────────────────────
+    "grue de cacao":          ("Cacao",                                   1),
+
+    # ── Clean Ice SA ──────────────────────────────────────────────────────────
+    "co2 anhidrido":          ("CO2",                                     1),
 }
 
 
@@ -80,26 +126,16 @@ def _save_procesados(procesados):
         json.dump(sorted(procesados), f, indent=2, ensure_ascii=False)
 
 
-def parse_xml(filepath):
-    """Parsea DTE XML (ISO-8859-1). Devuelve dict con datos del documento."""
-    with open(filepath, "rb") as f:
-        raw = f.read()
-    # Normalizar encoding para que ET pueda parsear sin error
-    content = raw.replace(b'encoding="ISO-8859-1"', b'encoding="UTF-8"')
-    content = content.replace(b"encoding='ISO-8859-1'", b"encoding='UTF-8'")
-    content_str = content.decode("iso-8859-1")
-    # Eliminar declaración de namespace de Signature para simplificar búsquedas
-    content_clean = re.sub(r' xmlns="[^"]+"', "", content_str)
-
-    root = ET.fromstring(content_clean.encode("utf-8"))
-    doc = root.find(".//Documento")
-    if doc is None:
-        raise ValueError(f"No se encontró <Documento> en {filepath.name}")
-
-    enc     = doc.find("Encabezado")
+def _parsear_documento(doc):
+    """Extrae datos de un elemento <Documento> ET. Retorna dict o None si inválido."""
+    enc = doc.find("Encabezado")
+    if enc is None:
+        return None
     id_doc  = enc.find("IdDoc")
     emisor  = enc.find("Emisor")
     totales = enc.find("Totales")
+    if id_doc is None or emisor is None or totales is None:
+        return None
 
     monto_neto  = int(float(totales.findtext("MntNeto")  or 0))
     monto_total = int(float(totales.findtext("MntTotal") or 0))
@@ -122,6 +158,31 @@ def parse_xml(filepath):
         "monto_total": monto_total,
         "items":       items,
     }
+
+
+def parse_xml(filepath):
+    """Parsea DTE XML (ISO-8859-1). Retorna lista de dicts — uno por documento.
+
+    Un archivo puede contener varios <Documento> (ej: descarga masiva del SII).
+    """
+    with open(filepath, "rb") as f:
+        raw = f.read()
+    content = raw.replace(b'encoding="ISO-8859-1"', b'encoding="UTF-8"')
+    content = content.replace(b"encoding='ISO-8859-1'", b"encoding='UTF-8'")
+    content_str = content.decode("iso-8859-1")
+    content_clean = re.sub(r' xmlns="[^"]+"', "", content_str)
+
+    root = ET.fromstring(content_clean.encode("utf-8"))
+    documentos = root.findall(".//Documento")
+    if not documentos:
+        raise ValueError(f"No se encontró <Documento> en {filepath.name}")
+
+    dtes = []
+    for doc in documentos:
+        datos = _parsear_documento(doc)
+        if datos:
+            dtes.append(datos)
+    return dtes
 
 
 def procesar_insumos(dte, cur):
@@ -191,35 +252,42 @@ def main():
         for xml_path in pendientes:
             print(f"\n-> {xml_path.name}")
             try:
-                dte = parse_xml(xml_path)
+                dtes = parse_xml(xml_path)
             except Exception as e:
                 print(f"  ERROR al parsear: {e}")
                 continue
 
-            rut = dte["rut_emisor"]
-            print(f"  Emisor: {dte['razon_social']} ({rut}) | Folio {dte['folio']} | ${dte['monto_total']:,}")
+            # Un archivo puede tener múltiples documentos (descarga masiva SII)
+            if len(dtes) > 1:
+                print(f"  [{len(dtes)} documentos en este archivo]")
 
-            with conn:
-                cur = conn.cursor()
-                if rut in PROVEEDORES_GASTOS:
-                    _, categoria = PROVEEDORES_GASTOS[rut]
-                    insertado = procesar_gasto(dte, categoria, cur)
-                    estado = "insertado" if insertado else "ya existía"
-                    print(f"  Gasto operativo [{categoria}]: {estado}")
-                elif rut in PROVEEDORES_INSUMOS:
-                    actualizados, no_mapeados = procesar_insumos(dte, cur)
-                    for msg in actualizados:
-                        print(f"  Precio: {msg}")
-                    for nombre in no_mapeados:
-                        print(f"  Sin mapeo (omitido): {nombre}")
-                    if not actualizados and not no_mapeados:
-                        print(f"  Sin ítems reconocidos para {PROVEEDORES_INSUMOS[rut]}")
-                else:
-                    print(f"  AVISO: RUT {rut} sin clasificar — omitido")
-                    print(f"  Para procesar: agregar a PROVEEDORES_INSUMOS o PROVEEDORES_GASTOS en sync_compras.py")
-                    continue
+            archivo_con_error = False
+            for dte in dtes:
+                rut = dte["rut_emisor"]
+                print(f"  Folio {dte['folio']} | {dte['razon_social']} ({rut}) | ${dte['monto_total']:,}")
 
-            nuevos_procesados.add(xml_path.name)
+                with conn:
+                    cur = conn.cursor()
+                    if rut in PROVEEDORES_GASTOS:
+                        _, categoria = PROVEEDORES_GASTOS[rut]
+                        insertado = procesar_gasto(dte, categoria, cur)
+                        estado = "insertado" if insertado else "ya existía"
+                        print(f"    Gasto [{categoria}]: {estado}")
+                    elif rut in PROVEEDORES_INSUMOS:
+                        actualizados, no_mapeados = procesar_insumos(dte, cur)
+                        for msg in actualizados:
+                            print(f"    Precio: {msg}")
+                        for nombre in no_mapeados:
+                            print(f"    Sin mapeo (omitido): {nombre}")
+                        if not actualizados and not no_mapeados:
+                            print(f"    Sin ítems reconocidos para {PROVEEDORES_INSUMOS[rut]}")
+                    else:
+                        print(f"    AVISO: RUT {rut} sin clasificar — omitido")
+                        print(f"    Para procesar: agregar a PROVEEDORES_INSUMOS o PROVEEDORES_GASTOS")
+                        archivo_con_error = True
+
+            if not archivo_con_error:
+                nuevos_procesados.add(xml_path.name)
 
         _save_procesados(procesados | nuevos_procesados)
         print(f"\nSync completo. Procesados nuevos: {len(nuevos_procesados)}")
