@@ -117,6 +117,24 @@ ITEM_MAP = {
     "detergente alcalino 5":  ("Detergente Alcalino",                      5),   # bidón 5 kg
     "detergente alcalino 6":  ("Detergente Alcalino",                      6),   # bidón 6 kg
     "detergente alcalino 23": ("Detergente Alcalino",                     23),   # bidón 23 kg
+
+    # ── Envasado — botellas (sacos de 70 u 80 unidades) ──────────────────────
+    "saco  70 botella baviera":         ("Botella 330ml Baviera",          70),  # Mundo Cervecero
+    "saco 70 botella baviera":          ("Botella 330ml Baviera",          70),
+    "saco 70 botellas genericas":       ("Botella 330ml",                  70),  # Mundo Cervecero
+    "botellas 330cc generica saco 80":  ("Botella 330ml",                  80),  # Almacén Cervecero
+    "botellas 330cc baviera saco 80":   ("Botella 330ml Baviera",          80),  # Almacén Cervecero
+
+    # ── Envasado — tapas ──────────────────────────────────────────────────────
+    "tapa corona":            ("Tapa Corona",                               1),  # precio por unidad
+    "tapa protectora barril": ("Tapa Barril",                               1),  # precio por unidad
+
+    # ── Envasado — cajas ──────────────────────────────────────────────────────
+    "caja sola para 12 botellas": ("Caja 12 botellas",                      1),
+    "caja sola / botella 330cc":  ("Caja 24 botellas",                      1),
+
+    # ── Envasado — barriles PET ───────────────────────────────────────────────
+    "petainer keg 30l":       ("Barril PET 30L",                            1),  # precio por unidad
 }
 
 
