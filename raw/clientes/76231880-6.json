@@ -1,12 +1,12 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-06-03",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 1264356.0,
+  "deuda_pendiente": 1378631.0,
   "direccion": "SEMINARIO 515",
   "estado": "activo",
-  "facturas_emitidas": 22,
-  "facturas_pendientes": 13,
+  "facturas_emitidas": 23,
+  "facturas_pendientes": 14,
   "promedio_dias_pago": 5,
   "razon_social": "RESTOBAR RUBIK LIMITADA",
   "rut": "76231880-6",
@@ -24,6 +24,6 @@
       "nombre": "Barril 30L Cream Ale"
     }
   ],
-  "total_vendido": 2118755.0,
+  "total_vendido": 2233030.0,
   "ultimo_pago": "2025-01-13"
 }

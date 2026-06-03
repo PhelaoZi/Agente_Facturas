@@ -2,7 +2,7 @@
 rut: 77854791-0
 razon_social: "CAFETERIA FYLGJA LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-06-03
 ---
 
 # CAFETERIA FYLGJA LIMITADA
@@ -11,15 +11,15 @@ ultima_actualizacion: 2026-04-12
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $764.450 |
-| Facturas emitidas | 8 |
-| Facturas pendientes | 8 ($764.450) |
+| Total vendido | $824.450 |
+| Facturas emitidas | 9 |
+| Facturas pendientes | 9 ($824.450) |
 | Promedio días de pago | — |
 | Último pago | — |
 
 ## Estado de cuenta
 
-- 8 factura(s) pendiente(s) por $764.450
+- 9 factura(s) pendiente(s) por $824.450
 - Sin pagos registrados
 
 ## Patrón de comportamiento
@@ -40,10 +40,12 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 389 días (>180), sin ningún pago registrado y con deuda de $764.450. Revisar si falta conciliar o es cliente moroso crónico.
+- Cliente desde hace 441 días (>180), sin ningún pago registrado y con deuda de $824.450. Revisar si falta conciliar o es cliente moroso crónico.
 
 ## Notas del agente
 
+- 2026-06-03: ⚠️ 9 factura(s) vencida(s) (>30 días): #4656, #4266, #4272, #4274, #4283, #4301, #4306, #4387, #4437 por $824.450.
+- 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.
 - 2026-04-12: ⚠️ 8 factura(s) vencida(s) (>30 días): #4266, #4272, #4274, #4283, #4301, #4306, #4387, #4437 por $764.450.
 - 2026-04-12: ⚠️ Cliente inactivo — 208 días sin nueva factura (última: 2025-09-16).
 - 2026-04-08: ⚠️ 8 factura(s) vencida(s) (>30 días): #4266, #4272, #4274, #4283, #4301, #4306, #4387, #4437 por $764.450.

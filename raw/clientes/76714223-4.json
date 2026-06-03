@@ -1,25 +1,25 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-06-03",
   "cliente_desde": "2026-03-10",
   "comuna": "SANTIAGO",
-  "deuda_pendiente": 156518.0,
+  "deuda_pendiente": 313037.0,
   "direccion": "PADRE LUIS DE VALDIVIA 327  17",
   "estado": "activo",
-  "facturas_emitidas": 3,
-  "facturas_pendientes": 3,
+  "facturas_emitidas": 5,
+  "facturas_pendientes": 5,
   "promedio_dias_pago": null,
   "razon_social": "LE BISTROT DU VIET NAM LIMITADA",
   "rut": "76714223-4",
   "top_productos": [
     {
-      "cantidad": 86.0,
+      "cantidad": 134.0,
       "nombre": "Botella 330cc Cream Ale"
     },
     {
-      "cantidad": 10.0,
+      "cantidad": 58.0,
       "nombre": "Botella 330cc Scotch Ale"
     }
   ],
-  "total_vendido": 156518.0,
+  "total_vendido": 313037.0,
   "ultimo_pago": null
 }

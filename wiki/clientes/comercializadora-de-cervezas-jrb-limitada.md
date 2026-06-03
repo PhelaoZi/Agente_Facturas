@@ -2,7 +2,7 @@
 rut: 76773284-8
 razon_social: "COMERCIALIZADORA DE CERVEZAS JRB LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-06-03
 ---
 
 # COMERCIALIZADORA DE CERVEZAS JRB LIMITADA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-04-12
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $324.380 |
-| Facturas emitidas | 3 |
-| Facturas pendientes | 3 ($324.380) |
+| Total vendido | $394.370 |
+| Facturas emitidas | 4 |
+| Facturas pendientes | 4 ($394.370) |
 | Promedio días de pago | — |
 | Último pago | — |
 
 ## Estado de cuenta
 
-- 3 factura(s) pendiente(s) por $324.380
+- 4 factura(s) pendiente(s) por $394.370
 - Sin pagos registrados
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-07-23**
-- Frecuencia de compra: ~1 factura cada **88 días**
+- Frecuencia de compra: ~1 factura cada **79 días**
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -40,10 +40,12 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 263 días (>180), sin ningún pago registrado y con deuda de $324.380. Revisar si falta conciliar o es cliente moroso crónico.
+- Cliente desde hace 315 días (>180), sin ningún pago registrado y con deuda de $394.370. Revisar si falta conciliar o es cliente moroso crónico.
 
 ## Notas del agente
 
+- 2026-06-03: ⚠️ 3 factura(s) vencida(s) (>30 días): #4384, #4385, #4472 por $324.380.
+- 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.
 - 2026-04-12: ⚠️ 3 factura(s) vencida(s) (>30 días): #4384, #4385, #4472 por $324.380.
 - 2026-04-12: ⚠️ Cliente inactivo — 174 días sin nueva factura (última: 2025-10-20).
 - 2026-04-08: ⚠️ 3 factura(s) vencida(s) (>30 días): #4384, #4385, #4472 por $324.380.

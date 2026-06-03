@@ -1,0 +1,18 @@
+# Producto: Barril 30L IPA W.C
+
+Actualizado: 2026-06-03
+
+## Clientes que lo compran
+
+| Cliente | RUT | Cantidad total |
+| --- | --- | --- |
+| [[INVERSIONES BARDOS SPA]] | 76922048-8 | 9 |
+| [[VDT SPA]] | 77220069-2 | 4 |
+| [[SOC COMERCIAL EBANO LIMITADA]] | 77352780-6 | 3 |
+| [[CAUR BAR SPA]] | 78019027-2 | 3 |
+| [[RESTAURANT S&S LIMITADA]] | 76442128-0 | 3 |
+| [[RESTOBAR RUBIK LIMITADA]] | 76231880-6 | 2 |
+| [[UNCLE FLETCH CHILE SPA]] | 76296603-4 | 1 |
+| [[INVERSIONES FDL SPA]] | 76990452-2 | 1 |
+| [[ESPACIOS GASTRONOMICOS OCULTO SPA]] | 77290617-K | 1 |
+| [[BAR CERVECERÍA ORIGINAL SPA]] | 77042203-5 | 1 |

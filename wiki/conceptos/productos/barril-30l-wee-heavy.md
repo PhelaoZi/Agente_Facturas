@@ -1,6 +1,6 @@
 # Producto: Barril 30L Wee Heavy
 
-Actualizado: 2026-04-12
+Actualizado: 2026-06-03
 
 ## Clientes que lo compran
 

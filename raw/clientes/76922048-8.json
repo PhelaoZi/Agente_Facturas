@@ -1,12 +1,12 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-06-03",
   "cliente_desde": "2024-04-23",
   "comuna": "ANTOFAGASTA",
-  "deuda_pendiente": 4989351.0,
+  "deuda_pendiente": 5522611.0,
   "direccion": "ANGAMOS 1309",
   "estado": "activo",
-  "facturas_emitidas": 8,
-  "facturas_pendientes": 8,
+  "facturas_emitidas": 10,
+  "facturas_pendientes": 9,
   "promedio_dias_pago": null,
   "razon_social": "INVERSIONES BARDOS SPA",
   "rut": "76922048-8",
@@ -24,6 +24,6 @@
       "nombre": "Barril Pet 30L"
     }
   ],
-  "total_vendido": 4989351.0,
-  "ultimo_pago": null
+  "total_vendido": 5522611.0,
+  "ultimo_pago": "2026-04-17"
 }

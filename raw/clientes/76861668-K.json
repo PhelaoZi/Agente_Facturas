@@ -1,12 +1,12 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-06-03",
   "cliente_desde": "2024-04-19",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 1473168.0,
+  "deuda_pendiente": 1661918.0,
   "direccion": "GENERAL HOLLEY 84",
   "estado": "activo",
-  "facturas_emitidas": 11,
-  "facturas_pendientes": 11,
+  "facturas_emitidas": 12,
+  "facturas_pendientes": 12,
   "promedio_dias_pago": null,
   "razon_social": "BIER BAR SPA",
   "rut": "76861668-K",
@@ -17,13 +17,13 @@
     },
     {
       "cantidad": 2.0,
-      "nombre": "Barril 30L Stout Cafe"
+      "nombre": "Barril 30L Sout Caf/Ca"
     },
     {
       "cantidad": 2.0,
-      "nombre": "Logistica Cream Ale"
+      "nombre": "Barril 30L Stout Cafe"
     }
   ],
-  "total_vendido": 1473168.0,
+  "total_vendido": 1661918.0,
   "ultimo_pago": null
 }

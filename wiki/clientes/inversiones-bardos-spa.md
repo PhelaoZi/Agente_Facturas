@@ -2,7 +2,7 @@
 rut: 76922048-8
 razon_social: "INVERSIONES BARDOS SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-06-03
 ---
 
 # INVERSIONES BARDOS SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-04-12
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $4.989.351 |
-| Facturas emitidas | 8 |
-| Facturas pendientes | 8 ($4.989.351) |
+| Total vendido | $5.522.611 |
+| Facturas emitidas | 10 |
+| Facturas pendientes | 9 ($5.522.611) |
 | Promedio días de pago | — |
-| Último pago | — |
+| Último pago | 2026-04-17 |
 
 ## Estado de cuenta
 
-- 8 factura(s) pendiente(s) por $4.989.351
-- Sin pagos registrados
+- 9 factura(s) pendiente(s) por $5.522.611
+- Último pago registrado: 2026-04-17
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-04-23**
-- Frecuencia de compra: ~1 factura cada **90 días**
+- Frecuencia de compra: ~1 factura cada **77 días**
 - Producto principal: **Lata 470cc Mincay**
 
 ## Relacionados
@@ -34,11 +34,13 @@ ultima_actualizacion: 2026-04-12
 
 ## Inconsistencias
 
-- Producto principal histórico = **Lata 470cc Mincay**, pero en las últimas 3 facturas predomina **Barril 30L RIS**. Posible cambio de patrón de compra.
-- Cliente desde hace 719 días (>180), sin ningún pago registrado y con deuda de $4.989.351. Revisar si falta conciliar o es cliente moroso crónico.
+- Producto principal histórico = **Lata 470cc Mincay**, pero en las últimas 3 facturas predomina **Barril PET 30L**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-06-03: ⚠️ 9 factura(s) vencida(s) (>30 días): #4651, #4019, #4077, #4133, #4161, #4017, #4418, #4486, #4554 por $5.522.611.
+- 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.
+- 2026-06-03: 📈 Deuda pendiente aumentó en $533.260.
 - 2026-04-12: ⚠️ 8 factura(s) vencida(s) (>30 días): #4019, #4077, #4133, #4161, #4017, #4418, #4486, #4554 por $4.989.351.
 - 2026-04-12: ⚠️ Cliente inactivo — 97 días sin nueva factura (última: 2026-01-05).
 - 2026-04-08: ⚠️ 8 factura(s) vencida(s) (>30 días): #4019, #4077, #4133, #4161, #4017, #4418, #4486, #4554 por $4.989.351.

@@ -1,6 +1,6 @@
 # Producto: Lata 470cc Sour Berries
 
-Actualizado: 2026-04-12
+Actualizado: 2026-06-03
 
 ## Clientes que lo compran
 

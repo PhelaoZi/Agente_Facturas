@@ -1,29 +1,29 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-06-03",
   "cliente_desde": "2024-08-27",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 559924.0,
+  "deuda_pendiente": 1336003.0,
   "direccion": "TEGUALDA 1375",
   "estado": "activo",
-  "facturas_emitidas": 69,
-  "facturas_pendientes": 9,
+  "facturas_emitidas": 76,
+  "facturas_pendientes": 16,
   "promedio_dias_pago": 34,
   "razon_social": "RESTAURANTE MARINA SPA",
   "rut": "77126823-4",
   "top_productos": [
     {
-      "cantidad": 100.0,
+      "cantidad": 109.0,
       "nombre": "Barril 30L Cream Ale"
+    },
+    {
+      "cantidad": 13.0,
+      "nombre": "Barril 30L Scotch Ale"
     },
     {
       "cantidad": 12.0,
       "nombre": "Barril 30L Cream  Ale"
-    },
-    {
-      "cantidad": 12.0,
-      "nombre": "Barril 30L Scotch Ale"
     }
   ],
-  "total_vendido": 8734691.0,
+  "total_vendido": 9510770.0,
   "ultimo_pago": "2026-03-30"
 }

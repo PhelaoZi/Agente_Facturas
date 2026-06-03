@@ -2,7 +2,7 @@
 rut: 77126823-4
 razon_social: "RESTAURANTE MARINA SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-06-03
 ---
 
 # RESTAURANTE MARINA SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-04-12
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $8.734.691 |
-| Facturas emitidas | 69 |
-| Facturas pendientes | 9 ($559.924) |
+| Total vendido | $9.510.770 |
+| Facturas emitidas | 76 |
+| Facturas pendientes | 16 ($1.336.003) |
 | Promedio días de pago | 34 |
 | Último pago | 2026-03-30 |
 
 ## Estado de cuenta
 
-- 9 factura(s) pendiente(s) por $559.924
+- 16 factura(s) pendiente(s) por $1.336.003
 - Último pago registrado: 2026-03-30
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-08-27**
-- Frecuencia de compra: ~1 factura cada **9 días**
+- Frecuencia de compra: ~1 factura cada **8 días**
 - Comportamiento de pago: **normal** (34 días promedio)
 - Producto principal: **Barril 30L Cream Ale**
 
@@ -45,6 +45,9 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-06-03: ⚠️ 12 factura(s) vencida(s) (>30 días): #4650, #4657, #4165, #4173, #4610, #4222, #4662, #4491, #4619, #4568, #4633, #4639 por $839.885.
+- 2026-06-03: 📄 7 factura(s) nueva(s) desde 2026-04-12.
+- 2026-06-03: 📈 Deuda pendiente aumentó en $776.079.
 - 2026-04-12: ⚠️ 6 factura(s) vencida(s) (>30 días): #4165, #4173, #4610, #4222, #4491, #4568 por $139.981.
 - 2026-04-12: 📄 1 factura(s) nueva(s) desde 2026-04-12.
 - 2026-04-12: 📈 Deuda pendiente aumentó en $139.981.
