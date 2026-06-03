@@ -157,6 +157,44 @@ MCP server configurado en `.mcp.json` para queries ad-hoc via `@modelcontextprot
 
 ---
 
+## Estructura de facturación — CRÍTICO para cálculos de ingresos
+
+Zigurat divide cada venta de barril en **dos líneas dentro de la misma factura**:
+
+| Línea | Descripción | Precio ejemplo | Impuestos |
+|-------|-------------|---------------|-----------|
+| 1 | Producto (ej: "Barril 30L Cream Ale") | $20.000 neto | IVA 19% + Impuesto Adicional 20,5% (ILA) |
+| 2 | "Logistica" | $35.370 neto | Solo IVA 19% |
+
+**El precio real del barril es la SUMA de ambas líneas: $55.370 neto ($69.990 total con impuestos).**
+
+Esta estructura se usa para optimizar la carga tributaria: el ILA (20,5%) solo aplica al ítem de cerveza, no a logística.
+
+### Consecuencias para queries y cálculos:
+
+- **Nunca usar `precio_unitario` de la tabla `productos` para estimar el precio de venta** — solo refleja una parte del precio real.
+- **Para calcular ingresos reales por factura**: usar `COALESCE(monto_neto_ajustado, monto_neto)` de la tabla `ventas` — ya incluye ambas líneas sumadas.
+- **Para calcular el precio real por barril**: dividir el neto de la factura por el número de barriles vendidos (contar solo el ítem de cerveza, no el de logística).
+- **El ítem "Logistica" en `productos` NO es un servicio separado** — es parte del precio de la cerveza disfrazado para reducir ILA.
+- **`impuesto_adicional` en `ventas`** = ILA (20,5%) aplicado solo sobre el valor neto del ítem cerveza.
+
+### Precios de venta por barril 30L (neto, confirmados por el productor)
+
+| Cerveza | Ítem cerveza | Ítem logística | **Total neto** | Total con impuestos |
+|---------|-------------|----------------|---------------|---------------------|
+| Cream Ale | $20.000 | $35.370 | **$55.370** | $69.990 |
+| Scotch Ale | $20.000 | $35.370 | **$55.370** | $69.990 |
+| Stout Café/Cacao | $25.000 | $50.000 | **$75.000** | $94.375 |
+| Paint it Black | $38.000 | $60.000 | **$98.000** | $124.410 |
+
+### Estructura de costos de producción
+
+- **Mano de obra:** $300.000/semana = $300.000/lote (1 lote/semana, costo de retiros del productor y socio)
+- **Servicios variables:** $185.000/lote (agua, luz, gas)
+- **Lote estándar:** 540 litros → 513 litros envasables (5% merma) → ~17 barriles de 30L
+
+---
+
 ## Reglas críticas para queries SQL
 
 Aplicar **siempre** al construir cualquier SQL sobre esta base de datos:
