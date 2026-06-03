@@ -17,6 +17,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import date, timedelta
+from calendar import monthrange
 from collections import defaultdict
 
 # Force UTF-8 output on Windows so client names with special characters print correctly.
@@ -125,16 +126,48 @@ def obtener_facturas_pendientes(cur):
     return cur.fetchall()
 
 
-def obtener_gastos_pendientes(cur, hasta):
-    """Retorna cuentas_por_pagar pendientes hasta la fecha indicada."""
+def obtener_gastos_pendientes(cur, hoy, horizonte):
+    """Retorna gastos a pagar en el horizonte de 4 semanas.
+
+    - Gastos no recurrentes: los que vencen entre hoy y horizonte.
+    - Gastos recurrentes mensuales: proyecta la ocurrencia del mes actual
+      y del siguiente si cae dentro del horizonte (el día de mes viene
+      guardado en fecha_vencimiento).
+    """
+    # Gastos puntuales pendientes dentro de la ventana
     cur.execute("""
         SELECT id, descripcion, proveedor, monto, fecha_vencimiento, categoria
         FROM cuentas_por_pagar
         WHERE pagado = FALSE
-          AND fecha_vencimiento <= %s
+          AND (recurrente = FALSE OR recurrente IS NULL)
+          AND fecha_vencimiento BETWEEN %s AND %s
         ORDER BY fecha_vencimiento
-    """, (hasta,))
-    return cur.fetchall()
+    """, (hoy, horizonte))
+    gastos = list(cur.fetchall())
+
+    # Gastos recurrentes mensuales: proyectar próximas ocurrencias
+    cur.execute("""
+        SELECT id, descripcion, proveedor, monto, fecha_vencimiento, categoria
+        FROM cuentas_por_pagar
+        WHERE recurrente = TRUE
+          AND periodicidad = 'mensual'
+    """)
+    for row in cur.fetchall():
+        dia_mes = row['fecha_vencimiento'].day
+        # Revisar los próximos 2 meses para cubrir el horizonte de 4 semanas
+        for delta_m in range(3):
+            mes_abs = hoy.month + delta_m
+            anio = hoy.year + (mes_abs - 1) // 12
+            mes = (mes_abs - 1) % 12 + 1
+            dia = min(dia_mes, monthrange(anio, mes)[1])
+            fecha_proj = date(anio, mes, dia)
+            if hoy <= fecha_proj <= horizonte:
+                ocurrencia = dict(row)
+                ocurrencia['fecha_vencimiento'] = fecha_proj
+                gastos.append(ocurrencia)
+
+    gastos.sort(key=lambda x: x['fecha_vencimiento'])
+    return gastos
 
 
 def semana_de(d, inicio_periodo):
@@ -189,7 +222,7 @@ def main():
 
             avg_dias = obtener_avg_dias_por_cliente(cur)
             facturas = obtener_facturas_pendientes(cur)
-            gastos = obtener_gastos_pendientes(cur, horizonte)
+            gastos = obtener_gastos_pendientes(cur, hoy, horizonte)
 
     conn.close()
 
