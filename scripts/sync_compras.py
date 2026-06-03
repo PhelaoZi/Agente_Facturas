@@ -111,6 +111,12 @@ ITEM_MAP = {
 
     # ── Clean Ice SA ──────────────────────────────────────────────────────────
     "co2 anhidrido":          ("CO2",                                     1),
+
+    # ── Limpieza (Mundo Cervecero y Almacén Cervecero) ────────────────────────
+    "base peracetico":        ("Desinfectante Peracetico",                 1),   # precio por litro
+    "detergente alcalino 5":  ("Detergente Alcalino",                      5),   # bidón 5 kg
+    "detergente alcalino 6":  ("Detergente Alcalino",                      6),   # bidón 6 kg
+    "detergente alcalino 23": ("Detergente Alcalino",                     23),   # bidón 23 kg
 }
 
 
