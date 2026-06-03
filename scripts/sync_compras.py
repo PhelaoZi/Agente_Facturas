@@ -70,10 +70,20 @@ PROVEEDORES_GASTOS = {
 # precio_neto_unitario = PrcItem / unidades_por_paquete
 ITEM_MAP = {
     # ── Almacén Cervecero ──────────────────────────────────────────────────────
-    "fermoale ay4":           ("Levadura AY4",                        500),
-    "lupulo100gr magnum":     ("Lupulo Magnum",                       100),
+    "fermoale ay4":           ("Levadura AY4",                        500),   # saco 500gr
+    "lev500gr us-05":         ("Levadura US-05",                      500),   # saco 500gr
+    "pinnacle american ale":  ("Levadura Pinnacle",                   500),   # saco 500gr
+    "lupulo100gr magnum":     ("Lupulo Magnum",                       100),   # bolsa 100gr
+    "lupulo1kg magnum":       ("Lupulo Magnum",                      1000),   # bolsa 1kg
     "polyclar brewbrite":     ("Clarificante Polyclar coccion",        100),
     "polyclar10":             ("Clarificante Polyclar 10 maduracion",  100),
+    "spindasol sb3 1 kilo":   ("Clarificante SB3 maduracion",        1000),   # 1L = 1000ml
+    "spindasol sb3 10k":      ("Clarificante SB3 maduracion",       10000),   # 10L = 10000ml
+    "endozym aldc":           ("Endozym ALDC",                          1),   # unidad (1L aprox)
+    # maltas Almacén (sacos 25kg, "MD S" = molido doble saco)
+    "aroma 150 md s":         ("Malta Arome",                         25),
+    "cara 50 md s":           ("Malta Cara 50",                       25),
+    "biscuit 50 md s":        ("Malta Biscuit",                       25),
 
     # ── Mundo Cervecero (precios por kg directamente) ─────────────────────────
     "malta chocolate":        ("Malta Chocolate",                        1),
@@ -134,7 +144,17 @@ ITEM_MAP = {
     "caja sola / botella 330cc":  ("Caja 24 botellas",                      1),
 
     # ── Envasado — barriles PET ───────────────────────────────────────────────
-    "petainer keg 30l":       ("Barril PET 30L",                            1),  # precio por unidad
+    "petainer keg 30l":           ("Barril PET 30L",   1),   # Petainer Chile
+    "barril plastico one way 30l": ("Barril PET 30L",  1),   # MACC SPA
+
+    # ── Envasado — cajas MACC ─────────────────────────────────────────────────
+    "caja sin separadores para 24": ("Caja 24 botellas", 1),
+
+    # ── Clarificantes adicionales ─────────────────────────────────────────────
+    "super f 500 ml":         ("Clarificante Super F", 500),  # 500ml → precio/ml
+
+    # ── Limpieza adicional ────────────────────────────────────────────────────
+    "desincrustante concentrado": ("Desincrustante",   1),    # precio por litro
 }
 
 
