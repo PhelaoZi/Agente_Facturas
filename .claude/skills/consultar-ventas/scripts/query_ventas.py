@@ -9,10 +9,16 @@ Tipos:
   periodo   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Ventas por rango
   listado   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Facturas individuales por rango
   facturas  --nombre NOMBRE                          Facturas de un cliente
+  pendientes [--nombre NOMBRE]                        Facturas SIN pago (deuda real)
+  pagadas    [--nombre NOMBRE]                        Facturas ya cobradas
   total                                              Total global vendido
   producto  --nombre NOMBRE                          Buscar por producto
   detalle   --folio FOLIO                            Detalle de una factura
   resumen                                            Estadisticas generales
+
+Estado de pago: una factura esta pagada <=> ventas.fecha_pago IS NOT NULL.
+NUNCA determinar el estado de cobro con un JOIN a conciliaciones (es solo
+evidencia bancaria de respaldo y puede estar incompleta).
 """
 import argparse
 import sys
@@ -201,6 +207,69 @@ def q_total(cur):
     print(f"Facturas emitidas: {row[0]}")
 
 
+def _filtro_cliente(nombre):
+    """Construye filtro SQL por nombre o RUT. Retorna (sql, params)."""
+    if not nombre:
+        return "", []
+    return ("AND (c.razon_social ILIKE %s OR v.rut_cliente ILIKE %s)",
+            [f"%{nombre}%", f"%{nombre}%"])
+
+
+def q_pendientes(cur, nombre=None):
+    """Facturas SIN pago. Fuente de verdad unica del estado de cobro:
+    una factura esta pagada <=> fecha_pago IS NOT NULL.
+    NO usar JOIN a conciliaciones (evidencia incompleta: los pagos
+    importados desde Excel no generan conciliacion)."""
+    filtro, params = _filtro_cliente(nombre)
+    cur.execute(f"""
+        SELECT v.folio, v.fecha, c.razon_social,
+               COALESCE(v.monto_total_ajustado, v.monto_total) AS total,
+               (CURRENT_DATE - v.fecha) AS dias_vencida
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND v.fecha_pago IS NULL
+          AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+          {filtro}
+        ORDER BY v.fecha
+    """, params)
+    rows = cur.fetchall()
+    if not rows:
+        obj = f" para '{nombre}'" if nombre else ""
+        print(f"No hay facturas pendientes de pago{obj}.")
+        return
+    titulo = f" — {nombre}" if nombre else ""
+    print(f"Facturas pendientes de pago{titulo}:\n")
+    table(["Folio", "Fecha", "Cliente", "Total", "Dias vencida"], rows, mcols=[3])
+    print(f"\nTotal: {len(rows)} facturas | {fmt(sum(r[3] for r in rows))} pendiente de cobro")
+
+
+def q_pagadas(cur, nombre=None):
+    """Facturas ya pagadas (fecha_pago IS NOT NULL)."""
+    filtro, params = _filtro_cliente(nombre)
+    cur.execute(f"""
+        SELECT v.folio, v.fecha, v.fecha_pago, c.razon_social,
+               COALESCE(v.monto_total_ajustado, v.monto_total) AS total,
+               v.dias_pago
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND v.fecha_pago IS NOT NULL
+          AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+          {filtro}
+        ORDER BY v.fecha_pago DESC
+    """, params)
+    rows = cur.fetchall()
+    if not rows:
+        obj = f" para '{nombre}'" if nombre else ""
+        print(f"No hay facturas pagadas{obj}.")
+        return
+    titulo = f" — {nombre}" if nombre else ""
+    print(f"Facturas pagadas{titulo}:\n")
+    table(["Folio", "Emision", "Fecha pago", "Cliente", "Total", "Dias"], rows, mcols=[4])
+    print(f"\nTotal: {len(rows)} facturas | {fmt(sum(r[4] for r in rows))} cobrado")
+
+
 def q_producto(cur, nombre):
     cur.execute("""
         SELECT p.folio, v.fecha, c.razon_social, p.descripcion,
@@ -277,8 +346,8 @@ def q_resumen(cur):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("tipo", choices=["ranking", "cliente", "periodo", "listado",
-                                     "facturas", "total", "producto", "detalle",
-                                     "resumen"])
+                                     "facturas", "pendientes", "pagadas", "total",
+                                     "producto", "detalle", "resumen"])
     p.add_argument("--nombre", "-n")
     p.add_argument("--limit", "-l", type=int, default=10)
     p.add_argument("--desde")
@@ -307,6 +376,10 @@ def main():
             if not args.nombre:
                 print("ERROR: --nombre requerido", file=sys.stderr); sys.exit(1)
             q_facturas(cur, args.nombre)
+        elif args.tipo == "pendientes":
+            q_pendientes(cur, args.nombre)
+        elif args.tipo == "pagadas":
+            q_pagadas(cur, args.nombre)
         elif args.tipo == "total":
             q_total(cur)
         elif args.tipo == "producto":

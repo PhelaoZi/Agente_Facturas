@@ -208,6 +208,7 @@ Aplicar **siempre** al construir cualquier SQL sobre esta base de datos:
 | `folio` puede requerir `folio::integer` | Se almacena como texto |
 | `COUNT(DISTINCT rut_cliente)` para contar clientes únicos | `COUNT(*)` cuenta facturas |
 | `impuesto_adicional` (ILA) puede ser 0 | No es obligatorio > 0 en maquila/servicios |
+| **Estado de pago: `fecha_pago IS NULL` = pendiente, `IS NOT NULL` = pagada** | **NUNCA usar JOIN a `conciliaciones` para esto** (ver sección "Estado de pago") |
 
 ### Query canónica — Ventas reales por cliente
 
@@ -234,6 +235,57 @@ ORDER BY total_real DESC;
 Las NC se guardan con **montos negativos** en `ventas`. Al sincronizar una NC, `sync_db.py` actualiza en la factura referenciada:
 - `monto_neto_ajustado` = neto original − NC
 - `monto_total_ajustado` = total original − NC
+
+---
+
+## Estado de pago de facturas — FUENTE DE VERDAD ÚNICA
+
+**Una factura está pagada ⟺ `ventas.fecha_pago IS NOT NULL`. Punto.**
+
+Esta es la única definición válida de estado de cobro. Existe porque dos
+instancias distintas del agente dieron respuestas contradictorias a "¿qué
+facturas debe el cliente X?": una miró `fecha_pago`, otra hizo `LEFT JOIN
+conciliaciones`. Ambas estaban mal.
+
+| Campo | Rol | Regla |
+|-------|-----|-------|
+| `ventas.fecha_pago` | **Fuente de verdad** del estado de cobro | `NULL` = pendiente; con fecha = pagada |
+| tabla `conciliaciones` | **Solo evidencia** bancaria de respaldo | Incompleta por diseño — NO usar para estado de pago |
+
+**Por qué `conciliaciones` NO sirve como fuente de verdad:** los pagos
+importados desde el Excel de seguimiento (`importar_pagos_excel.py`) escriben
+`fecha_pago` pero **no** generan fila en `conciliaciones`. Determinar deuda con
+un JOIN a `conciliaciones` cuenta esos pagos legítimos como deuda e infla el
+saldo de casi todos los clientes.
+
+**Invariante que debe cumplirse siempre:** toda factura con conciliación
+bancaria debe tener `fecha_pago`. Es decir, `conciliaciones ⟹ fecha_pago`.
+Auditar con `python scripts/lint_estado_pago.py` (debe reportar 0
+inconsistencias). La corrigió `migrate_backfill_fecha_pago.py` (160 facturas de
+una carga masiva del 2026-01-25 que insertó conciliaciones sin `fecha_pago`).
+
+### Cómo consultar deuda — siempre así
+
+```bash
+/consultar-ventas → pendientes --nombre "VDT SPA"   # deuda de un cliente (nombre o RUT)
+/consultar-ventas → pendientes                       # deuda total (213 facturas)
+```
+
+```sql
+-- Query canónica de facturas pendientes de cobro
+SELECT v.folio, v.fecha, c.razon_social,
+       COALESCE(v.monto_total_ajustado, v.monto_total) AS total
+FROM ventas v
+JOIN clientes c ON c.rut_cliente = v.rut_cliente
+WHERE v.tipo_documento != 61
+  AND v.fecha_pago IS NULL
+  AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+ORDER BY v.fecha;
+```
+
+> Nota: en esta BD `tipo_documento` y `folio` son **integer** (no texto). El
+> casteo `folio::integer` o comparar con `'61'` funciona igual, pero `!= 61`
+> sin comillas es lo correcto.
 
 ---
 

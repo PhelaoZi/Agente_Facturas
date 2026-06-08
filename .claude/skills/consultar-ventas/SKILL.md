@@ -25,6 +25,8 @@ cliente   --nombre "NOMBRE"                        Ventas de un cliente
 periodo   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Ventas por rango de fechas (agrupado por cliente)
 listado   --desde YYYY-MM-DD --hasta YYYY-MM-DD    Facturas individuales por rango (folio por folio)
 facturas  --nombre "NOMBRE"                        Facturas de un cliente
+pendientes [--nombre "NOMBRE"]                     Facturas SIN pago (deuda real; nombre o RUT)
+pagadas    [--nombre "NOMBRE"]                     Facturas ya cobradas
 total                                              Total global vendido
 producto  --nombre "NOMBRE"                        Buscar por producto
 detalle   --folio FOLIO                            Detalle de una factura
@@ -43,12 +45,17 @@ Analiza la pregunta del usuario y elige el comando apropiado:
 - "listado de facturas de [periodo]" → `listado --desde YYYY-MM-DD --hasta YYYY-MM-DD`
 - "que facturas emiti en [mes]" → `listado --desde YYYY-MM-DD --hasta YYYY-MM-DD`
 - "facturas de [nombre]" → `facturas --nombre "nombre"`
+- "que facturas debe [nombre]?" / "deuda de [nombre]" / "facturas sin pago de [nombre]" / "cuanto debe [nombre]?" → `pendientes --nombre "nombre"`
+- "facturas pendientes" / "deuda total" / "quien me debe" → `pendientes`
+- "facturas pagadas de [nombre]" / "que ya me pago [nombre]" → `pagadas --nombre "nombre"`
 - "total vendido" → `total`
 - "busca [producto]" → `producto --nombre "producto"`
 - "factura [folio]" → `detalle --folio FOLIO`
 - "resumen" → `resumen`
 
 **Regla clave:** Cuando el usuario pida facturas individuales (folios, listado, "todas las facturas de X mes") usar `listado`. Cuando pida totales o resumen por cliente de un periodo, usar `periodo`.
+
+**Estado de pago / deuda — CRÍTICO:** una factura está pagada ⟺ `fecha_pago IS NOT NULL`. Para CUALQUIER pregunta sobre deuda, cobros o facturas sin pago, usar SIEMPRE `pendientes` (nunca SQL ad-hoc, y NUNCA un JOIN a `conciliaciones` — es evidencia incompleta y da deudas infladas).
 
 Ejecuta el comando de inmediato. NUNCA construyas SQL manualmente — SIEMPRE usa el script.
 
