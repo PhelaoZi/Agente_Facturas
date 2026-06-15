@@ -439,8 +439,16 @@ Editables por receta.
 Backup diario automatizado (Tarea Programada de Windows "Zigurat - Backup BD",
 23:00, corre al encender si el notebook estaba apagado):
 
+- **Cuándo corre:** la tarea es `LogonType: Interactive` + `StartWhenAvailable`.
+  Corre a las 23:00 si hay sesión iniciada; si el notebook estaba apagado o sin
+  sesión, corre apenas inicias sesión ese día. Es decir: **basta con que
+  prendas el notebook e inicies sesión en el día para tener backup.** No corre
+  con la sesión cerrada (aceptable para un equipo mono-usuario).
 - **Script:** `scripts/backup_db.py` — pg_dump formato custom comprimido,
-  verificado con `pg_restore --list` antes de quedar firme.
+  verificado con `pg_restore --list` (lee el header/TOC: detecta un dump
+  truncado o sin cabecera, no corrupción interna de bloques) antes de quedar
+  firme. La garantía real de restaurabilidad se validó restaurando a una BD
+  temporal y comparando conteos (ver el plan).
 - **Destino:** `C:\Users\cdela\OneDrive\Backups\zigurat-db\` (OneDrive lo sube
   a la nube). `_estado.json` ahí mismo registra el último intento y último OK.
 - **Retención:** 60 días de dumps diarios + el primer dump de cada mes para

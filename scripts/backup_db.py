@@ -4,9 +4,10 @@
 backup_db.py - Zigurat ERP
 Backup diario verificado de la BD dte_facturas_chile a OneDrive.
 
-Flujo: pg_dump -Fc -> archivo .part -> verificación con pg_restore --list ->
-renombrar a .dump -> retención (60 días + primer dump de cada mes) ->
-_estado.json + logs/backup_db.log.
+Flujo: pg_dump -Fc -> archivo .part -> verificación con pg_restore --list
+(lee el header/TOC: detecta un dump truncado o sin cabecera, no corrupción
+interna de bloques) -> renombrar a .dump -> retención (60 días + primer dump
+de cada mes) -> _estado.json + logs/backup_db.log.
 
 Uso:
     python scripts/backup_db.py
