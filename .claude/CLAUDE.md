@@ -68,6 +68,9 @@ python scripts/migrate_gastos_operativos.py   # Crea tabla gastos_operativos
 python scripts/migrate_costos_v3.py           # Corrige precios maestro_insumos + agrega insumos
 python scripts/cargar_recetas_v2.py           # Recarga 4 recetas desde Recetas.xlsx
 python scripts/sync_compras.py                # Procesa XMLs de compras (usar /sync-compras)
+
+# Backup de la base de datos
+python scripts/backup_db.py                   # Backup manual inmediato (la tarea corre sola a las 23:00)
 ```
 
 ---
@@ -428,6 +431,27 @@ Editables por receta.
 - No registra órdenes de producción.
 - No prorratea costos fijos / overhead (capa C).
 - No procesa DTEs recibidos (sub-proyecto aparte).
+
+---
+
+## Backup de la base de datos
+
+Backup diario automatizado (Tarea Programada de Windows "Zigurat - Backup BD",
+23:00, corre al encender si el notebook estaba apagado):
+
+- **Script:** `scripts/backup_db.py` — pg_dump formato custom comprimido,
+  verificado con `pg_restore --list` antes de quedar firme.
+- **Destino:** `C:\Users\cdela\OneDrive\Backups\zigurat-db\` (OneDrive lo sube
+  a la nube). `_estado.json` ahí mismo registra el último intento y último OK.
+- **Retención:** 60 días de dumps diarios + el primer dump de cada mes para
+  siempre.
+- **Log:** `logs/backup_db.log`.
+- **Restaurar:** procedimiento completo en el docstring de `backup_db.py`
+  (createdb + pg_restore; selectivo por tabla con `-t`).
+- **Reinstalar la tarea** (cambio de hora o de ruta del proyecto):
+  `powershell -ExecutionPolicy Bypass -File scripts\instalar_tarea_backup.ps1`.
+
+El spec completo está en `docs/superpowers/specs/2026-06-11-backup-bd-design.md`.
 
 ---
 
