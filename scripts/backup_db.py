@@ -73,3 +73,28 @@ def fecha_de_nombre(nombre: str) -> date | None:
     """
     m = PATRON_DUMP.match(nombre)
     return date.fromisoformat(m.group(1)) if m else None
+
+
+# --- Retención -----------------------------------------------------------------
+
+def archivos_a_borrar(nombres: list[str], hoy: date) -> list[str]:
+    """Aplica la política de retención sobre una lista de nombres de archivo.
+
+    Se borra un dump si tiene más de RETENCION_DIAS y NO es el más antiguo de
+    su mes calendario (el primero de cada mes se conserva para siempre).
+    Nombres que no calzan con PATRON_DUMP nunca se borran (defensivo).
+    """
+    validos = [(n, f) for n in nombres if (f := fecha_de_nombre(n)) is not None]
+
+    # El más antiguo de cada mes. En este formato de nombre, orden
+    # lexicográfico == orden cronológico (incluida la hora HHMM).
+    primero_del_mes: dict[tuple[int, int], str] = {}
+    for nombre, fecha in sorted(validos):
+        primero_del_mes.setdefault((fecha.year, fecha.month), nombre)
+    conservar = set(primero_del_mes.values())
+
+    return [
+        nombre
+        for nombre, fecha in validos
+        if (hoy - fecha).days > RETENCION_DIAS and nombre not in conservar
+    ]

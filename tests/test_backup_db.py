@@ -5,6 +5,7 @@ from datetime import date, datetime
 import pytest
 
 from scripts.backup_db import (
+    archivos_a_borrar,
     fecha_de_nombre,
     nombre_dump,
 )
@@ -27,3 +28,44 @@ def test_fecha_de_nombre_invalido_devuelve_none():
     assert fecha_de_nombre("_estado.json") is None
     assert fecha_de_nombre("otro_backup_2026-06-11.dump") is None
     assert fecha_de_nombre("zigurat_dte_2026-06-11_2300.dump.part") is None
+
+
+# --- archivos_a_borrar (retención) --------------------------------------------
+
+def test_retencion_conserva_recientes():
+    hoy = date(2026, 6, 11)
+    nombres = ["zigurat_dte_2026-06-01_2300.dump"]  # 10 días de antigüedad
+    assert archivos_a_borrar(nombres, hoy) == []
+
+
+def test_retencion_borra_viejos_que_no_son_primeros_del_mes():
+    hoy = date(2026, 6, 11)
+    nombres = [
+        "zigurat_dte_2026-03-05_2300.dump",  # más antiguo de marzo: se conserva
+        "zigurat_dte_2026-03-20_2300.dump",  # viejo y no primero: se borra
+    ]
+    assert archivos_a_borrar(nombres, hoy) == ["zigurat_dte_2026-03-20_2300.dump"]
+
+
+def test_retencion_conserva_primero_de_cada_mes():
+    hoy = date(2026, 6, 11)
+    nombres = [
+        "zigurat_dte_2026-01-02_2300.dump",
+        "zigurat_dte_2026-02-01_2300.dump",
+        "zigurat_dte_2026-03-01_2300.dump",
+    ]
+    assert archivos_a_borrar(nombres, hoy) == []
+
+
+def test_retencion_mismo_dia_conserva_solo_el_mas_antiguo_del_mes():
+    hoy = date(2026, 12, 31)
+    nombres = [
+        "zigurat_dte_2026-03-01_0900.dump",
+        "zigurat_dte_2026-03-01_2300.dump",
+    ]
+    assert archivos_a_borrar(nombres, hoy) == ["zigurat_dte_2026-03-01_2300.dump"]
+
+
+def test_retencion_nunca_borra_nombres_desconocidos():
+    hoy = date(2030, 1, 1)
+    assert archivos_a_borrar(["notas.txt", "_estado.json"], hoy) == []
