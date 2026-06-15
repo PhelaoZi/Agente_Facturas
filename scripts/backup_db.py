@@ -135,3 +135,42 @@ def localizar_pg_dump(base: Path = BASE_POSTGRES) -> Path:
         "No se encontró pg_dump.exe. Define PG_DUMP_PATH en el .env o "
         "instala PostgreSQL en C:\\Program Files\\PostgreSQL."
     )
+
+
+# --- Archivo de estado (consumible por el dashboard en el futuro) ----------------
+
+def escribir_estado(
+    backup_dir,
+    resultado: str,
+    archivo: str | None = None,
+    tamano_bytes: int | None = None,
+    duracion_segundos: float | None = None,
+    error: str | None = None,
+) -> None:
+    """Escribe _estado.json con el resultado del último intento.
+
+    En caso de error preserva `ultimo_ok` del estado anterior, para poder
+    responder "¿hace cuánto que no tengo un backup bueno?".
+    """
+    ruta = Path(backup_dir) / "_estado.json"
+    ahora = datetime.now().isoformat(timespec="seconds")
+
+    ultimo_ok = ahora if resultado == "ok" else None
+    if resultado != "ok" and ruta.exists():
+        try:
+            ultimo_ok = json.loads(ruta.read_text(encoding="utf-8")).get("ultimo_ok")
+        except (json.JSONDecodeError, OSError):
+            ultimo_ok = None  # estado previo ilegible: no inventar fechas
+
+    estado = {
+        "ultimo_intento": ahora,
+        "resultado": resultado,
+        "ultimo_ok": ultimo_ok,
+        "archivo": archivo,
+        "tamano_bytes": tamano_bytes,
+        "duracion_segundos": duracion_segundos,
+        "error": error,
+    }
+    ruta.write_text(
+        json.dumps(estado, indent=2, ensure_ascii=False), encoding="utf-8"
+    )

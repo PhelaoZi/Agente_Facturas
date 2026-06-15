@@ -6,6 +6,7 @@ import pytest
 
 from scripts.backup_db import (
     archivos_a_borrar,
+    escribir_estado,
     fecha_de_nombre,
     localizar_pg_dump,
     nombre_dump,
@@ -101,3 +102,41 @@ def test_localizar_pg_dump_sin_nada_falla(tmp_path, monkeypatch):
     monkeypatch.setattr("scripts.backup_db.shutil.which", lambda _: None)
     with pytest.raises(FileNotFoundError, match="No se encontró pg_dump"):
         localizar_pg_dump(base=tmp_path / "vacio")
+
+
+# --- escribir_estado -------------------------------------------------------------
+
+def _leer_estado(carpeta):
+    return json.loads((carpeta / "_estado.json").read_text(encoding="utf-8"))
+
+
+def test_escribir_estado_ok(tmp_path):
+    escribir_estado(
+        tmp_path, "ok", archivo="x.dump", tamano_bytes=100, duracion_segundos=1.5
+    )
+    estado = _leer_estado(tmp_path)
+    assert estado["resultado"] == "ok"
+    assert estado["ultimo_ok"] == estado["ultimo_intento"]
+    assert estado["archivo"] == "x.dump"
+    assert estado["tamano_bytes"] == 100
+    assert estado["error"] is None
+
+
+def test_escribir_estado_error_preserva_ultimo_ok(tmp_path):
+    escribir_estado(
+        tmp_path, "ok", archivo="x.dump", tamano_bytes=100, duracion_segundos=1.5
+    )
+    ok_previo = _leer_estado(tmp_path)["ultimo_ok"]
+
+    escribir_estado(tmp_path, "error", error="pg_dump falló")
+    estado = _leer_estado(tmp_path)
+    assert estado["resultado"] == "error"
+    assert estado["ultimo_ok"] == ok_previo
+    assert estado["error"] == "pg_dump falló"
+
+
+def test_escribir_estado_error_sin_estado_previo(tmp_path):
+    escribir_estado(tmp_path, "error", error="sin conexión")
+    estado = _leer_estado(tmp_path)
+    assert estado["resultado"] == "error"
+    assert estado["ultimo_ok"] is None
