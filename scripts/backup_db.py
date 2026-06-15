@@ -179,3 +179,118 @@ def escribir_estado(
     ruta.write_text(
         json.dumps(estado, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+
+# --- Log -------------------------------------------------------------------------
+
+def log(mensaje: str) -> None:
+    """Imprime y anexa a logs/backup_db.log con timestamp."""
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    linea = f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {mensaje}"
+    print(linea)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(linea + "\n")
+
+
+# --- Dump y verificación -----------------------------------------------------------
+
+def ejecutar_dump(pg_dump: Path, destino_part: Path) -> None:
+    """Corre pg_dump -Fc hacia el archivo .part.
+
+    La contraseña va en PGPASSWORD del entorno del subproceso: nunca en la
+    línea de comandos (sería visible en el administrador de tareas).
+    """
+    env = {**os.environ, "PGPASSWORD": os.environ.get("DB_PASSWORD", "")}
+    cmd = [
+        str(pg_dump),
+        "-Fc",
+        "-h", os.environ.get("DB_HOST", "localhost"),
+        "-p", os.environ.get("DB_PORT", "5432"),
+        "-U", os.environ.get("DB_USER", "postgres"),
+        "-d", os.environ.get("DB_NAME", "dte_facturas_chile"),
+        "-f", str(destino_part),
+    ]
+    r = subprocess.run(
+        cmd, env=env, capture_output=True, text=True, timeout=TIMEOUT_SEGUNDOS
+    )
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"pg_dump falló (código {r.returncode}): {r.stderr.strip()}"
+        )
+
+
+def verificar_dump(pg_dump: Path, archivo: Path) -> None:
+    """Valida que el dump sea legible con pg_restore --list.
+
+    Un backup ilegible es peor que ninguno: da falsa seguridad.
+    """
+    pg_restore = pg_dump.parent / "pg_restore.exe"
+    if not pg_restore.exists():
+        raise FileNotFoundError(f"No existe pg_restore junto a pg_dump: {pg_restore}")
+    r = subprocess.run(
+        [str(pg_restore), "--list", str(archivo)],
+        capture_output=True, text=True, timeout=TIMEOUT_SEGUNDOS,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"Verificación falló, dump ilegible: {r.stderr.strip()}")
+
+
+def aplicar_retencion(backup_dir: Path, hoy: date) -> list[str]:
+    """Borra del disco los dumps que la política de retención descarta."""
+    nombres = [p.name for p in Path(backup_dir).glob("*.dump")]
+    borrar = archivos_a_borrar(nombres, hoy)
+    for nombre in borrar:
+        (Path(backup_dir) / nombre).unlink()
+        log(f"Retención: borrado {nombre}")
+    return borrar
+
+
+# --- Main ------------------------------------------------------------------------
+
+def main() -> int:
+    inicio = time.monotonic()
+    backup_dir = Path(os.environ.get("BACKUP_DIR", DEFAULT_BACKUP_DIR))
+    try:
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        pg_dump = localizar_pg_dump()
+        momento = datetime.now()
+        nombre = nombre_dump(momento)
+        destino = backup_dir / nombre
+        part = backup_dir / (nombre + ".part")
+
+        log(f"Iniciando backup -> {destino}")
+        try:
+            ejecutar_dump(pg_dump, part)
+            verificar_dump(pg_dump, part)
+        except BaseException:
+            # Nunca dejar un dump corrupto o a medias en la carpeta.
+            part.unlink(missing_ok=True)
+            raise
+        part.rename(destino)
+
+        tamano = destino.stat().st_size
+        borrados = aplicar_retencion(backup_dir, momento.date())
+        duracion = round(time.monotonic() - inicio, 1)
+        escribir_estado(
+            backup_dir, "ok",
+            archivo=nombre, tamano_bytes=tamano, duracion_segundos=duracion,
+        )
+        log(
+            f"Backup OK: {nombre} ({tamano / 1024:.0f} KB, {duracion}s, "
+            f"retención borró {len(borrados)} archivo(s))"
+        )
+        return 0
+    except Exception as e:
+        duracion = round(time.monotonic() - inicio, 1)
+        try:
+            escribir_estado(
+                backup_dir, "error", duracion_segundos=duracion, error=str(e)
+            )
+        except OSError as e2:
+            log(f"ERROR adicional al escribir _estado.json: {e2}")
+        log(f"ERROR en backup: {e}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
