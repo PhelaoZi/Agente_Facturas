@@ -32,6 +32,13 @@ def test_fecha_de_nombre_invalido_devuelve_none():
     assert fecha_de_nombre("zigurat_dte_2026-06-11_2300.dump.part") is None
 
 
+def test_fecha_de_nombre_fecha_imposible_devuelve_none():
+    # El patrón acepta cualquier \d{4}-\d{2}-\d{2}, pero una fecha imposible
+    # (mes 13, día 30 de febrero) debe tratarse como nombre ajeno, no reventar.
+    assert fecha_de_nombre("zigurat_dte_2026-13-01_2300.dump") is None
+    assert fecha_de_nombre("zigurat_dte_2026-02-30_2300.dump") is None
+
+
 # --- archivos_a_borrar (retención) --------------------------------------------
 
 def test_retencion_conserva_recientes():
@@ -90,7 +97,7 @@ def test_localizar_pg_dump_env_roto_falla(tmp_path, monkeypatch):
 
 def test_localizar_pg_dump_elige_version_mas_alta(tmp_path, monkeypatch):
     monkeypatch.delenv("PG_DUMP_PATH", raising=False)
-    for version in ("9", "15", "16"):
+    for version in ("9", "10", "16"):
         bin_dir = tmp_path / version / "bin"
         bin_dir.mkdir(parents=True)
         (bin_dir / "pg_dump.exe").write_bytes(b"")

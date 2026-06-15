@@ -72,7 +72,12 @@ def fecha_de_nombre(nombre: str) -> date | None:
     Se parsea del nombre y no del mtime porque OneDrive puede alterar mtimes.
     """
     m = PATRON_DUMP.match(nombre)
-    return date.fromisoformat(m.group(1)) if m else None
+    if not m:
+        return None
+    try:
+        return date.fromisoformat(m.group(1))
+    except ValueError:
+        return None  # fecha imposible (ej. mes 13): tratar como nombre ajeno
 
 
 # --- Retención -----------------------------------------------------------------
@@ -140,7 +145,7 @@ def localizar_pg_dump(base: Path = BASE_POSTGRES) -> Path:
 # --- Archivo de estado (consumible por el dashboard en el futuro) ----------------
 
 def escribir_estado(
-    backup_dir,
+    backup_dir: Path | str,
     resultado: str,
     archivo: str | None = None,
     tamano_bytes: int | None = None,
