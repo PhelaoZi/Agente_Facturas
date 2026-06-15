@@ -98,3 +98,40 @@ def archivos_a_borrar(nombres: list[str], hoy: date) -> list[str]:
         for nombre, fecha in validos
         if (hoy - fecha).days > RETENCION_DIAS and nombre not in conservar
     ]
+
+
+# --- Localización de binarios de PostgreSQL --------------------------------------
+
+def localizar_pg_dump(base: Path = BASE_POSTGRES) -> Path:
+    """Encuentra pg_dump.exe. Orden: PG_DUMP_PATH del .env > versión más alta
+    instalada en Program Files > PATH del sistema.
+
+    Si PG_DUMP_PATH está definido pero no existe, es un error explícito:
+    una configuración rota no debe degradar silenciosamente a otra cosa.
+    """
+    configurado = os.environ.get("PG_DUMP_PATH")
+    if configurado:
+        ruta = Path(configurado)
+        if ruta.exists():
+            return ruta
+        raise FileNotFoundError(
+            f"PG_DUMP_PATH apunta a un archivo inexistente: {configurado}"
+        )
+
+    candidatos = sorted(
+        base.glob("*/bin/pg_dump.exe"),
+        key=lambda p: int(p.parent.parent.name)
+        if p.parent.parent.name.isdigit()
+        else -1,
+    )
+    if candidatos:
+        return candidatos[-1]
+
+    en_path = shutil.which("pg_dump")
+    if en_path:
+        return Path(en_path)
+
+    raise FileNotFoundError(
+        "No se encontró pg_dump.exe. Define PG_DUMP_PATH en el .env o "
+        "instala PostgreSQL en C:\\Program Files\\PostgreSQL."
+    )
