@@ -211,12 +211,12 @@ def ejecutar_dump(pg_dump: Path, destino_part: Path) -> None:
         "-f", str(destino_part),
     ]
     r = subprocess.run(
-        cmd, env=env, capture_output=True, text=True, timeout=TIMEOUT_SEGUNDOS
+        cmd, env=env, capture_output=True, text=True, errors="replace",
+        timeout=TIMEOUT_SEGUNDOS,
     )
     if r.returncode != 0:
-        raise RuntimeError(
-            f"pg_dump falló (código {r.returncode}): {r.stderr.strip()}"
-        )
+        detalle = ((r.stderr or "").strip().splitlines() or ["(sin detalle)"])[-1]
+        raise RuntimeError(f"pg_dump falló (código {r.returncode}): {detalle[:300]}")
 
 
 def verificar_dump(pg_dump: Path, archivo: Path) -> None:
@@ -229,20 +229,27 @@ def verificar_dump(pg_dump: Path, archivo: Path) -> None:
         raise FileNotFoundError(f"No existe pg_restore junto a pg_dump: {pg_restore}")
     r = subprocess.run(
         [str(pg_restore), "--list", str(archivo)],
-        capture_output=True, text=True, timeout=TIMEOUT_SEGUNDOS,
+        capture_output=True, text=True, errors="replace",
+        timeout=TIMEOUT_SEGUNDOS,
     )
     if r.returncode != 0:
-        raise RuntimeError(f"Verificación falló, dump ilegible: {r.stderr.strip()}")
+        detalle = ((r.stderr or "").strip().splitlines() or ["(sin detalle)"])[-1]
+        raise RuntimeError(f"Verificación falló, dump ilegible: {detalle[:300]}")
 
 
 def aplicar_retencion(backup_dir: Path, hoy: date) -> list[str]:
     """Borra del disco los dumps que la política de retención descarta."""
     nombres = [p.name for p in Path(backup_dir).glob("*.dump")]
     borrar = archivos_a_borrar(nombres, hoy)
+    borrados = []
     for nombre in borrar:
-        (Path(backup_dir) / nombre).unlink()
-        log(f"Retención: borrado {nombre}")
-    return borrar
+        try:
+            (Path(backup_dir) / nombre).unlink()
+            log(f"Retención: borrado {nombre}")
+            borrados.append(nombre)
+        except OSError as e:
+            log(f"Retención: no se pudo borrar {nombre}: {e}")
+    return borrados
 
 
 # --- Main ------------------------------------------------------------------------
@@ -264,9 +271,12 @@ def main() -> int:
             verificar_dump(pg_dump, part)
         except BaseException:
             # Nunca dejar un dump corrupto o a medias en la carpeta.
-            part.unlink(missing_ok=True)
+            try:
+                part.unlink(missing_ok=True)
+            except OSError as e_limpieza:
+                log(f"No se pudo borrar el .part tras fallo: {e_limpieza}")
             raise
-        part.rename(destino)
+        os.replace(part, destino)   # sobrescribe atómicamente en Windows (Path.rename falla si destino existe)
 
         tamano = destino.stat().st_size
         borrados = aplicar_retencion(backup_dir, momento.date())
