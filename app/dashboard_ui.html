@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zigurat · Centro de Comando</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0c10; --bg2:#0e1016; --panel:#141821; --panel2:#1a1f2b;
+    --border:#252b39; --border2:#30374a;
+    --text:#e8eaf0; --muted:#8d93a6; --muted2:#5f6678;
+    --accent:#f97316; --accent2:#fb923c; --accent-dim:#7c3a10;
+    --green:#22c55e; --red:#ef4444; --blue:#3b82f6; --violet:#a855f7; --yellow:#eab308;
+    --shadow:0 8px 30px rgba(0,0,0,.45);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, #16110a 0%, var(--bg) 45%) , var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; min-height:100vh;
+  }
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2a3142;border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:236px; flex-shrink:0; background:linear-gradient(180deg,var(--bg2),#0b0d12);
+    border-right:1px solid var(--border); padding:22px 16px;
+    display:flex; flex-direction:column; gap:6px; position:sticky; top:0; height:100vh;
+  }
+  .brand{display:flex; align-items:center; gap:12px; padding:6px 8px 20px}
+  .brand .logo{
+    width:42px;height:42px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),#c2410c);
+    display:grid;place-items:center;font-size:22px;
+    box-shadow:0 6px 18px rgba(249,115,22,.35);
+  }
+  .brand h1{font-size:15px;font-weight:700;letter-spacing:.2px;line-height:1.1}
+  .brand span{font-size:11px;color:var(--muted);font-weight:500}
+  .nav{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .nav button{
+    display:flex;align-items:center;gap:12px;width:100%;
+    background:transparent;border:none;color:var(--muted);
+    padding:11px 13px;border-radius:11px;cursor:pointer;
+    font-size:13.5px;font-weight:600;font-family:inherit;text-align:left;
+    transition:all .15s;
+  }
+  .nav button .ico{width:18px;text-align:center;font-size:15px}
+  .nav button:hover{background:#171b25;color:var(--text)}
+  .nav button.active{
+    background:linear-gradient(90deg,rgba(249,115,22,.16),rgba(249,115,22,.02));
+    color:#fff;box-shadow:inset 2px 0 0 var(--accent);
+  }
+  .sidebar .foot{margin-top:auto;font-size:10.5px;color:var(--muted2);padding:8px;line-height:1.5}
+  .sidebar .foot b{color:var(--muted)}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;padding:26px 30px 60px;max-width:1500px;margin:0 auto;width:100%}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+  .topbar .title h2{font-size:23px;font-weight:750;letter-spacing:-.3px}
+  .topbar .title p{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .topbar .actions{display:flex;align-items:center;gap:12px}
+  .pill{font-size:11.5px;color:var(--muted);background:var(--panel);border:1px solid var(--border);
+    padding:7px 12px;border-radius:999px;display:flex;align-items:center;gap:7px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .btn{
+    background:linear-gradient(135deg,var(--accent),#ea580c);color:#fff;border:none;
+    padding:9px 16px;border-radius:11px;font-size:13px;font-weight:650;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;gap:8px;transition:transform .1s, filter .15s;
+    box-shadow:0 4px 14px rgba(249,115,22,.3);
+  }
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:scale(.97)}
+  .btn.refreshing .ico{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- Cards / grid ---------- */
+  .grid{display:grid;gap:16px}
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .card.hero{border-color:var(--border2)}
+  .kpi .label{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
+  .kpi .label .ic{font-size:14px}
+  .kpi .value{font-size:27px;font-weight:780;margin-top:9px;letter-spacing:-.5px;line-height:1}
+  .kpi .sub{font-size:11.5px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .kpi .accentbar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.0}
+  .kpi.k-accent .accentbar{opacity:1}
+  .kpi.k-green .accentbar{background:var(--green);opacity:1}
+  .kpi.k-red .accentbar{background:var(--red);opacity:1}
+  .kpi.k-blue .accentbar{background:var(--blue);opacity:1}
+  .trend{font-weight:700;padding:2px 8px;border-radius:999px;font-size:11px}
+  .trend.up{color:var(--green);background:rgba(34,197,94,.12)}
+  .trend.down{color:var(--red);background:rgba(239,68,68,.12)}
+  .trend.flat{color:var(--muted);background:#1c2230}
+
+  .section-grid{display:grid;gap:16px;margin-top:16px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  .cols-3-2{grid-template-columns:1.5fr 1fr}
+  @media(max-width:1000px){.cols-2,.cols-3-2{grid-template-columns:1fr}}
+
+  .card h3{font-size:14px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:9px}
+  .card h3 .ic{color:var(--accent)}
+  .card .csub{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  .chart-wrap{position:relative;height:300px}
+  .chart-wrap.tall{height:340px}
+  .chart-wrap.short{height:240px}
+
+  /* ---------- Tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{
+    text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--border);
+    position:sticky;top:0;background:var(--panel);
+  }
+  tbody td{padding:9px 10px;border-bottom:1px solid #1c212d;color:var(--text)}
+  tbody tr:hover{background:#171c27}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .tbl-scroll{max-height:380px;overflow:auto;border-radius:10px}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .tag.activo{color:var(--green);background:rgba(34,197,94,.12)}
+  .tag.incobrable{color:var(--red);background:rgba(239,68,68,.13)}
+  .tag.moroso{color:var(--yellow);background:rgba(234,179,8,.13)}
+  .tag.neutro{color:var(--muted);background:#1c2230}
+  .badge-dias{font-weight:700}
+  .badge-dias.ok{color:var(--green)} .badge-dias.warn{color:var(--yellow)} .badge-dias.bad{color:var(--red)}
+  .rank{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;
+    background:#1c2230;color:var(--muted);font-weight:800;font-size:11px;margin-right:4px}
+  .rank.top{background:linear-gradient(135deg,var(--accent),#c2410c);color:#fff}
+
+  /* states */
+  .hidden{display:none!important}
+  .empty{color:var(--muted2);font-size:12.5px;padding:26px 10px;text-align:center;font-style:italic}
+  .overlay{position:fixed;inset:0;background:rgba(8,10,14,.85);display:grid;place-items:center;z-index:50;backdrop-filter:blur(3px)}
+  .spinner{width:46px;height:46px;border:4px solid #2a3142;border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+  .loadtxt{color:var(--muted);font-size:13px;margin-top:16px;text-align:center}
+  .errbox{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:#fda4a4;
+    padding:16px 18px;border-radius:12px;font-size:13px;margin-bottom:18px;line-height:1.5}
+  .errbox b{color:#fff}
+  .notice{font-size:11px;color:var(--yellow);background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);
+    padding:9px 13px;border-radius:10px;margin-bottom:14px}
+  .mini-list{display:flex;flex-direction:column;gap:2px}
+  .mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid #1c212d;font-size:12.5px}
+  .mini-row:last-child{border-bottom:none}
+  .mini-row .name{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+  .mini-row .v{font-variant-numeric:tabular-nums;font-weight:700}
+  .pos{color:var(--green)} .neg{color:var(--red)} .acc{color:var(--accent2)}
+
+  /* ---------- Asistente ---------- */
+  .chat-log{display:flex;flex-direction:column;gap:12px;margin:6px 0 14px;max-height:440px;overflow:auto;padding-right:4px}
+  .bubble{padding:11px 14px;border-radius:13px;font-size:13.5px;line-height:1.55;max-width:86%}
+  .bubble.user{align-self:flex-end;background:linear-gradient(135deg,var(--accent),#ea580c);color:#fff;border-bottom-right-radius:4px}
+  .bubble.bot{align-self:flex-start;background:#1c2230;border:1px solid var(--border);border-bottom-left-radius:4px}
+  .bubble.bot b{color:var(--accent2)}
+  .bubble.think{color:var(--muted);font-style:italic}
+  .chat-input{display:flex;gap:10px;align-items:flex-end}
+  .chat-input textarea{flex:1;background:#0e1016;border:1px solid var(--border2);color:var(--text);
+    border-radius:12px;padding:12px 14px;font-size:13.5px;font-family:inherit;resize:none;outline:none;max-height:120px}
+  .chat-input textarea:focus{border-color:var(--accent)}
+  .chat-hint{font-size:11px;color:var(--muted2);margin-top:9px}
+  .suggest{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 12px}
+  .chip{background:#161b25;border:1px solid var(--border);color:var(--muted);font-size:11.5px;
+    padding:6px 11px;border-radius:999px;cursor:pointer;transition:all .15s}
+  .chip:hover{border-color:var(--accent);color:var(--text)}
+  .report-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:4px}
+  @media(max-width:900px){.report-btns{grid-template-columns:repeat(2,1fr)}}
+  .rbtn{background:linear-gradient(180deg,#1a1f2b,#151a24);border:1px solid var(--border2);color:var(--text);
+    padding:15px 12px;border-radius:13px;cursor:pointer;font-size:13px;font-weight:650;font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .15s}
+  .rbtn .em{font-size:22px}
+  .rbtn:hover{border-color:var(--accent);background:#1d2330;transform:translateY(-2px)}
+  .rbtn.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  #report-out{margin-top:16px}
+  .rec{display:flex;gap:13px;padding:13px 15px;border-radius:12px;background:#161b25;border:1px solid var(--border);margin-bottom:10px}
+  .rec .pri{width:5px;border-radius:6px;flex-shrink:0}
+  .rec.alta .pri{background:var(--red)} .rec.media .pri{background:var(--yellow)} .rec.baja .pri{background:var(--green)}
+  .rec .rt{font-weight:700;font-size:13.5px;margin-bottom:3px}
+  .rec .rd{font-size:12.5px;color:var(--muted)}
+  .rec .pribadge{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:999px;align-self:flex-start}
+  .rec.alta .pribadge{color:var(--red);background:rgba(239,68,68,.13)}
+  .rec.media .pribadge{color:var(--yellow);background:rgba(234,179,8,.13)}
+  .rec.baja .pribadge{color:var(--green);background:rgba(34,197,94,.13)}
+  .flujo-sem{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:6px 0 14px}
+  .flujo-sem .fs{background:#161b25;border:1px solid var(--border);border-radius:12px;padding:13px}
+  .flujo-sem .fs.neg{border-color:rgba(239,68,68,.4)}
+  .flujo-sem .fl{font-size:11px;color:var(--muted)} .flujo-sem .fv{font-size:17px;font-weight:750;margin-top:5px}
+  .flujo-sem .fd{font-size:11px;margin-top:6px}
+  .kchip{display:inline-flex;flex-direction:column;background:#1c2230;border:1px solid var(--border);border-radius:10px;padding:9px 13px;margin:4px 6px 4px 0}
+  .kchip .l{font-size:10.5px;color:var(--muted)} .kchip .v{font-size:16px;font-weight:750}
+
+  /* ---------- Brief del día ---------- */
+  .brief{background:linear-gradient(135deg,rgba(249,115,22,.14),rgba(249,115,22,.02));
+    border:1px solid var(--border2);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .brief .bh{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .brief .principal{font-size:17px;font-weight:700;margin:9px 0 14px;line-height:1.4}
+  .brief .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+  @media(max-width:900px){.brief .bgrid{grid-template-columns:1fr}}
+  .brief .bbox{background:#11151d;border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+  .brief .bbox .t{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+  .brief .brow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:3px 0}
+  .brief .brow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
+  .brief .none{font-size:12px;color:var(--muted2);font-style:italic}
+
+  /* ---------- Cobranza ---------- */
+  .cob{display:flex;flex-direction:column;gap:11px}
+  .cobitem{background:#161b25;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .cobhead{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer}
+  .cobhead:hover{background:#1a2030}
+  .cobhead .nm{font-weight:700;font-size:13.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cobhead .amt{font-weight:800;font-size:14px;color:var(--accent2);white-space:nowrap}
+  .tono{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .tono.bueno{color:var(--green);background:rgba(34,197,94,.13)}
+  .tono.medio{color:var(--blue);background:rgba(59,130,246,.13)}
+  .tono.cronico{color:var(--yellow);background:rgba(234,179,8,.13)}
+  .tono.incobrable{color:var(--red);background:rgba(239,68,68,.13)}
+  .cobbody{padding:0 15px 14px;border-top:1px solid var(--border)}
+  .cobbody.hidden{display:none}
+  .cobmeta{font-size:11.5px;color:var(--muted);margin:11px 0}
+  .cobmail{background:#0e1016;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--text);white-space:pre-wrap;line-height:1.5;max-height:240px;overflow:auto}
+  .cobmail .asunto{color:var(--accent2);font-weight:700;margin-bottom:8px}
+  .cobbtns{display:flex;gap:9px;margin-top:11px;flex-wrap:wrap}
+  .cobbtns a,.cobbtns button{font-family:inherit;font-size:12.5px;font-weight:650;padding:9px 14px;border-radius:10px;cursor:pointer;border:1px solid var(--border2);text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+  .cobbtns .primary{background:linear-gradient(135deg,var(--accent),#ea580c);color:#fff;border:none}
+  .cobbtns .ghost{background:#1c2230;color:var(--text)}
+  .cobbtns .ghost:hover{border-color:var(--accent)}
+  .chevron{transition:transform .2s;color:var(--muted)}
+  .cobitem.open .chevron{transform:rotate(90deg)}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">🍺</div>
+    <div><h1>Zigurat</h1><span>Centro de Comando</span></div>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-sec="resumen" class="active"><span class="ico">📊</span> Resumen</button>
+    <button data-sec="asistente"><span class="ico">🤖</span> Asistente &amp; Informes</button>
+    <button data-sec="ventas"><span class="ico">📈</span> Ventas</button>
+    <button data-sec="clientes"><span class="ico">👥</span> Clientes</button>
+    <button data-sec="cobranza"><span class="ico">💰</span> Cobranza</button>
+    <button data-sec="costos"><span class="ico">🏭</span> Costos &amp; Márgenes</button>
+  </nav>
+  <div class="foot">
+    <b>Zigurat Brewery</b><br>
+    Vintage SPA<br>
+    <span id="db-name">dte_facturas_chile</span>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="title">
+      <h2 id="sec-title">Resumen general</h2>
+      <p id="sec-desc">La panorámica completa de tu cervecería de un vistazo.</p>
+    </div>
+    <div class="actions">
+      <div class="pill"><span class="dot" id="conn-dot"></span> <span id="conn-txt">Conectado</span></div>
+      <div class="pill" id="updated-pill">Actualizado: —</div>
+      <button class="btn" id="refresh"><span class="ico">⟳</span> Actualizar</button>
+    </div>
+  </div>
+
+  <div id="global-err"></div>
+
+  <!-- ============ RESUMEN ============ -->
+  <section class="sec" id="sec-resumen">
+    <div class="brief" id="brief-card"></div>
+    <div class="grid kpis" id="kpi-grid"></div>
+    <div class="section-grid cols-3-2">
+      <div class="card hero">
+        <h3><span class="ic">📈</span> Ventas mensuales</h3>
+        <div class="csub">Ingreso real (neto+impuestos, ajustado por notas de crédito) · últimos 12 meses</div>
+        <div class="chart-wrap tall"><canvas id="ch-ventas-res"></canvas></div>
+      </div>
+      <div class="card">
+        <h3><span class="ic">🏆</span> Top clientes</h3>
+        <div class="csub">Por venta real acumulada</div>
+        <div class="chart-wrap tall"><canvas id="ch-topcli-res"></canvas></div>
+      </div>
+    </div>
+    <div class="section-grid cols-2">
+      <div class="card">
+        <h3><span class="ic">⚠️</span> Mayores deudas vencidas</h3>
+        <div class="csub">Facturas sin pago, +30 días</div>
+        <div class="mini-list" id="mini-morosos"></div>
+      </div>
+      <div class="card">
+        <h3><span class="ic">🍺</span> Productos más vendidos</h3>
+        <div class="csub">Unidades (barriles / botellas) · excluye logística</div>
+        <div class="mini-list" id="mini-productos"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VENTAS ============ -->
+  <section class="sec hidden" id="sec-ventas">
+    <div class="grid kpis" id="kpi-ventas"></div>
+    <div class="section-grid">
+      <div class="card hero">
+        <h3><span class="ic">📈</span> Evolución de ventas</h3>
+        <div class="csub">Ingreso real por mes</div>
+        <div class="chart-wrap tall"><canvas id="ch-ventas-full"></canvas></div>
+      </div>
+    </div>
+    <div class="section-grid cols-2">
+      <div class="card">
+        <h3><span class="ic">🍺</span> Productos más vendidos</h3>
+        <div class="csub">Por unidades vendidas</div>
+        <div class="chart-wrap"><canvas id="ch-productos"></canvas></div>
+      </div>
+      <div class="card">
+        <h3><span class="ic">🗓️</span> Detalle por mes</h3>
+        <div class="csub">Ventas y nº de facturas</div>
+        <div class="tbl-scroll"><table id="tbl-meses"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CLIENTES ============ -->
+  <section class="sec hidden" id="sec-clientes">
+    <div class="grid kpis" id="kpi-clientes"></div>
+    <div class="section-grid cols-3-2">
+      <div class="card hero">
+        <h3><span class="ic">🏆</span> Ranking de clientes</h3>
+        <div class="csub">Top por venta real acumulada</div>
+        <div class="chart-wrap tall"><canvas id="ch-topcli-full"></canvas></div>
+      </div>
+      <div class="card">
+        <h3><span class="ic">🩺</span> Estado de la cartera</h3>
+        <div class="csub">Distribución por estado</div>
+        <div class="chart-wrap short"><canvas id="ch-estado"></canvas></div>
+        <div id="estado-legend" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="section-grid cols-2">
+      <div class="card">
+        <h3><span class="ic">🥇</span> Mejores clientes (detalle)</h3>
+        <div class="csub">Venta real y nº de facturas</div>
+        <div class="tbl-scroll"><table id="tbl-topcli"></table></div>
+      </div>
+      <div class="card">
+        <h3><span class="ic">😴</span> Clientes inactivos</h3>
+        <div class="csub">Sin comprar hace +60 días</div>
+        <div class="tbl-scroll"><table id="tbl-inactivos"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COBRANZA ============ -->
+  <section class="sec hidden" id="sec-cobranza">
+    <div class="grid kpis" id="kpi-cobranza"></div>
+    <div class="section-grid">
+      <div class="card hero">
+        <h3><span class="ic">📬</span> Cobrar hoy — priorizado</h3>
+        <div class="csub">Ordenado por monto y atraso. Cada cliente trae su correo redactado según su historial de pago.</div>
+        <div class="cob" id="cob-list"></div>
+      </div>
+    </div>
+    <div class="section-grid cols-2">
+      <div class="card">
+        <h3><span class="ic">🧾</span> Facturas por cobrar</h3>
+        <div class="csub">Emitidas sin pago registrado</div>
+        <div class="tbl-scroll"><table id="tbl-porcobrar"></table></div>
+      </div>
+      <div class="card">
+        <h3><span class="ic">📤</span> Cuentas por pagar</h3>
+        <div class="csub">Gastos próximos programados</div>
+        <div class="tbl-scroll"><table id="tbl-porpagar"></table></div>
+      </div>
+    </div>
+    <div class="section-grid">
+      <div class="card">
+        <h3><span class="ic">⚠️</span> Clientes morosos</h3>
+        <div class="csub">Deuda vencida +30 días</div>
+        <div class="tbl-scroll"><table id="tbl-morosos"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COSTOS ============ -->
+  <section class="sec hidden" id="sec-costos">
+    <div class="notice" id="costos-notice"></div>
+    <div class="section-grid">
+      <div class="card">
+        <h3><span class="ic">🏭</span> Costo unitario por SKU</h3>
+        <div class="csub">Líquido + envasado + mano de obra + servicios (vista_costo_sku)</div>
+        <div class="tbl-scroll"><table id="tbl-costos"></table></div>
+      </div>
+    </div>
+    <div class="section-grid">
+      <div class="card">
+        <h3><span class="ic">💵</span> Margen por barril 30L</h3>
+        <div class="csub">Costo vs precio de venta neto confirmado</div>
+        <div class="tbl-scroll"><table id="tbl-margen"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ASISTENTE ============ -->
+  <section class="sec hidden" id="sec-asistente">
+    <div class="card hero">
+      <h3><span class="ic">💬</span> Pregúntame lo que quieras</h3>
+      <div class="csub">Escribe en lenguaje natural y te respondo con cifras, gráficos y tablas de tu base.</div>
+      <div class="suggest" id="chat-suggest">
+        <span class="chip">¿Quién me debe más?</span>
+        <span class="chip">Ventas de este mes vs el anterior</span>
+        <span class="chip">Mis 5 mejores clientes</span>
+        <span class="chip">¿Qué cerveza se vende más?</span>
+        <span class="chip">Clientes que dejaron de comprar</span>
+      </div>
+      <div class="chat-log" id="chat-log"></div>
+      <div class="chat-input">
+        <textarea id="chat-q" rows="1" placeholder="Escribe tu pregunta y presiona Enter…"></textarea>
+        <button class="btn" id="chat-send"><span class="ico">➤</span> Enviar</button>
+      </div>
+      <div class="chat-hint" id="chat-hint"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">⚡</span> Informes rápidos</h3>
+      <div class="csub">Un clic y listo — sin escribir nada</div>
+      <div class="report-btns">
+        <button class="rbtn" data-rep="informe"><span class="em">🖨️</span> Informe mensual<br>(PDF)</button>
+        <button class="rbtn" data-rep="ventas"><span class="em">📈</span> Predicción de ventas</button>
+        <button class="rbtn" data-rep="flujo"><span class="em">💧</span> Flujo de caja<br>4 semanas</button>
+        <button class="rbtn" data-rep="recos"><span class="em">🎯</span> Recomendaciones</button>
+      </div>
+      <div id="report-out"></div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay">
+  <div style="text-align:center">
+    <div class="spinner" style="margin:0 auto"></div>
+    <div class="loadtxt">Conectando con tu base de datos…</div>
+  </div>
+</div>
+
+<script>
+const ACCENT='#f97316', ACCENT2='#fb923c', GREEN='#22c55e', RED='#ef4444',
+      BLUE='#3b82f6', VIOLET='#a855f7', YELLOW='#eab308', MUTED='#8d93a6', GRID='#222836';
+const PALETTE=[ACCENT,ACCENT2,'#fdba74',BLUE,GREEN,VIOLET,YELLOW,'#f472b6','#2dd4bf','#fca5a5'];
+let DATA=null; const charts={};
+
+// ---------- helpers ----------
+const clp = n => (n==null||isNaN(n)) ? '—' :
+  (n<0?'-':'')+'$'+Math.round(Math.abs(n)).toLocaleString('es-CL');
+const clpK = n => { if(n==null||isNaN(n))return '—'; const a=Math.abs(n);
+  if(a>=1e6) return (n<0?'-':'')+'$'+(a/1e6).toFixed(1).replace('.',',')+'M';
+  if(a>=1e3) return (n<0?'-':'')+'$'+Math.round(a/1e3)+'K'; return clp(n); };
+const num = n => (n==null||isNaN(n))?'—':Math.round(n).toLocaleString('es-CL');
+const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fmtMes(ym){ if(!ym)return ''; const [y,m]=ym.split('-'); return MESES[(+m)-1]+' '+y.slice(2); }
+function fmtFecha(d){ if(!d)return '—'; const s=String(d).slice(0,10).split('-'); return s.length===3?`${s[2]}-${s[1]}-${s[0]}`:d; }
+const esc = s => (s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function diasBadge(d){ if(d==null)return '—'; const cl=d>60?'bad':d>30?'warn':'ok'; return `<span class="badge-dias ${cl}">${d} d</span>`; }
+function trend(cur,prev){
+  if(prev==null||prev===0||cur==null) return '<span class="trend flat">—</span>';
+  const p=((cur-prev)/Math.abs(prev))*100; const up=p>=0;
+  return `<span class="trend ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(p).toFixed(0)}%</span>`;
+}
+
+// ---------- KPI builder ----------
+function kpi(label, ic, value, sub, cls=''){
+  return `<div class="card kpi ${cls}"><div class="accentbar"></div>
+    <div class="label"><span class="ic">${ic}</span>${label}</div>
+    <div class="value">${value}</div>
+    <div class="sub">${sub||''}</div></div>`;
+}
+
+function renderKPIs(){
+  const r=DATA.resumen||{};
+  document.getElementById('kpi-grid').innerHTML =
+    kpi('Ventas del mes','📅',clp(r.mes), trend(r.mes,r.mes_prev)+' <span style="color:var(--muted)">vs mes anterior</span>','k-accent') +
+    kpi('Ventas del año','📈',clp(r.ytd), `${num(r.facturas_total)} facturas en total`,'k-green') +
+    kpi('Ticket promedio','🎯',clp(r.ticket), 'Por factura emitida','k-blue') +
+    kpi('Por cobrar', '💰', r.por_cobrar==null?'—':clp(r.por_cobrar),
+        r.por_cobrar_n==null?'—':`${num(r.por_cobrar_n)} facturas pendientes`, r.vencido>0?'k-red':'k-accent');
+
+  // Ventas section KPIs
+  document.getElementById('kpi-ventas').innerHTML =
+    kpi('Ventas del mes','📅',clp(r.mes), trend(r.mes,r.mes_prev),'k-accent') +
+    kpi('Mes anterior','📅',clp(r.mes_prev),'Comparativo','') +
+    kpi('Facturas del mes','🧾',num(r.facturas_mes),'Emitidas este mes','k-blue') +
+    kpi('Ventas totales','∑',clp(r.total),`Desde ${fmtFecha(r.primera)}`,'k-green');
+
+  // Clientes section KPIs
+  document.getElementById('kpi-clientes').innerHTML =
+    kpi('Clientes totales','👥',num(r.clientes_total),'En la cartera','k-accent') +
+    kpi('Activos','✅',r.clientes_activos==null?'—':num(r.clientes_activos),'Comprando','k-green') +
+    kpi('Incobrables','🚫',r.clientes_incobrables==null?'—':num(r.clientes_incobrables),'Marcados incobrables','k-red') +
+    kpi('Ticket promedio','🎯',clp(r.ticket),'Por factura','k-blue');
+
+  // Cobranza section KPIs
+  document.getElementById('kpi-cobranza').innerHTML =
+    kpi('Por cobrar','💰',r.por_cobrar==null?'—':clp(r.por_cobrar), r.por_cobrar_n==null?'':`${num(r.por_cobrar_n)} facturas`,'k-accent') +
+    kpi('Vencido +30d','⏰',r.vencido==null?'—':clp(r.vencido), r.vencido_n==null?'':`${num(r.vencido_n)} facturas`,'k-red') +
+    kpi('Saldo en banco','🏦',r.saldo_banco==null?'sin dato':clp(r.saldo_banco),'Último registrado','k-green') +
+    kpi('Clientes morosos','⚠️',num((DATA.morosos||[]).length),'Con deuda +30d','k-red');
+}
+
+// ---------- charts ----------
+function killChart(id){ if(charts[id]){charts[id].destroy(); delete charts[id];} }
+Chart.defaults.color=MUTED; Chart.defaults.font.family="Inter,system-ui,sans-serif"; Chart.defaults.font.size=11;
+
+function lineVentas(canvasId){
+  killChart(canvasId);
+  const m=(DATA.ventas_mensuales||[]).slice(-12);
+  const ctx=document.getElementById(canvasId); if(!ctx)return;
+  const g=ctx.getContext('2d').createLinearGradient(0,0,0,330);
+  g.addColorStop(0,'rgba(249,115,22,.35)'); g.addColorStop(1,'rgba(249,115,22,0)');
+  charts[canvasId]=new Chart(ctx,{type:'line',data:{labels:m.map(x=>fmtMes(x.mes)),
+    datasets:[{data:m.map(x=>+x.total),borderColor:ACCENT,backgroundColor:g,fill:true,
+      tension:.35,borderWidth:2.5,pointRadius:3,pointBackgroundColor:ACCENT,pointHoverRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>' '+clp(c.parsed.y)}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:GRID},ticks:{callback:v=>clpK(v)}}}}});
+}
+function barTopCli(canvasId){
+  killChart(canvasId);
+  const t=(DATA.top_clientes||[]).slice(0,10);
+  const ctx=document.getElementById(canvasId); if(!ctx)return;
+  charts[canvasId]=new Chart(ctx,{type:'bar',data:{
+    labels:t.map(x=>shorten(x.razon_social,22)),
+    datasets:[{data:t.map(x=>+x.total),backgroundColor:t.map((_,i)=>i===0?ACCENT:'#3b3220'),
+      borderColor:t.map((_,i)=>i===0?ACCENT:ACCENT2),borderWidth:t.map((_,i)=>i===0?0:1),borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>' '+clp(c.parsed.x)}}},
+      scales:{x:{grid:{color:GRID},ticks:{callback:v=>clpK(v)}},y:{grid:{display:false},ticks:{font:{size:10.5}}}}}});
+}
+function barProductos(canvasId){
+  killChart(canvasId);
+  const p=(DATA.top_productos||[]).slice(0,10);
+  const ctx=document.getElementById(canvasId); if(!ctx)return;
+  charts[canvasId]=new Chart(ctx,{type:'bar',data:{
+    labels:p.map(x=>shorten(x.producto,24)),
+    datasets:[{data:p.map(x=>+x.unidades),backgroundColor:'#3b3220',borderColor:ACCENT,borderWidth:1,borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>' '+num(c.parsed.x)+' unidades'}}},
+      scales:{x:{grid:{color:GRID}},y:{grid:{display:false},ticks:{font:{size:10.5}}}}}});
+}
+function doughEstado(canvasId){
+  killChart(canvasId);
+  const e=DATA.estado_clientes||[];
+  const ctx=document.getElementById(canvasId); if(!ctx)return;
+  const colorMap={activo:GREEN,incobrable:RED,moroso:YELLOW};
+  const cols=e.map(x=>colorMap[x.estado]||BLUE);
+  charts[canvasId]=new Chart(ctx,{type:'doughnut',data:{labels:e.map(x=>x.estado),
+    datasets:[{data:e.map(x=>+x.n),backgroundColor:cols,borderColor:'#141821',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.label+': '+c.parsed}}}}});
+  document.getElementById('estado-legend').innerHTML = e.map(x=>
+    `<div class="mini-row"><span class="name"><span class="tag ${x.estado}">${esc(x.estado)}</span></span>
+     <span class="v">${x.n}</span></div>`).join('') || '';
+}
+function barMeses(canvasId){ /* reservado */ }
+function shorten(s,n){ s=s||''; return s.length>n? s.slice(0,n-1)+'…':s; }
+
+// ---------- mini lists ----------
+function miniMorosos(){
+  const m=(DATA.morosos||[]).slice(0,6);
+  document.getElementById('mini-morosos').innerHTML = m.length? m.map(x=>
+    `<div class="mini-row"><span class="name">${esc(x.razon_social||x.rut_cliente)}</span>
+     <span class="v neg">${clp(x.deuda)}</span></div>`).join('')
+    : '<div class="empty">Sin deudas vencidas 🎉</div>';
+}
+function miniProductos(){
+  const p=(DATA.top_productos||[]).slice(0,6);
+  document.getElementById('mini-productos').innerHTML = p.length? p.map(x=>
+    `<div class="mini-row"><span class="name">${esc(x.producto)}</span>
+     <span class="v acc">${num(x.unidades)} u</span></div>`).join('')
+    : '<div class="empty">Sin datos de productos</div>';
+}
+
+// ---------- tables ----------
+function tbl(id, head, rows){
+  const t=document.getElementById(id); if(!t)return;
+  if(!rows || !rows.length){ t.innerHTML=`<tbody><tr><td><div class="empty">Sin datos disponibles</div></td></tr></tbody>`; return; }
+  t.innerHTML = `<thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody>`;
+}
+function renderTables(){
+  // meses
+  const m=(DATA.ventas_mensuales||[]).slice(-13).reverse();
+  tbl('tbl-meses', `<th>Mes</th><th class="num">Ventas</th><th class="num">Facturas</th>`,
+    m.map(x=>`<tr><td>${fmtMes(x.mes)}</td><td class="num">${clp(x.total)}</td><td class="num">${num(x.facturas)}</td></tr>`));
+
+  // top clientes
+  const tc=DATA.top_clientes||[];
+  tbl('tbl-topcli', `<th>#</th><th>Cliente</th><th class="num">Venta real</th><th class="num">Facturas</th>`,
+    tc.map((x,i)=>`<tr><td><span class="rank ${i<3?'top':''}">${i+1}</span></td>
+      <td>${esc(x.razon_social)}</td><td class="num">${clp(x.total)}</td><td class="num">${num(x.facturas)}</td></tr>`));
+
+  // inactivos
+  const ina=DATA.inactivos||[];
+  tbl('tbl-inactivos', `<th>Cliente</th><th>Estado</th><th class="num">Última compra</th><th class="num">Días</th><th class="num">Histórico</th>`,
+    ina.map(x=>`<tr><td>${esc(x.razon_social)}</td>
+      <td>${x.estado?`<span class="tag ${x.estado}">${esc(x.estado)}</span>`:'<span class="tag neutro">—</span>'}</td>
+      <td class="num">${fmtFecha(x.ultima_compra)}</td><td class="num">${diasBadge(x.dias_sin_comprar)}</td>
+      <td class="num">${clp(x.total_historico)}</td></tr>`));
+
+  // por cobrar
+  const pc=DATA.por_cobrar||[];
+  tbl('tbl-porcobrar', `<th>Folio</th><th>Cliente</th><th class="num">Fecha</th><th class="num">Monto</th><th class="num">Días</th>`,
+    pc.map(x=>`<tr><td>${esc(x.folio)}</td><td>${esc(shorten(x.cliente,26))}</td>
+      <td class="num">${fmtFecha(x.fecha)}</td><td class="num">${clp(x.monto)}</td><td class="num">${diasBadge(x.dias)}</td></tr>`));
+
+  // por pagar
+  const pp=DATA.por_pagar||[];
+  tbl('tbl-porpagar', `<th>Descripción</th><th>Proveedor</th><th class="num">Vence</th><th class="num">Monto</th>`,
+    pp.map(x=>`<tr><td>${esc(shorten(x.descripcion,28))}</td><td>${esc(x.proveedor||'—')}</td>
+      <td class="num">${fmtFecha(x.fecha_vencimiento)}</td><td class="num">${clp(x.monto)}</td></tr>`));
+
+  // morosos full
+  const mo=DATA.morosos||[];
+  tbl('tbl-morosos', `<th>Cliente</th><th>RUT</th><th class="num">Facturas</th><th class="num">Días máx</th><th class="num">Deuda</th>`,
+    mo.map(x=>`<tr><td>${esc(x.razon_social)}</td><td>${esc(x.rut_cliente)}</td>
+      <td class="num">${num(x.facturas)}</td><td class="num">${diasBadge(x.dias_max)}</td>
+      <td class="num"><span class="neg" style="font-weight:700">${clp(x.deuda)}</span></td></tr>`));
+
+  // costos
+  const cs=DATA.costos_sku||[];
+  tbl('tbl-costos', `<th>Código</th><th>Cerveza</th><th>Formato</th><th class="num">Líquido</th><th class="num">Envasado</th><th class="num">Costo total</th>`,
+    cs.map(x=>`<tr><td>${esc(x.codigo)}</td><td>${esc(x.nombre_cerveza)}</td><td>${esc(x.formato)}</td>
+      <td class="num">${clp(x.costo_liquido_unitario)}</td><td class="num">${clp(x.costo_envasado_unitario)}</td>
+      <td class="num"><b>${clp(x.costo_total_unitario)}</b></td></tr>`));
+  renderMargen();
+
+  document.getElementById('costos-notice').innerHTML = cs.length? ''
+    : '⚠️ No encontré la vista de costos (vista_costo_sku). Ejecuta las migraciones de costos para activar esta sección.';
+  document.getElementById('costos-notice').classList.toggle('hidden', cs.length>0);
+}
+
+function renderMargen(){
+  const cs=DATA.costos_sku||[]; const precios=DATA.precios_venta||{};
+  const norm=s=>(s||'').toLowerCase();
+  const rows=[];
+  cs.forEach(x=>{
+    const f=norm(x.formato);
+    if(!(f.includes('30')||f.includes('barril'))) return;
+    const key=Object.keys(precios).find(k=>norm(x.nombre_cerveza).includes(k));
+    if(!key) return;
+    const venta=precios[key], costo=+x.costo_total_unitario;
+    const margen=venta-costo, pct=venta? (margen/venta*100):0;
+    const cl=pct>=50?'pos':pct>=25?'':'neg';
+    rows.push(`<tr><td>${esc(x.nombre_cerveza)}</td><td>${esc(x.formato)}</td>
+      <td class="num">${clp(costo)}</td><td class="num">${clp(venta)}</td>
+      <td class="num"><span class="${margen>=0?'pos':'neg'}" style="font-weight:700">${clp(margen)}</span></td>
+      <td class="num"><span class="${cl}" style="font-weight:700">${pct.toFixed(0)}%</span></td></tr>`);
+  });
+  tbl('tbl-margen', `<th>Cerveza</th><th>Formato</th><th class="num">Costo</th><th class="num">Precio venta neto</th><th class="num">Margen $</th><th class="num">Margen %</th>`, rows);
+}
+
+// ---------- nav ----------
+const SEC_META={
+  resumen:['Resumen general','La panorámica completa de tu cervecería de un vistazo.'],
+  asistente:['Asistente & Informes','Pregúntame lo que quieras o genera un informe al instante.'],
+  ventas:['Ventas','Evolución de ingresos y productos más vendidos.'],
+  clientes:['Clientes','Tu cartera: mejores compradores, estado y reactivación.'],
+  cobranza:['Cobranza & caja','Lo que te deben, lo que debes y tu liquidez.'],
+  costos:['Costos & márgenes','Cuánto cuesta producir y cuánto ganas por producto.'],
+};
+function showSection(sec){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('sec-'+sec).classList.remove('hidden');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.sec===sec));
+  document.getElementById('sec-title').textContent=SEC_META[sec][0];
+  document.getElementById('sec-desc').textContent=SEC_META[sec][1];
+  // (re)dibujar charts de la sección visible
+  requestAnimationFrame(()=>drawCharts(sec));
+}
+function drawCharts(sec){
+  if(!DATA) return;
+  if(sec==='resumen'){ lineVentas('ch-ventas-res'); barTopCli('ch-topcli-res'); }
+  if(sec==='ventas'){ lineVentas('ch-ventas-full'); barProductos('ch-productos'); }
+  if(sec==='clientes'){ barTopCli('ch-topcli-full'); doughEstado('ch-estado'); }
+}
+document.getElementById('nav').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(b) showSection(b.dataset.sec);
+});
+
+// ---------- Asistente (chat IA) ----------
+let chatBusy=false, artSeq=0;
+function mdBot(s){ s=esc(s||''); s=s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); return s.replace(/\n/g,'<br>'); }
+function addBubble(cls, html){
+  const log=document.getElementById('chat-log');
+  const d=document.createElement('div'); d.className='bubble '+cls; d.innerHTML=html;
+  log.appendChild(d); log.scrollTop=log.scrollHeight; return d;
+}
+function renderArtefactos(cont, arts){
+  (arts||[]).forEach(a=>{
+    const p=a.payload||{};
+    if(a.tipo==='kpi'){
+      cont.insertAdjacentHTML('beforeend',`<div class="kchip"><span class="l">${esc(p.etiqueta||a.titulo)}</span><span class="v">${esc(p.valor||'')}</span>${p.delta?`<span class="l" style="color:var(--green)">${esc(p.delta)}</span>`:''}</div>`);
+    } else if(a.tipo==='tabla'){
+      const cols=p.columnas||[], fil=p.filas||[];
+      cont.insertAdjacentHTML('beforeend',`<div style="font-weight:700;font-size:12.5px;margin:10px 0 6px">${esc(a.titulo)}</div><div class="tbl-scroll"><table><thead><tr>`+cols.map(c=>`<th>${esc(c)}</th>`).join('')+`</tr></thead><tbody>`+fil.map(r=>`<tr>`+(Array.isArray(r)?r:Object.values(r)).map(v=>`<td>${esc(v)}</td>`).join('')+`</tr>`).join('')+`</tbody></table></div>`);
+    } else if(a.tipo==='grafico'){
+      const id='art'+(++artSeq), t=p.chart_type||'bar';
+      cont.insertAdjacentHTML('beforeend',`<div style="font-weight:700;font-size:12.5px;margin:12px 0 6px">${esc(a.titulo)}</div><div style="position:relative;height:240px"><canvas id="${id}"></canvas></div>`);
+      new Chart(document.getElementById(id),{type:t,data:{labels:p.x||[],datasets:[{label:a.titulo,data:p.y||[],backgroundColor:t==='pie'?PALETTE:'#3b3220',borderColor:ACCENT,borderWidth:1.5,borderRadius:6,tension:.35,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:t==='pie',labels:{color:MUTED}}},scales:t==='pie'?{}:{x:{grid:{color:GRID}},y:{grid:{color:GRID}}}}});
+    } else if(a.tipo==='informe'){
+      cont.insertAdjacentHTML('beforeend',`<div style="margin-top:10px;font-size:13px;line-height:1.6">${mdBot(p.markdown)}</div>`);
+    }
+  });
+}
+async function askAgent(q){
+  q=(q||'').trim(); if(chatBusy||!q)return; chatBusy=true;
+  addBubble('user', esc(q));
+  document.getElementById('chat-q').value='';
+  const think=addBubble('bot think','Pensando… consultando tu base 🍺');
+  try{
+    const res=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
+    const d=await res.json(); think.remove();
+    if(!d.ok){
+      if(d.error==='asistente_no_disponible')
+        addBubble('bot','El chat con IA no está disponible en este momento. Suele faltar el motor de IA (<b>claude-agent-sdk</b>) o el comando <b>claude</b> en el PATH. Mientras tanto, los <b>Informes rápidos</b> de abajo funcionan perfecto y no necesitan IA.');
+      else
+        addBubble('bot','Tuve un problema al responder: '+esc(d.detalle||d.error||'error'));
+      chatBusy=false; return;
+    }
+    const b=addBubble('bot', mdBot(d.texto||'(sin respuesta)'));
+    renderArtefactos(b, d.artefactos);
+  }catch(e){ think.remove(); addBubble('bot','Error de conexión: '+esc(e.message)); }
+  chatBusy=false;
+}
+document.getElementById('chat-send').addEventListener('click',()=>askAgent(document.getElementById('chat-q').value));
+document.getElementById('chat-q').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); askAgent(e.target.value);} });
+document.getElementById('chat-suggest').addEventListener('click',e=>{ if(e.target.classList.contains('chip')) askAgent(e.target.textContent); });
+
+// ---------- Informes rápidos ----------
+function repVentas(){
+  const out=document.getElementById('report-out'), pv=(DATA||{}).prediccion_ventas||{};
+  if(!pv.disponible){ out.innerHTML=`<div class="empty">${esc(pv.motivo||'No disponible')}</div>`; return; }
+  const hist=(pv.historico||[]).slice(-9), fc=pv.pronostico||[];
+  const labels=hist.map(x=>fmtMes(x.mes)).concat(fc.map(x=>fmtMes(x.mes)+' (est)'));
+  const histData=hist.map(x=>+x.total).concat(fc.map(()=>null));
+  const fcData=hist.map(()=>null); if(hist.length) fcData[hist.length-1]=+hist[hist.length-1].total; fc.forEach(x=>fcData.push(+x.total));
+  out.innerHTML=`<div style="margin-bottom:8px;font-size:13px">${esc(pv.metodo)} Tendencia: <b class="${pv.tendencia==='bajando'?'neg':'acc'}">${esc(pv.tendencia)}</b>.</div>
+    ${fc.map(x=>`<span class="kchip"><span class="l">${fmtMes(x.mes)}</span><span class="v">${clp(x.total)}</span></span>`).join('')}
+    <div style="position:relative;height:280px;margin-top:12px"><canvas id="rep-ch" role="img" aria-label="Proyección de ventas"></canvas></div>`;
+  new Chart(document.getElementById('rep-ch'),{type:'line',data:{labels,datasets:[
+    {label:'Real',data:histData,borderColor:ACCENT,backgroundColor:'rgba(249,115,22,.12)',fill:true,tension:.35,borderWidth:2.5,pointRadius:3},
+    {label:'Proyección',data:fcData,borderColor:'#3b82f6',borderDash:[6,4],tension:.35,borderWidth:2.5,pointRadius:3,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:MUTED}}},scales:{x:{grid:{display:false}},y:{grid:{color:GRID},ticks:{callback:v=>clpK(v)}}}}});
+}
+function repFlujo(){
+  const out=document.getElementById('report-out'), fj=(DATA||{}).flujo_caja;
+  if(!fj||!fj.disponible){ out.innerHTML=`<div class="empty">No pude calcular el flujo de caja.</div>`; return; }
+  let h=`<div style="font-size:13px;margin-bottom:10px">Saldo inicial: <b>${clp(fj.saldo_inicial)}</b>${fj.saldo_fecha?` <span style="color:var(--muted)">(banco al ${fmtFecha(fj.saldo_fecha)})</span>`:''}.</div>`;
+  if(fj.nota) h+=`<div class="notice">${esc(fj.nota)}</div>`;
+  h+=`<div class="flujo-sem">`+(fj.semanas||[]).map((s,i)=>`<div class="fs ${s.riesgo?'neg':''}"><div class="fl">Semana ${i+1} · ${esc(s.label)}</div><div class="fv ${s.saldo<0?'neg':''}">${clp(s.saldo)}</div><div class="fd"><span class="pos">▲ ${clpK(s.ingresos)}</span> &nbsp; <span class="neg">▼ ${clpK(s.egresos)}</span></div></div>`).join('')+`</div>`;
+  h+=`<div style="display:flex;gap:18px;font-size:12.5px;color:var(--muted)"><span>Total que entra: <b class="pos">${clp(fj.total_ingresos)}</b></span><span>Total que sale: <b class="neg">${clp(fj.total_egresos)}</b></span></div>`;
+  out.innerHTML=h;
+}
+function repRecos(){
+  const out=document.getElementById('report-out'), rs=(DATA||{}).recomendaciones||[];
+  out.innerHTML = rs.length? rs.map(r=>`<div class="rec ${esc(r.prioridad)}"><div class="pri"></div><div style="flex:1"><div class="rt">${esc(r.titulo)}</div><div class="rd">${esc(r.detalle)}</div></div><span class="pribadge">${esc(r.prioridad)}</span></div>`).join('') : `<div class="empty">Sin recomendaciones por ahora.</div>`;
+}
+document.querySelector('.report-btns').addEventListener('click',e=>{
+  const b=e.target.closest('.rbtn'); if(!b)return;
+  const rep=b.dataset.rep;
+  if(rep==='informe'){ window.open('/informe','_blank'); return; }
+  document.querySelectorAll('.rbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  if(rep==='ventas') repVentas(); else if(rep==='flujo') repFlujo(); else if(rep==='recos') repRecos();
+});
+
+// ---------- Brief del día ----------
+function renderBrief(){
+  const b=(DATA||{}).brief||{}; const el=document.getElementById('brief-card'); if(!el) return;
+  const ch=(b.cobrar_hoy||[]).map(c=>`<div class="brow"><span class="nm">${esc(c.razon_social)}</span><span class="neg" style="font-weight:700">${clp(c.deuda)}</span></div>`).join('') || '<div class="none">Nada vencido por cobrar 🎉</div>';
+  const vp=(b.vence_pronto||[]).map(v=>`<div class="brow"><span class="nm">${esc(v.desc||'Gasto')}</span><span style="font-weight:700">${clp(v.monto)}</span></div>`).join('') || '<div class="none">Nada vence esta semana</div>';
+  const al=(b.alertas||[]).map(a=>`<div class="brow"><span class="nm">⚠️ ${esc(a)}</span></div>`).join('') || '<div class="none">Sin alertas</div>';
+  el.innerHTML=`<div class="bh"><span>☀️ Brief de hoy</span><span style="color:var(--muted2)">· ${fmtFecha(b.fecha)}</span></div>
+    <div class="principal">${esc(b.principal||'')}</div>
+    <div class="bgrid">
+      <div class="bbox"><div class="t">💰 Cobrar hoy</div>${ch}</div>
+      <div class="bbox"><div class="t">📤 Vence esta semana</div>${vp}</div>
+      <div class="bbox"><div class="t">🔔 Alertas</div>${al}</div>
+    </div>`;
+}
+
+// ---------- Cobranza ----------
+const LBL_TONO={bueno:'Buen pagador',medio:'Normal',cronico:'Atrasador',incobrable:'Incobrable'};
+function renderCobranza(){
+  const list=document.getElementById('cob-list'); if(!list) return;
+  const cob=(DATA||{}).cobranza||[];
+  if(!cob.length){ list.innerHTML='<div class="empty">No hay facturas por cobrar 🎉</div>'; return; }
+  list.innerHTML = cob.map((c,i)=>{
+    const dias = c.dias_max!=null? `<span class="badge-dias ${c.dias_max>60?'bad':c.dias_max>30?'warn':'ok'}">${c.dias_max} d</span>`:'';
+    const mailHref = `mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(c.asunto||'')}&body=${encodeURIComponent(c.cuerpo||'')}`;
+    return `<div class="cobitem" data-i="${i}">
+      <div class="cobhead">
+        <span class="chevron">▶</span>
+        <span class="nm">${esc(c.razon_social)}</span>
+        <span class="tono ${esc(c.categoria)}">${LBL_TONO[c.categoria]||esc(c.categoria)}</span>
+        ${dias}
+        <span class="amt">${clp(c.deuda)}</span>
+      </div>
+      <div class="cobbody hidden">
+        <div class="cobmeta">${c.n} factura(s): ${esc((c.folios||[]).map(f=>'N°'+f).join(', '))} · ${c.email?('correo: '+esc(c.email)):'<span style="color:var(--yellow)">sin correo (agrégalo en contactos.csv)</span>'}${c.prom_dias_pago!=null?` · suele pagar en ~${c.prom_dias_pago} días`:''}</div>
+        <div class="cobmail"><div class="asunto">${esc(c.asunto)}</div>${esc(c.cuerpo)}</div>
+        <div class="cobbtns">
+          <a class="primary" href="${mailHref}">✉️ Abrir en correo</a>
+          <button class="ghost" data-copy="${i}">📋 Copiar mensaje</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('cob-list').addEventListener('click',e=>{
+  const head=e.target.closest('.cobhead');
+  if(head){ const it=head.closest('.cobitem'); it.classList.toggle('open'); it.querySelector('.cobbody').classList.toggle('hidden'); return; }
+  const cp=e.target.closest('[data-copy]');
+  if(cp){ const c=((DATA||{}).cobranza||[])[+cp.dataset.copy];
+    if(c){ const txt=(c.asunto||'')+'\n\n'+(c.cuerpo||'');
+      navigator.clipboard.writeText(txt).then(()=>{ const o=cp.textContent; cp.textContent='✓ Copiado'; setTimeout(()=>cp.textContent=o,1500); }); } }
+});
+
+// ---------- load ----------
+async function load(){
+  const btn=document.getElementById('refresh'); btn.classList.add('refreshing');
+  try{
+    const res=await fetch('/api/data',{cache:'no-store'});
+    const d=await res.json();
+    const err=document.getElementById('global-err');
+    if(!d.ok){
+      document.getElementById('conn-dot').classList.add('off');
+      document.getElementById('conn-txt').textContent='Sin conexión a la BD';
+      err.innerHTML=`<div class="errbox"><b>No pude conectar a tu base de datos.</b><br>${esc(d.error_conexion||d.error||'Error desconocido')}<br><br>
+        Revisa que PostgreSQL esté corriendo y que las credenciales en <b>.env</b> sean correctas.</div>`;
+      document.getElementById('overlay').classList.add('hidden');
+      return;
+    }
+    DATA=d;
+    document.getElementById('conn-dot').classList.remove('off');
+    document.getElementById('conn-txt').textContent='Conectado';
+    // avisos suaves de bloques con error
+    if(d.errores && d.errores.length){
+      err.innerHTML=`<div class="notice">Algunas secciones no cargaron: ${esc(d.errores.map(x=>x.split(':')[0]).join(', '))}. El resto está al día.</div>`;
+    } else { err.innerHTML=''; }
+    renderKPIs(); renderTables(); miniMorosos(); miniProductos(); renderBrief(); renderCobranza();
+    const active=document.querySelector('#nav button.active').dataset.sec;
+    drawCharts(active);
+    const now=new Date();
+    document.getElementById('updated-pill').textContent='Actualizado: '+now.toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    document.getElementById('global-err').innerHTML=`<div class="errbox"><b>Error al cargar datos.</b><br>${esc(e.message)}</div>`;
+  }finally{
+    btn.classList.remove('refreshing');
+    document.getElementById('overlay').classList.add('hidden');
+  }
+}
+document.getElementById('refresh').addEventListener('click',load);
+window.addEventListener('resize',()=>{ const s=document.querySelector('#nav button.active').dataset.sec; drawCharts(s); });
+load();
+</script>
+</body>
+</html>
