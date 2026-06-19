@@ -37,3 +37,47 @@ def resumen_cobranza(cur):
         else:
             buckets["d60_mas"] += monto
     return {"total": total, "n_facturas": len(filas), "buckets": buckets}
+
+
+def top_deudores(cur, limite=5):
+    """Top N clientes por deuda pendiente (suma de facturas sin pago)."""
+    cur.execute("""
+        SELECT c.razon_social,
+               SUM(COALESCE(v.monto_total_ajustado, v.monto_total)) AS deuda,
+               COUNT(*) AS n
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND v.fecha_pago IS NULL
+          AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+          AND COALESCE(c.estado, '') <> 'incobrable'
+        GROUP BY c.razon_social
+        ORDER BY deuda DESC
+        LIMIT %s
+    """, (limite,))
+    return [
+        {"cliente": f["razon_social"], "deuda": float(f["deuda"]), "n": int(f["n"])}
+        for f in cur.fetchall()
+    ]
+
+
+def facturas_vencidas(cur, dias=30):
+    """Facturas pendientes con más de `dias` de antigüedad (morosos)."""
+    cur.execute("""
+        SELECT v.folio, v.fecha, c.razon_social,
+               COALESCE(v.monto_total_ajustado, v.monto_total) AS total,
+               (CURRENT_DATE - v.fecha) AS dias_vencida
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND v.fecha_pago IS NULL
+          AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+          AND COALESCE(c.estado, '') <> 'incobrable'
+          AND (CURRENT_DATE - v.fecha) > %s
+        ORDER BY dias_vencida DESC
+    """, (dias,))
+    return [
+        {"folio": f["folio"], "cliente": f["razon_social"],
+         "total": float(f["total"]), "dias": int(f["dias_vencida"])}
+        for f in cur.fetchall()
+    ]
