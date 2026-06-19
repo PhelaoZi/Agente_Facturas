@@ -1,0 +1,42 @@
+# tests/test_briefing_data.py
+from app.briefing import data
+
+
+class FakeCursor:
+    """Cursor falso al estilo RealDictCursor: fetchall/fetchone devuelven dicts.
+    Ignora el SQL; solo entrega las filas precargadas (patrón de test del proyecto)."""
+
+    def __init__(self, rows):
+        self._rows = rows
+
+    def execute(self, sql, params=None):
+        pass
+
+    def fetchall(self):
+        return self._rows
+
+    def fetchone(self):
+        return self._rows[0] if self._rows else None
+
+
+def test_resumen_cobranza_clasifica_por_antiguedad():
+    rows = [
+        {"dias": 0, "total": 20000},    # al día
+        {"dias": 5, "total": 100000},   # 1-30
+        {"dias": 45, "total": 50000},   # 31-60
+        {"dias": 90, "total": 30000},   # +60
+    ]
+    r = data.resumen_cobranza(FakeCursor(rows))
+    assert r["total"] == 200000
+    assert r["n_facturas"] == 4
+    assert r["buckets"]["al_dia"] == 20000
+    assert r["buckets"]["d1_30"] == 100000
+    assert r["buckets"]["d31_60"] == 50000
+    assert r["buckets"]["d60_mas"] == 30000
+
+
+def test_resumen_cobranza_sin_deuda():
+    r = data.resumen_cobranza(FakeCursor([]))
+    assert r["total"] == 0
+    assert r["n_facturas"] == 0
+    assert r["buckets"] == {"al_dia": 0, "d1_30": 0, "d31_60": 0, "d60_mas": 0}
