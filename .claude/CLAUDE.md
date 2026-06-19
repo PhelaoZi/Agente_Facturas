@@ -463,6 +463,26 @@ El spec completo está en `docs/superpowers/specs/2026-06-11-backup-bd-design.md
 
 ---
 
+## Brief diario automático
+
+Reporte de negocio generado cada mañana (Tarea Programada de Windows
+"Zigurat - Brief Diario", 08:00, `StartWhenAvailable` igual que el backup):
+
+- **Qué incluye:** deuda total con desglose por antigüedad, top 5 deudores,
+  facturas vencidas (+30 días), cobrado y ventas de los últimos 7 días,
+  clientes inactivos (+60 días).
+- **Solo lectura:** no modifica la BD. Reutiliza las reglas canónicas de
+  cobranza (`fecha_pago IS NULL`, excluye NC e `incobrable`).
+- **Capa de datos:** `app/briefing/data.py` (funciones reutilizables, testeadas
+  con cursor falso en `tests/test_briefing_data.py`). Render en
+  `app/briefing/render.py`.
+- **Salida:** `briefs/YYYY-MM-DD.md` (historial committeable del negocio).
+- **Generar manualmente:** `python scripts/generar_brief.py`
+- **Reinstalar la tarea:**
+  `powershell -ExecutionPolicy Bypass -File scripts\instalar_tarea_brief.ps1`
+
+---
+
 ## Convenciones del proyecto
 
 - XMLs del SII van en `facturas/` con nombre `DTE_DDMMYYYY`
