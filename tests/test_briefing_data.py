@@ -61,3 +61,27 @@ def test_facturas_vencidas_mapea_dias_y_total():
     ]
     r = data.facturas_vencidas(FakeCursor(rows), dias=30)
     assert r == [{"folio": 1234, "cliente": "Bar Uno", "total": 80000.0, "dias": 78}]
+
+
+def test_cobrado_reciente_suma_y_cuenta():
+    rows = [
+        {"folio": 1, "fecha_pago": "2026-06-17", "razon_social": "Bar Uno", "total": 70000},
+        {"folio": 2, "fecha_pago": "2026-06-16", "razon_social": "Bar Dos", "total": 30000},
+    ]
+    r = data.cobrado_reciente(FakeCursor(rows), dias=7)
+    assert r["n"] == 2
+    assert r["total"] == 100000.0
+    assert r["facturas"][0]["cliente"] == "Bar Uno"
+
+
+def test_ventas_periodo_devuelve_n_y_total():
+    r = data.ventas_periodo(FakeCursor([{"n": 5, "total": 350000}]), dias=7)
+    assert r == {"n": 5, "total": 350000.0}
+
+
+def test_clientes_inactivos_mapea_dias():
+    rows = [
+        {"razon_social": "Bar Frio", "ultima_venta": "2026-03-01", "dias_inactivo": 109},
+    ]
+    r = data.clientes_inactivos(FakeCursor(rows), dias=60)
+    assert r == [{"cliente": "Bar Frio", "ultima_venta": "2026-03-01", "dias": 109}]

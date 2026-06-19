@@ -81,3 +81,64 @@ def facturas_vencidas(cur, dias=30):
          "total": float(f["total"]), "dias": int(f["dias_vencida"])}
         for f in cur.fetchall()
     ]
+
+
+def cobrado_reciente(cur, dias=7):
+    """Facturas cobradas en los últimos `dias` (fecha_pago reciente)."""
+    cur.execute("""
+        SELECT v.folio, v.fecha_pago, c.razon_social,
+               COALESCE(v.monto_total_ajustado, v.monto_total) AS total
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND v.fecha_pago >= CURRENT_DATE - %s
+        ORDER BY v.fecha_pago DESC
+    """, (dias,))
+    facturas = [
+        {"folio": f["folio"], "cliente": f["razon_social"],
+         "fecha_pago": f["fecha_pago"], "total": float(f["total"])}
+        for f in cur.fetchall()
+    ]
+    return {
+        "n": len(facturas),
+        "total": sum(x["total"] for x in facturas),
+        "facturas": facturas,
+    }
+
+
+def ventas_periodo(cur, dias=7):
+    """Ventas emitidas (netas de NC) en los últimos `dias`."""
+    cur.execute("""
+        SELECT COUNT(*) AS n,
+               COALESCE(SUM(COALESCE(v.monto_total_ajustado, v.monto_total)), 0) AS total
+        FROM ventas v
+        WHERE v.tipo_documento != 61
+          AND v.fecha >= CURRENT_DATE - %s
+    """, (dias,))
+    f = cur.fetchone()
+    return {"n": int(f["n"]), "total": float(f["total"])}
+
+
+def clientes_inactivos(cur, dias=60, limite=10):
+    """Clientes cuya última venta fue hace más de `dias` (posible churn).
+
+    Orden ascendente por días: primero los que recién cruzaron el umbral,
+    que son los más recuperables.
+    """
+    cur.execute("""
+        SELECT c.razon_social, MAX(v.fecha) AS ultima_venta,
+               (CURRENT_DATE - MAX(v.fecha)) AS dias_inactivo
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND COALESCE(c.estado, '') <> 'incobrable'
+        GROUP BY c.razon_social
+        HAVING (CURRENT_DATE - MAX(v.fecha)) > %s
+        ORDER BY dias_inactivo ASC
+        LIMIT %s
+    """, (dias, limite))
+    return [
+        {"cliente": f["razon_social"], "ultima_venta": f["ultima_venta"],
+         "dias": int(f["dias_inactivo"])}
+        for f in cur.fetchall()
+    ]
