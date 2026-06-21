@@ -41,3 +41,26 @@ def test_ranking_mapea_filas():
     r = ventas.ranking(FakeCursor(rows), limite=2)
     assert r[0] == {"cliente": "Bar Uno", "rut": "11-1", "total": 900000.0}
     assert len(r) == 2
+
+
+def test_por_cliente_separa_facturas_y_nc():
+    rows = [
+        {"folio": 10, "tipo_documento": 33, "fecha": "2026-06-01", "monto": 100000},
+        {"folio": 11, "tipo_documento": 61, "fecha": "2026-06-02", "monto": 20000},
+    ]
+    r = ventas.por_cliente(FakeCursor(rows), "Bar Uno")
+    assert r["n_facturas"] == 1
+    assert r["n_notas_credito"] == 1
+    assert r["total_real"] == 100000.0
+    assert len(r["documentos"]) == 2
+
+
+def test_por_producto_mapea():
+    rows = [
+        {"folio": 10, "fecha": "2026-06-01", "razon_social": "Bar Uno",
+         "descripcion": "Barril 30L Cream Ale", "cantidad": 2, "precio_unitario": 20000},
+    ]
+    r = ventas.por_producto(FakeCursor(rows), "Cream")
+    assert r[0]["producto"] == "Barril 30L Cream Ale"
+    assert r[0]["cantidad"] == 2
+    assert r[0]["precio_unitario"] == 20000.0
