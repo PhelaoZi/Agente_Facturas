@@ -142,3 +142,34 @@ def clientes_inactivos(cur, dias=60, limite=10):
          "dias": int(f["dias_inactivo"])}
         for f in cur.fetchall()
     ]
+
+
+def deuda_cliente(cur, nombre):
+    """Deuda pendiente de un cliente (por nombre o RUT).
+
+    A diferencia de los totales globales, NO excluye 'incobrable': si se
+    pregunta por un cliente puntual se muestra su deuda igual.
+    """
+    cur.execute("""
+        SELECT v.folio, v.fecha, c.razon_social,
+               COALESCE(v.monto_total_ajustado, v.monto_total) AS total,
+               (CURRENT_DATE - v.fecha) AS dias_vencida
+        FROM ventas v
+        JOIN clientes c ON c.rut_cliente = v.rut_cliente
+        WHERE v.tipo_documento != 61
+          AND v.fecha_pago IS NULL
+          AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+          AND (c.razon_social ILIKE %s OR v.rut_cliente ILIKE %s)
+        ORDER BY v.fecha
+    """, (f"%{nombre}%", f"%{nombre}%"))
+    facturas = [
+        {"folio": f["folio"], "fecha": f["fecha"], "cliente": f["razon_social"],
+         "total": float(f["total"]), "dias": int(f["dias_vencida"])}
+        for f in cur.fetchall()
+    ]
+    return {
+        "nombre_consultado": nombre,
+        "n_facturas": len(facturas),
+        "total": sum(x["total"] for x in facturas),
+        "facturas": facturas,
+    }

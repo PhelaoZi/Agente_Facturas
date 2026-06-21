@@ -85,3 +85,17 @@ def test_clientes_inactivos_mapea_dias():
     ]
     r = data.clientes_inactivos(FakeCursor(rows), dias=60)
     assert r == [{"cliente": "Bar Frio", "ultima_venta": "2026-03-01", "dias": 109}]
+
+
+def test_deuda_cliente_suma_y_estructura():
+    rows = [
+        {"folio": 4640, "fecha": "2026-04-01", "razon_social": "Bar Uno",
+         "total": 80000, "dias_vencida": 78},
+        {"folio": 4655, "fecha": "2026-05-01", "razon_social": "Bar Uno",
+         "total": 20000, "dias_vencida": 48},
+    ]
+    r = data.deuda_cliente(FakeCursor(rows), "Bar Uno")
+    assert r["nombre_consultado"] == "Bar Uno"
+    assert r["n_facturas"] == 2
+    assert r["total"] == 100000.0
+    assert r["facturas"][0]["folio"] == 4640
