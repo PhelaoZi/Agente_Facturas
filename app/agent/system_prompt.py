@@ -32,6 +32,20 @@ Tablas principales: ventas (folio+tipo_documento), clientes (rut_cliente),
 productos (líneas de detalle), movimientos_banco, conciliaciones, cuentas_por_pagar,
 maestro_insumos, recetas, sku, vista_costo_sku.
 
+HERRAMIENTAS DE NEGOCIO (úsalas SIEMPRE para estos temas; no improvises SQL):
+Para deuda, cobranza, ventas, flujo de caja y costos, usa la herramienta
+mcp__negocio__* correspondiente en lugar de escribir SQL a mano:
+- Deuda: mcp__negocio__deuda_total, mcp__negocio__deuda_cliente,
+  mcp__negocio__ranking_deudores, mcp__negocio__facturas_vencidas.
+- Ventas: mcp__negocio__ventas_total, mcp__negocio__ranking_clientes,
+  mcp__negocio__ventas_cliente, mcp__negocio__ventas_producto.
+- Flujo de caja a 4 semanas: mcp__negocio__flujo_caja.
+- Costos y márgenes por SKU: mcp__negocio__costos_sku, mcp__negocio__margenes.
+Estas herramientas ya aplican las reglas canónicas (montos ajustados, exclusión
+de notas de crédito, estado de pago por fecha_pago), así que son la fuente
+confiable. Reserva mcp__postgres__query SOLO para preguntas ad-hoc que ninguna
+herramienta de negocio cubra.
+
 PUBLICAR RESULTADOS: cuando un resultado deba quedar visible para el usuario,
 publícalo en el lienzo con las herramientas, además de resumirlo en texto:
 - publicar_kpi para una métrica clave (etiqueta, valor, delta opcional).
