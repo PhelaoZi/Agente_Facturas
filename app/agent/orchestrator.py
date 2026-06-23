@@ -11,6 +11,7 @@ from claude_agent_sdk import ClaudeAgentOptions, query
 from app.agent.publish_tools import build_lienzo_server
 from app.agent.system_prompt import SYSTEM_PROMPT
 from app.agent.tools_negocio import build_negocio_server
+from app.agent.tools_acciones import build_acciones_server
 from app.canvas.artifacts import Collector
 from app.config import DB_URL, PROJECT_ROOT
 
@@ -45,6 +46,7 @@ def _extract_text(messages) -> str:
 def _build_options(collector: Collector) -> ClaudeAgentOptions:
     lienzo_server, lienzo_tools = build_lienzo_server(collector)
     negocio_server, negocio_tools = build_negocio_server()
+    acciones_server, acciones_tools = build_acciones_server(collector)
     claude_path = shutil.which("claude")
     return ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
@@ -52,9 +54,10 @@ def _build_options(collector: Collector) -> ClaudeAgentOptions:
         mcp_servers={
             "lienzo": lienzo_server,
             "negocio": negocio_server,
+            "acciones": acciones_server,
             "postgres": _postgres_server(),
         },
-        allowed_tools=lienzo_tools + negocio_tools + ["mcp__postgres__query"],
+        allowed_tools=lienzo_tools + negocio_tools + acciones_tools + ["mcp__postgres__query"],
         permission_mode="bypassPermissions",
         max_turns=MAX_TURNS,
         cli_path=claude_path,

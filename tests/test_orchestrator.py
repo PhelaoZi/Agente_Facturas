@@ -49,3 +49,17 @@ def test_build_options_incluye_tools_de_negocio():
     # No se rompe lo anterior:
     assert "mcp__postgres__query" in options.allowed_tools
     assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
+
+
+def test_build_options_incluye_tool_de_accion():
+    options = orchestrator._build_options(Collector())
+    assert "mcp__acciones__proponer_gasto" in options.allowed_tools
+    # No rompe lo anterior:
+    assert "mcp__negocio__deuda_total" in options.allowed_tools
+    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
+    assert "mcp__postgres__query" in options.allowed_tools
+
+
+def test_build_options_no_cambia_permission_mode():
+    options = orchestrator._build_options(Collector())
+    assert options.permission_mode == "bypassPermissions"
