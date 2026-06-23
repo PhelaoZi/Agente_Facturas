@@ -18,7 +18,8 @@ def _normalizar_monto(monto):
     s = str(monto).strip()
     if not s:
         return None
-    # Quita símbolo/espacios; punto = separador de miles, coma = decimal.
+    # Asume montos enteros o con punto de miles ('185.000'); no soporta
+    # decimales con coma en strings con miles ('1.234,56').
     s = s.replace("$", "").replace(" ", "").replace(".", "").replace(",", ".")
     try:
         return float(s)

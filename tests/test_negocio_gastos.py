@@ -59,3 +59,5 @@ def test_registrar_gasto_devuelve_id_y_usa_parametros():
     assert new_id == 42
     # El INSERT va parametrizado, en el orden de columnas de cuentas_por_pagar
     assert cur.params == ("Luz", None, 185000.0, "2026-06-30", "servicios")
+    assert "cuentas_por_pagar" in cur.sql
+    assert "RETURNING id" in cur.sql
