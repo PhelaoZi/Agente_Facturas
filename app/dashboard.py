@@ -1057,6 +1057,41 @@ class Handler(BaseHTTPRequestHandler):
                 return
             res = run_agent(q)
             self._send(200, json.dumps(res, default=_json_default, ensure_ascii=False))
+        elif path == "/api/registrar-gasto":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                self._send(400, json.dumps({"ok": False, "error": "JSON inválido"}))
+                return
+            try:
+                from app.negocio import gastos
+            except Exception as e:  # pragma: no cover
+                self._send(500, json.dumps({"ok": False, "error": "módulo de gastos no disponible",
+                                            "detalle": str(e)}))
+                return
+            try:
+                limpio = gastos.validar_gasto(
+                    body.get("descripcion"), body.get("monto"), body.get("fecha"),
+                    body.get("proveedor"), body.get("categoria"))
+            except ValueError as e:
+                self._send(400, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+                return
+            try:
+                conn = get_conn()
+                with conn:
+                    with conn.cursor() as cur:
+                        new_id = gastos.registrar_gasto(cur, **limpio)
+                conn.close()
+            except Exception as e:
+                self._send(500, json.dumps({"ok": False, "error": "error al escribir en la base",
+                                            "detalle": str(e)}, ensure_ascii=False))
+                return
+            monto_fmt = "$" + f"{int(round(float(limpio['monto']))):,}".replace(",", ".")
+            self._send(200, json.dumps(
+                {"ok": True, "id": new_id,
+                 "mensaje": f"Gasto registrado (id {new_id}): {limpio['descripcion']} · {monto_fmt}"},
+                ensure_ascii=False))
         else:
             self._send(404, json.dumps({"ok": False, "error": "no encontrado"}))
 
