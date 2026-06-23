@@ -221,6 +221,10 @@ def q_pendientes(cur, nombre=None):
     NO usar JOIN a conciliaciones (evidencia incompleta: los pagos
     importados desde Excel no generan conciliacion)."""
     filtro, params = _filtro_cliente(nombre)
+    # El total de credito cobrable excluye clientes incobrables (castigados).
+    # Si se consulta un cliente por nombre, se muestra igual (para ver su deuda
+    # aunque este marcado incobrable).
+    excl_incobrable = "" if nombre else "AND COALESCE(c.estado, '') <> 'incobrable'"
     cur.execute(f"""
         SELECT v.folio, v.fecha, c.razon_social,
                COALESCE(v.monto_total_ajustado, v.monto_total) AS total,
@@ -230,6 +234,7 @@ def q_pendientes(cur, nombre=None):
         WHERE v.tipo_documento != 61
           AND v.fecha_pago IS NULL
           AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0
+          {excl_incobrable}
           {filtro}
         ORDER BY v.fecha
     """, params)
