@@ -103,3 +103,34 @@ def listar(cur, filtro=None, incluir_pagados=False):
         tuple(params),
     )
     return [dict(r) for r in cur.fetchall()]
+
+
+def _validar_id(params):
+    """Extrae y valida un id de gasto (entero > 0). Lanza ValueError si no sirve."""
+    raw = params.get("id")
+    try:
+        id_ = int(raw)
+    except (TypeError, ValueError):
+        raise ValueError(f"Id de gasto inválido: {raw!r}.")
+    if id_ <= 0:
+        raise ValueError(f"Id de gasto inválido: {id_}.")
+    return id_
+
+
+def validar_borrar(params):
+    """Valida los params de borrar: requiere un id entero > 0."""
+    return {"id": _validar_id(params)}
+
+
+def borrar_gasto(cur, id):
+    """Borra el gasto por id. Devuelve {id, descripcion, mensaje}.
+    Lanza ValueError si el gasto no existe."""
+    cur.execute(
+        "DELETE FROM cuentas_por_pagar WHERE id = %s RETURNING descripcion",
+        (id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise ValueError(f"El gasto {id} ya no existe.")
+    desc = row["descripcion"]
+    return {"id": id, "descripcion": desc, "mensaje": f"Gasto borrado: {desc}"}

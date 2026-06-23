@@ -98,3 +98,27 @@ def test_listar_con_filtro_usa_ilike():
     gastos.listar(cur, filtro="luz")
     assert "ILIKE" in cur.sql
     assert cur.params == ("%luz%",)
+
+
+def test_validar_borrar_acepta_id_string_o_int():
+    assert gastos.validar_borrar({"id": "5"}) == {"id": 5}
+    assert gastos.validar_borrar({"id": 5}) == {"id": 5}
+
+
+def test_validar_borrar_rechaza_id_malo():
+    for malo in ({"id": "abc"}, {"id": 0}, {"id": -2}, {}):
+        with pytest.raises(ValueError):
+            gastos.validar_borrar(malo)
+
+
+def test_borrar_gasto_devuelve_mensaje_y_borra():
+    cur = FakeCursor(row={"descripcion": "Contadora"})
+    r = gastos.borrar_gasto(cur, 5)
+    assert r == {"id": 5, "descripcion": "Contadora", "mensaje": "Gasto borrado: Contadora"}
+    assert "DELETE" in cur.sql and "cuentas_por_pagar" in cur.sql
+    assert cur.params == (5,)
+
+
+def test_borrar_gasto_inexistente_lanza_valueerror():
+    with pytest.raises(ValueError):
+        gastos.borrar_gasto(FakeCursor(row=None), 999)
