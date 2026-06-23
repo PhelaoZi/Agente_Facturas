@@ -106,7 +106,7 @@ def parsear_fecha(valor):
     if hasattr(valor, 'date'):
         return valor.date()
     s = str(valor).strip()
-    # Remover parte de hora si existe
+    # Remover parte de hora si existe (acepta '... - HH:MM' y '... HH:MM')
     s = s.split(' - ')[0].split(' ')[0]
     for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y'):
         try:
@@ -116,39 +116,65 @@ def parsear_fecha(valor):
     return None
 
 
-def encontrar_excel(ruta_arg=None):
+def parsear_codigo(valor):
     """
-    Retorna la ruta al Excel a importar.
-    Si se pasa argumento, usa ese. Sino, busca el .xlsx mas reciente en transferencias/
+    Limpia el codigo de transferencia. Los .xls leidos con xlrd traen el codigo
+    como float ('435992178.0'); hay que dejarlo como entero limpio para que el
+    dedup por codigo_transferencia calce con lo ya cargado.
+    """
+    if valor is None:
+        return None
+    s = str(valor).strip()
+    if s in ('', 'nan', 'None'):
+        return None
+    if s.endswith('.0'):
+        s = s[:-2]
+    elif '.' in s:
+        try:
+            s = str(int(float(s)))
+        except ValueError:
+            pass
+    return s or None
+
+
+def encontrar_excels(ruta_arg=None):
+    """
+    Retorna la LISTA de archivos a importar.
+    Si se pasa argumento, usa ese unico archivo. Sino, procesa TODOS los
+    .xls/.xlsx de transferencias/ (los meses exportados del Itau), ordenados
+    por fecha. El dedup por codigo hace seguro reprocesar meses solapados.
     """
     if ruta_arg:
         p = Path(ruta_arg)
         if not p.exists():
             print(f"ERROR: No se encontro el archivo: {ruta_arg}")
             sys.exit(1)
-        return p
+        return [p]
 
     carpeta = Path("transferencias")
     if not carpeta.exists():
         print("ERROR: No existe la carpeta transferencias/")
-        print("Crea la carpeta y deposita el Excel del Itau ahi.")
+        print("Crea la carpeta y deposita los Excel del Itau ahi.")
         sys.exit(1)
 
-    archivos = sorted(carpeta.glob("*.xlsx"), key=lambda p: p.stat().st_mtime, reverse=True)
+    archivos = sorted([*carpeta.glob("*.xlsx"), *carpeta.glob("*.xls")],
+                      key=lambda p: p.stat().st_mtime)
     if not archivos:
-        print("ERROR: No hay archivos .xlsx en la carpeta transferencias/")
+        print("ERROR: No hay archivos .xls/.xlsx en la carpeta transferencias/")
         sys.exit(1)
 
-    return archivos[0]
+    return archivos
 
 
 def leer_excel(ruta):
     """
     Lee el Excel del Itau. Los headers estan en la fila 10 (indice 9 en 0-based).
-    Retorna DataFrame con columnas normalizadas.
+    Elige el motor segun la extension: xlrd para .xls (formato viejo del portal),
+    openpyxl para .xlsx. Retorna DataFrame con columnas normalizadas.
     """
+    engine = 'xlrd' if Path(ruta).suffix.lower() == '.xls' else 'openpyxl'
     try:
-        df = pd.read_excel(ruta, header=9, engine='openpyxl')
+        df = pd.read_excel(ruta, header=9, engine=engine)
     except Exception as e:
         print(f"ERROR leyendo Excel: {e}")
         sys.exit(1)
@@ -213,14 +239,27 @@ def mapear_columnas(df):
     return df
 
 
+def _rut_digitos(rut):
+    """Deja solo digitos y K (mayuscula) para comparar RUTs sin importar formato."""
+    return re.sub(r'[^0-9K]', '', (rut or '').upper())
+
+
 def importar(df, conn):
     """
-    Inserta las filas del DataFrame en movimientos_banco.
-    Retorna (insertados, omitidos, errores).
+    Carga las filas del DataFrame en movimientos_banco evitando duplicados.
+
+    Para cada transferencia:
+      1. Si ya existe una fila con ese codigo -> se omite (ya cargada).
+      2. Si existe una fila SIN codigo que calza (fecha + monto + RUT) -> se le
+         rellena el codigo (enriquece las 730 filas viejas que se cargaron sin el).
+      3. Si no calza con nada -> se inserta como nueva.
+
+    Esto es necesario porque la carga historica guardo el RUT sin normalizar y
+    sin codigo, por lo que el dedup por codigo solo no detecta los solapamientos.
+
+    Retorna (insertados, enriquecidos, omitidos, errores).
     """
-    insertados = 0
-    omitidos = 0
-    errores = 0
+    insertados = enriquecidos = omitidos = errores = 0
 
     with conn:
         cur = conn.cursor()
@@ -229,34 +268,48 @@ def importar(df, conn):
             rut = normalizar_rut(row.get('rut'))
             nombre = str(row.get('nombre', '')).strip() or None
             monto = parsear_monto(row.get('monto'))
-            codigo = str(row.get('codigo_transferencia', '')).strip() if 'codigo_transferencia' in row.index else None
-            if codigo in ('', 'nan', 'None'):
-                codigo = None
+            codigo = parsear_codigo(row.get('codigo_transferencia')) if 'codigo_transferencia' in row.index else None
 
             if not fecha or not monto:
                 errores += 1
                 continue
 
             try:
-                cur.execute("""
-                    INSERT INTO movimientos_banco
-                        (fecha, rut_emisor, nombre_emisor, monto_abono, conciliado, codigo_transferencia)
-                    VALUES (%s, %s, %s, %s, FALSE, %s)
-                    ON CONFLICT (codigo_transferencia)
-                        WHERE codigo_transferencia IS NOT NULL
-                    DO NOTHING
-                """, (fecha, rut, nombre, monto, codigo))
+                # 1. ¿Ya existe exactamente este codigo?
+                if codigo:
+                    cur.execute("SELECT 1 FROM movimientos_banco WHERE codigo_transferencia = %s LIMIT 1", (codigo,))
+                    if cur.fetchone():
+                        omitidos += 1
+                        continue
 
-                if cur.rowcount == 1:
-                    insertados += 1
+                # 2. ¿Hay una fila vieja sin codigo que calce (fecha+monto+RUT)?
+                cur.execute("""
+                    SELECT id FROM movimientos_banco
+                    WHERE fecha = %s AND monto_abono = %s
+                      AND regexp_replace(upper(COALESCE(rut_emisor, '')), '[^0-9K]', '', 'g') = %s
+                      AND codigo_transferencia IS NULL
+                    ORDER BY id LIMIT 1
+                """, (fecha, monto, _rut_digitos(rut)))
+                match = cur.fetchone()
+
+                if match:
+                    cur.execute(
+                        "UPDATE movimientos_banco SET codigo_transferencia = %s WHERE id = %s",
+                        (codigo, match[0]))
+                    enriquecidos += 1
                 else:
-                    omitidos += 1
+                    cur.execute("""
+                        INSERT INTO movimientos_banco
+                            (fecha, rut_emisor, nombre_emisor, monto_abono, conciliado, codigo_transferencia)
+                        VALUES (%s, %s, %s, %s, FALSE, %s)
+                    """, (fecha, rut, nombre, monto, codigo))
+                    insertados += 1
 
             except psycopg2.Error as e:
-                print(f"  Error insertando fila: {e}")
+                print(f"  Error procesando fila: {e}")
                 errores += 1
 
-    return insertados, omitidos, errores
+    return insertados, enriquecidos, omitidos, errores
 
 
 def main():
@@ -267,13 +320,8 @@ def main():
     print("=" * 60)
     print()
 
-    ruta = encontrar_excel(ruta_arg)
-    print(f"  Archivo: {ruta}")
-    print()
-
-    df = leer_excel(ruta)
-    df = mapear_columnas(df)
-    print(f"  Filas en Excel: {len(df)}")
+    archivos = encontrar_excels(ruta_arg)
+    print(f"  Archivos a procesar: {len(archivos)}")
 
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -284,23 +332,28 @@ def main():
     print(f"  Conectado a: {DB_CONFIG['dbname']}")
     print()
 
-    insertados, omitidos, errores = importar(df, conn)
+    tot_ins = tot_enr = tot_omi = tot_err = 0
+    for ruta in archivos:
+        df = leer_excel(ruta)
+        df = mapear_columnas(df)
+        ins, enr, omi, err = importar(df, conn)
+        tot_ins += ins
+        tot_enr += enr
+        tot_omi += omi
+        tot_err += err
+        print(f"  {ruta.name:38s} filas:{len(df):4d}  nuevas:{ins:4d}  enriquecidas:{enr:4d}  ya:{omi:4d}")
     conn.close()
 
+    print()
     print("=" * 60)
     print("RESULTADO")
     print("=" * 60)
-    print(f"  Transferencias importadas: {insertados}")
-    if omitidos:
-        print(f"  Ya existian (omitidas):   {omitidos}")
-    if errores:
-        print(f"  Filas con errores:         {errores}")
-    print()
-
-    if insertados > 0:
-        print("Importacion completada")
-    elif omitidos > 0 and insertados == 0:
-        print("Todas las transferencias ya estaban en la base de datos")
+    print(f"  Transferencias nuevas insertadas: {tot_ins}")
+    print(f"  Filas viejas con codigo rellenado: {tot_enr}")
+    if tot_omi:
+        print(f"  Ya estaban completas (omitidas):   {tot_omi}")
+    if tot_err:
+        print(f"  Filas de pie/vacias (ignoradas):   {tot_err}")
     print("=" * 60)
 
 
