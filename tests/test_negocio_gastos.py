@@ -122,3 +122,35 @@ def test_borrar_gasto_devuelve_mensaje_y_borra():
 def test_borrar_gasto_inexistente_lanza_valueerror():
     with pytest.raises(ValueError):
         gastos.borrar_gasto(FakeCursor(row=None), 999)
+
+
+def test_validar_marcar_pagado_fecha_por_defecto_hoy():
+    from datetime import date
+    r = gastos.validar_marcar_pagado({"id": 3})
+    assert r["id"] == 3
+    assert r["fecha_pago"] == date.today().isoformat()
+
+
+def test_validar_marcar_pagado_con_fecha_explicita():
+    r = gastos.validar_marcar_pagado({"id": 3, "fecha_pago": "2026-06-01"})
+    assert r == {"id": 3, "fecha_pago": "2026-06-01"}
+
+
+def test_validar_marcar_pagado_rechaza_fecha_mala():
+    import pytest
+    with pytest.raises(ValueError):
+        gastos.validar_marcar_pagado({"id": 3, "fecha_pago": "01/06/2026"})
+
+
+def test_marcar_gasto_pagado_actualiza_y_devuelve_mensaje():
+    cur = FakeCursor(row={"descripcion": "Contadora"})
+    r = gastos.marcar_gasto_pagado(cur, 5, "2026-06-01")
+    assert r["mensaje"] == "Gasto marcado como pagado: Contadora"
+    assert "UPDATE" in cur.sql and "pagado = TRUE" in cur.sql
+    assert cur.params == ("2026-06-01", 5)
+
+
+def test_marcar_gasto_pagado_inexistente_lanza_valueerror():
+    import pytest
+    with pytest.raises(ValueError):
+        gastos.marcar_gasto_pagado(FakeCursor(row=None), 999, "2026-06-01")

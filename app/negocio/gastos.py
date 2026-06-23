@@ -5,7 +5,7 @@ datos antes de cualquier escritura. `registrar_gasto` ejecuta el INSERT con un
 cursor que recibe (la conexión y el commit los maneja quien llama). Replica el
 SQL y la normalización de monto de la skill agregar-gasto.
 """
-from datetime import datetime
+from datetime import datetime, date
 
 
 def _normalizar_monto(monto):
@@ -134,3 +134,34 @@ def borrar_gasto(cur, id):
         raise ValueError(f"El gasto {id} ya no existe.")
     desc = row["descripcion"]
     return {"id": id, "descripcion": desc, "mensaje": f"Gasto borrado: {desc}"}
+
+
+def validar_marcar_pagado(params):
+    """Valida marcar-pagado: id válido; fecha_pago por defecto hoy, si viene
+    debe ser YYYY-MM-DD."""
+    id_ = _validar_id(params)
+    fecha = params.get("fecha_pago") or params.get("fecha")
+    if not fecha:
+        fecha_pago = date.today().isoformat()
+    else:
+        try:
+            fecha_pago = datetime.strptime(str(fecha).strip(), "%Y-%m-%d").date().isoformat()
+        except (ValueError, TypeError):
+            raise ValueError(f"Fecha inválida: {fecha!r}. Formato esperado: YYYY-MM-DD.")
+    return {"id": id_, "fecha_pago": fecha_pago}
+
+
+def marcar_gasto_pagado(cur, id, fecha_pago):
+    """Marca el gasto como pagado en la fecha dada. Lanza ValueError si no existe."""
+    cur.execute(
+        """
+        UPDATE cuentas_por_pagar SET pagado = TRUE, fecha_pago = %s
+        WHERE id = %s RETURNING descripcion
+        """,
+        (fecha_pago, id),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise ValueError(f"El gasto {id} ya no existe.")
+    desc = row["descripcion"]
+    return {"id": id, "descripcion": desc, "mensaje": f"Gasto marcado como pagado: {desc}"}
