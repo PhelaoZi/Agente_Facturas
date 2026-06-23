@@ -17,3 +17,15 @@ logs/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Datos crudos de entrada del pipeline (input transitorio, no se versiona)
+facturas/
+facturas-ventas/
+transferencias/
+facturas-compras/*.xml
+Notas de Credito/*.xml
+# Planilla de seguimiento manual de pagos (datos locales)
+Pagos_Inv_Serv_Gas.xlsx
+
+# Scratch del framework de skills (superpowers)
+.superpowers/
