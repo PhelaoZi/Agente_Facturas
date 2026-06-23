@@ -4,10 +4,12 @@ from app.negocio import gastos
 
 
 class FakeCursor:
-    """Cursor falso estilo RealDictCursor: fetchone devuelve un dict."""
+    """Cursor falso estilo RealDictCursor. Captura sql/params; fetchone devuelve
+    `row`, fetchall devuelve `rows` (o [row] si solo se pasó row)."""
 
-    def __init__(self, row):
+    def __init__(self, row=None, rows=None):
         self._row = row
+        self._rows = rows if rows is not None else ([] if row is None else [row])
         self.sql = None
         self.params = None
 
@@ -17,6 +19,9 @@ class FakeCursor:
 
     def fetchone(self):
         return self._row
+
+    def fetchall(self):
+        return self._rows
 
 
 def test_validar_gasto_normaliza_monto_chileno():
@@ -61,3 +66,35 @@ def test_registrar_gasto_devuelve_id_y_usa_parametros():
     assert cur.params == ("Luz", None, 185000.0, "2026-06-30", "servicios")
     assert "cuentas_por_pagar" in cur.sql
     assert "RETURNING id" in cur.sql
+
+
+def test_obtener_gasto_devuelve_dict():
+    fila = {"id": 5, "descripcion": "Contadora", "monto": 50000,
+            "fecha_vencimiento": "2026-06-30", "proveedor": None,
+            "categoria": None, "pagado": False}
+    cur = FakeCursor(row=fila)
+    r = gastos.obtener_gasto(cur, 5)
+    assert r["descripcion"] == "Contadora"
+    assert cur.params == (5,)
+    assert "cuentas_por_pagar" in cur.sql
+
+
+def test_obtener_gasto_inexistente_devuelve_none():
+    assert gastos.obtener_gasto(FakeCursor(row=None), 999) is None
+
+
+def test_listar_excluye_pagados_por_defecto():
+    filas = [{"id": 3, "descripcion": "Gas", "monto": 200000,
+              "fecha_vencimiento": "2026-06-30", "proveedor": None,
+              "categoria": None, "pagado": False}]
+    cur = FakeCursor(rows=filas)
+    r = gastos.listar(cur)
+    assert len(r) == 1 and r[0]["descripcion"] == "Gas"
+    assert "pagado = FALSE" in cur.sql
+
+
+def test_listar_con_filtro_usa_ilike():
+    cur = FakeCursor(rows=[])
+    gastos.listar(cur, filtro="luz")
+    assert "ILIKE" in cur.sql
+    assert cur.params == ("%luz%",)

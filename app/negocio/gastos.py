@@ -67,3 +67,39 @@ def registrar_gasto(cur, descripcion, monto, fecha, proveedor, categoria):
         (descripcion, proveedor, monto, fecha, categoria),
     )
     return cur.fetchone()["id"]
+
+
+def obtener_gasto(cur, id):
+    """Devuelve el gasto por id como dict, o None si no existe."""
+    cur.execute(
+        """
+        SELECT id, descripcion, monto, fecha_vencimiento, proveedor, categoria, pagado
+        FROM cuentas_por_pagar WHERE id = %s
+        """,
+        (id,),
+    )
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def listar(cur, filtro=None, incluir_pagados=False):
+    """Lista gastos ordenados por vencimiento. `filtro` hace ILIKE sobre la
+    descripción; por defecto excluye los ya pagados."""
+    cond = []
+    params = []
+    if not incluir_pagados:
+        cond.append("(pagado = FALSE OR pagado IS NULL)")
+    if filtro:
+        cond.append("descripcion ILIKE %s")
+        params.append(f"%{filtro}%")
+    where = ("WHERE " + " AND ".join(cond)) if cond else ""
+    cur.execute(
+        f"""
+        SELECT id, descripcion, monto, fecha_vencimiento, proveedor, categoria, pagado
+        FROM cuentas_por_pagar
+        {where}
+        ORDER BY fecha_vencimiento ASC NULLS LAST, id
+        """,
+        tuple(params),
+    )
+    return [dict(r) for r in cur.fetchall()]
