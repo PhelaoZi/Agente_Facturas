@@ -16,10 +16,19 @@ def _pesos(n):
         return "$0"
 
 
+def _fecha_dmy(fecha):
+    """Formatea 'YYYY-MM-DD' como 'DD/MM/YYYY'; si no parsea, devuelve el original."""
+    from datetime import datetime
+    try:
+        return datetime.strptime(str(fecha), "%Y-%m-%d").strftime("%d/%m/%Y")
+    except (ValueError, TypeError):
+        return str(fecha or "")
+
+
 def _resumen_gasto(params: dict) -> str:
     desc = params.get("descripcion", "")
     extra = f" · {params['proveedor']}" if params.get("proveedor") else ""
-    return f"Gasto: {desc} · {_pesos(params.get('monto'))} · vence {params.get('fecha', '')}{extra}"
+    return f"Gasto: {desc} · {_pesos(params.get('monto'))} · vence {_fecha_dmy(params.get('fecha', ''))}{extra}"
 
 
 def accion_gasto_artifact(params: dict) -> Artifact:

@@ -13,6 +13,8 @@ def test_accion_gasto_artifact_arma_payload():
     assert art.payload["params"] == params
     assert "185.000" in art.payload["resumen"]
     assert "Luz" in art.payload["resumen"]
+    assert "30/06/2026" in art.payload["resumen"]
+    assert "None" not in art.payload["resumen"]
 
 
 def test_build_acciones_server_lista_un_tool():
