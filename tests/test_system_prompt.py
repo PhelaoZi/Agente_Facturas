@@ -21,3 +21,10 @@ def test_system_prompt_menciona_herramientas_de_negocio():
     assert "mcp__negocio__" in SYSTEM_PROMPT
     assert "deuda_total" in SYSTEM_PROMPT
     assert "flujo_caja" in SYSTEM_PROMPT
+
+
+def test_system_prompt_incluye_regla_de_gastos():
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "proponer_gasto" in SYSTEM_PROMPT
+    # Debe dejar claro que NO afirme que quedó registrado:
+    assert "registrad" in SYSTEM_PROMPT.lower()
