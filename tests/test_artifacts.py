@@ -32,3 +32,17 @@ def test_merge_evita_duplicados_por_id():
     assert len(merge_artifacts(canvas, [a])) == 1  # mismo id, no duplica
     b = Artifact(tipo="kpi", titulo="B", payload={})
     assert len(merge_artifacts(canvas, [b])) == 2
+
+
+def test_permite_tipo_accion():
+    from app.canvas.artifacts import Artifact
+    art = Artifact(tipo="accion", titulo="Confirmar gasto", payload={"x": 1})
+    assert art.tipo == "accion"
+    assert art.titulo == "Confirmar gasto"
+
+
+def test_rechaza_tipo_desconocido():
+    import pytest
+    from app.canvas.artifacts import Artifact
+    with pytest.raises(ValueError):
+        Artifact(tipo="inventado", titulo="x", payload={})

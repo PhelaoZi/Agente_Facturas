@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-ARTIFACT_TYPES = {"kpi", "grafico", "tabla", "informe"}
+ARTIFACT_TYPES = {"kpi", "grafico", "tabla", "informe", "accion"}
 
 
 @dataclass
