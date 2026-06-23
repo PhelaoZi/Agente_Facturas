@@ -1079,10 +1079,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 conn = get_conn()
-                with conn:
-                    with conn.cursor() as cur:
-                        new_id = gastos.registrar_gasto(cur, **limpio)
-                conn.close()
+                try:
+                    with conn:
+                        with conn.cursor() as cur:
+                            new_id = gastos.registrar_gasto(cur, **limpio)
+                finally:
+                    conn.close()
             except Exception as e:
                 self._send(500, json.dumps({"ok": False, "error": "error al escribir en la base",
                                             "detalle": str(e)}, ensure_ascii=False))
