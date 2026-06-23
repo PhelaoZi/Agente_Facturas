@@ -714,6 +714,28 @@ function renderArtefactos(cont, arts){
       new Chart(document.getElementById(id),{type:t,data:{labels:p.x||[],datasets:[{label:a.titulo,data:p.y||[],backgroundColor:t==='pie'?PALETTE:'#3b3220',borderColor:ACCENT,borderWidth:1.5,borderRadius:6,tension:.35,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:t==='pie',labels:{color:MUTED}}},scales:t==='pie'?{}:{x:{grid:{color:GRID}},y:{grid:{color:GRID}}}}});
     } else if(a.tipo==='informe'){
       cont.insertAdjacentHTML('beforeend',`<div style="margin-top:10px;font-size:13px;line-height:1.6">${mdBot(p.markdown)}</div>`);
+    } else if(a.tipo==='accion'){
+      const id='acc'+(++artSeq);
+      const params=p.params||{};
+      cont.insertAdjacentHTML('beforeend',`<div id="${id}" style="border:1px solid var(--line,#3b3220);border-radius:10px;padding:12px 14px;margin-top:10px;background:rgba(249,115,22,.06)">
+        <div style="font-weight:700;font-size:12.5px;margin-bottom:4px">${esc(a.titulo||'Confirmar acción')}</div>
+        <div style="font-size:13px;margin-bottom:10px">${esc(p.resumen||'')}</div>
+        <button class="acc-ok" style="background:#f97316;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12.5px;cursor:pointer;font-weight:600">Confirmar</button>
+        <button class="acc-no" style="background:transparent;color:var(--muted,#a8a29e);border:1px solid var(--line,#3b3220);padding:8px 16px;border-radius:7px;font-size:12.5px;cursor:pointer;margin-left:6px">Cancelar</button>
+        <div class="acc-msg" style="margin-top:8px;font-size:12px"></div></div>`);
+      const card=document.getElementById(id);
+      const msg=card.querySelector('.acc-msg');
+      const ok=card.querySelector('.acc-ok'), no=card.querySelector('.acc-no');
+      no.addEventListener('click',()=>card.remove());
+      ok.addEventListener('click',async()=>{
+        ok.disabled=true; ok.textContent='Registrando…';
+        try{
+          const r=await fetch('/api/registrar-gasto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});
+          const dd=await r.json();
+          if(dd.ok){ msg.innerHTML='<span style="color:var(--green,#16a34a)">✓ '+esc(dd.mensaje||('Registrado (id '+dd.id+')'))+'</span>'; ok.textContent='Registrado'; no.disabled=true; }
+          else { msg.innerHTML='<span style="color:#dc2626">'+esc(dd.error||'No se pudo registrar')+'</span>'; ok.disabled=false; ok.textContent='Confirmar'; }
+        }catch(e){ msg.innerHTML='<span style="color:#dc2626">Error de conexión: '+esc(e.message)+'</span>'; ok.disabled=false; ok.textContent='Confirmar'; }
+      });
     }
   });
 }
