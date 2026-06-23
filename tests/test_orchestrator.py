@@ -54,6 +54,7 @@ def test_build_options_incluye_tools_de_negocio():
 def test_build_options_incluye_tool_de_accion():
     options = orchestrator._build_options(Collector())
     assert "mcp__acciones__proponer_gasto" in options.allowed_tools
+    assert "acciones" in options.mcp_servers
     # No rompe lo anterior:
     assert "mcp__negocio__deuda_total" in options.allowed_tools
     assert "mcp__lienzo__publicar_kpi" in options.allowed_tools

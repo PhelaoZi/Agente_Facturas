@@ -63,8 +63,6 @@ def _build_options(collector: Collector) -> ClaudeAgentOptions:
         cli_path=claude_path,
     )
 
-
-
 async def _run(pregunta: str, collector: Collector) -> str:
     options = _build_options(collector)
     mensajes = []
