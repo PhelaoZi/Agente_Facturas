@@ -5,7 +5,7 @@ from app.agent.tools_negocio import build_negocio_server
 def test_negocio_server_registra_los_tools():
     server, names = build_negocio_server()
     assert server is not None
-    assert len(names) == 11
+    assert len(names) == 12
     for esperado in [
         "mcp__negocio__deuda_total",
         "mcp__negocio__deuda_cliente",
@@ -20,3 +20,9 @@ def test_negocio_server_registra_los_tools():
         "mcp__negocio__margenes",
     ]:
         assert esperado in names
+
+
+def test_listar_gastos_registrado_en_tools():
+    from app.agent.tools_negocio import build_negocio_server
+    _server, tool_names = build_negocio_server()
+    assert "mcp__negocio__listar_gastos" in tool_names

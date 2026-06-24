@@ -13,6 +13,7 @@ from app.briefing import data as deuda_data
 from app.negocio import ventas as ventas_data
 from app.negocio import costos as costos_data
 from app.negocio import flujo as flujo_data
+from app.negocio import gastos as gastos_data
 
 
 def _con_cursor(fn, *args, **kwargs):
@@ -147,10 +148,24 @@ def build_negocio_server():
                               f"({m['margen_pct']}%)")
         return _texto("\n".join(lineas))
 
+    @tool("listar_gastos", "Lista los gastos pendientes (cuentas por pagar) con su id, "
+                           "para ubicar uno antes de borrarlo, editarlo o marcarlo pagado. "
+                           "Opcional: filtro de texto sobre la descripción.",
+          {"filtro": str})
+    async def listar_gastos(args):
+        r = _con_cursor(gastos_data.listar, args.get("filtro"))
+        if not r:
+            suf = f" que coincidan con '{args['filtro']}'." if args.get("filtro") else "."
+            return _texto("No hay gastos pendientes" + suf)
+        return _texto("\n".join(
+            f"- id {g['id']}: {g['descripcion']} · {_pesos(g['monto'])} · vence {g['fecha_vencimiento']}"
+            + (f" · {g['proveedor']}" if g.get("proveedor") else "")
+            for g in r))
+
     server = create_sdk_mcp_server(name="negocio", version="1.0.0", tools=[
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
-        flujo_caja, costos_sku, margenes,
+        flujo_caja, costos_sku, margenes, listar_gastos,
     ])
     tool_names = [
         "mcp__negocio__deuda_total", "mcp__negocio__deuda_cliente",
@@ -158,5 +173,6 @@ def build_negocio_server():
         "mcp__negocio__ventas_total", "mcp__negocio__ranking_clientes",
         "mcp__negocio__ventas_cliente", "mcp__negocio__ventas_producto",
         "mcp__negocio__flujo_caja", "mcp__negocio__costos_sku", "mcp__negocio__margenes",
+        "mcp__negocio__listar_gastos",
     ]
     return server, tool_names
