@@ -730,7 +730,7 @@ function renderArtefactos(cont, arts){
       ok.addEventListener('click',async()=>{
         ok.disabled=true; ok.textContent='Registrando…';
         try{
-          const r=await fetch('/api/registrar-gasto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});
+          const r=await fetch('/api/ejecutar-accion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo_accion:p.tipo_accion,params})});
           const dd=await r.json();
           if(dd.ok){ msg.innerHTML='<span style="color:var(--green,#16a34a)">✓ '+esc(dd.mensaje||('Registrado (id '+dd.id+')'))+'</span>'; ok.textContent='Registrado'; no.disabled=true; }
           else { msg.innerHTML='<span style="color:#dc2626">'+esc(dd.error||'No se pudo registrar')+'</span>'; ok.disabled=false; ok.textContent='Confirmar'; }
