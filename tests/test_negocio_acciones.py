@@ -51,3 +51,15 @@ def test_ejecutar_registrar_incluye_id_y_mensaje():
                            "proveedor": None, "categoria": None})
     assert r["id"] == 42
     assert "Gasto registrado" in r["mensaje"]
+
+
+def test_ejecutar_editar_devuelve_resultado_uniforme():
+    cur = FakeCursor(row={"descripcion": "Luz actualizada"})
+    r = acciones.ejecutar(cur, "editar_gasto", {"id": 3, "cambios": {"monto": 200000}})
+    assert "mensaje" in r
+
+
+def test_ejecutar_marcar_pagado_devuelve_resultado_uniforme():
+    cur = FakeCursor(row={"descripcion": "Contadora"})
+    r = acciones.ejecutar(cur, "marcar_gasto_pagado", {"id": 7, "fecha_pago": "2026-06-20"})
+    assert "mensaje" in r
