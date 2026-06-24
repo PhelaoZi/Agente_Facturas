@@ -165,3 +165,53 @@ def marcar_gasto_pagado(cur, id, fecha_pago):
         raise ValueError(f"El gasto {id} ya no existe.")
     desc = row["descripcion"]
     return {"id": id, "descripcion": desc, "mensaje": f"Gasto marcado como pagado: {desc}"}
+
+
+def validar_editar(params):
+    """Valida editar: id válido + al menos un campo. Normaliza monto y fecha.
+    Devuelve {id, cambios:{columna_real: valor}}."""
+    id_ = _validar_id(params)
+    cambios = {}
+    if params.get("descripcion") is not None:
+        desc = str(params["descripcion"]).strip()
+        if not desc:
+            raise ValueError("La descripción no puede quedar vacía.")
+        cambios["descripcion"] = desc
+    if params.get("monto") is not None:
+        m = _normalizar_monto(params["monto"])
+        if m is None or m <= 0:
+            raise ValueError(f"Monto inválido: {params['monto']!r}. Debe ser mayor que 0.")
+        cambios["monto"] = m
+    if params.get("fecha") is not None:
+        try:
+            cambios["fecha_vencimiento"] = datetime.strptime(
+                str(params["fecha"]).strip(), "%Y-%m-%d").date().isoformat()
+        except (ValueError, TypeError):
+            raise ValueError(f"Fecha inválida: {params['fecha']!r}. Formato esperado: YYYY-MM-DD.")
+    if params.get("proveedor") is not None:
+        cambios["proveedor"] = str(params["proveedor"]).strip() or None
+    if params.get("categoria") is not None:
+        cambios["categoria"] = str(params["categoria"]).strip() or None
+
+    if not cambios:
+        raise ValueError("No indicaste ningún campo para cambiar.")
+    return {"id": id_, "cambios": cambios}
+
+
+def editar_gasto(cur, id, cambios):
+    """Aplica los cambios al gasto (UPDATE parcial parametrizado). Las claves de
+    `cambios` son siempre columnas de la whitelist (las produce validar_editar).
+    Lanza ValueError si no hay cambios o el gasto no existe."""
+    if not cambios:
+        raise ValueError("No hay cambios que aplicar.")
+    set_sql = ", ".join(f"{col} = %s" for col in cambios)
+    valores = list(cambios.values()) + [id]
+    cur.execute(
+        f"UPDATE cuentas_por_pagar SET {set_sql} WHERE id = %s RETURNING descripcion",
+        tuple(valores),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise ValueError(f"El gasto {id} ya no existe.")
+    return {"id": id, "descripcion": row["descripcion"],
+            "mensaje": f"Gasto actualizado: {row['descripcion']}"}

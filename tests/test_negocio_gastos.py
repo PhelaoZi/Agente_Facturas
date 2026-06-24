@@ -154,3 +154,39 @@ def test_marcar_gasto_pagado_inexistente_lanza_valueerror():
     import pytest
     with pytest.raises(ValueError):
         gastos.marcar_gasto_pagado(FakeCursor(row=None), 999, "2026-06-01")
+
+
+def test_validar_editar_normaliza_monto():
+    r = gastos.validar_editar({"id": 4, "monto": "180.000"})
+    assert r == {"id": 4, "cambios": {"monto": 180000.0}}
+
+
+def test_validar_editar_mapea_fecha_a_vencimiento():
+    r = gastos.validar_editar({"id": 4, "fecha": "2026-07-01"})
+    assert r["cambios"] == {"fecha_vencimiento": "2026-07-01"}
+
+
+def test_validar_editar_sin_campos_lanza_valueerror():
+    import pytest
+    with pytest.raises(ValueError):
+        gastos.validar_editar({"id": 4})
+
+
+def test_validar_editar_rechaza_monto_malo():
+    import pytest
+    with pytest.raises(ValueError):
+        gastos.validar_editar({"id": 4, "monto": "abc"})
+
+
+def test_editar_gasto_arma_update_parametrizado():
+    cur = FakeCursor(row={"descripcion": "Gas"})
+    r = gastos.editar_gasto(cur, 4, {"monto": 180000.0})
+    assert r["mensaje"] == "Gasto actualizado: Gas"
+    assert "UPDATE cuentas_por_pagar SET monto = %s" in cur.sql
+    assert cur.params == (180000.0, 4)
+
+
+def test_editar_gasto_inexistente_lanza_valueerror():
+    import pytest
+    with pytest.raises(ValueError):
+        gastos.editar_gasto(FakeCursor(row=None), 999, {"monto": 1.0})
