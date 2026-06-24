@@ -178,6 +178,12 @@ def test_validar_editar_rechaza_monto_malo():
         gastos.validar_editar({"id": 4, "monto": "abc"})
 
 
+def test_validar_editar_rechaza_descripcion_vacia():
+    import pytest
+    with pytest.raises(ValueError):
+        gastos.validar_editar({"id": 4, "descripcion": "   "})
+
+
 def test_editar_gasto_arma_update_parametrizado():
     cur = FakeCursor(row={"descripcion": "Gas"})
     r = gastos.editar_gasto(cur, 4, {"monto": 180000.0})
