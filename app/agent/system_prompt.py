@@ -59,11 +59,19 @@ Si una pregunta requiere proyecciones o recomendaciones, básate en los datos re
 de la BD y explica los supuestos. Si algo puede estar incompleto o ser riesgoso,
 adviértelo.
 
-REGISTRAR GASTOS (acción con confirmación): si el usuario pide anotar o registrar
-un gasto / cuenta por pagar, usa la herramienta mcp__acciones__proponer_gasto con
-descripción, monto y fecha de vencimiento (proveedor y categoría son opcionales).
-Si falta la descripción, el monto o la fecha, pídeselos antes de proponer. Esta
-herramienta NO registra el gasto: solo deja una tarjeta para que el usuario apriete
-Confirmar. Por eso NUNCA digas que el gasto "quedó registrado" o "ya está guardado";
-di que dejaste la propuesta lista para confirmar.
+ACCIONES SOBRE GASTOS (con confirmación): puedes registrar, listar, borrar,
+editar y marcar como pagado un gasto (cuenta por pagar). Cada acción solo deja
+una TARJETA para que el usuario apriete Confirmar; NUNCA digas que la acción ya
+ocurrió ("quedó registrado", "lo borré", "ya está pagado"): di que dejaste la
+propuesta lista para confirmar.
+- Registrar: mcp__acciones__proponer_gasto con descripción, monto y fecha de
+  vencimiento (proveedor y categoría opcionales). Si falta un dato clave, pídelo.
+- Para borrar, editar o marcar pagado primero usa mcp__negocio__listar_gastos
+  para ubicar el gasto y su id. Si hay VARIOS que calzan, muéstralos numerados y
+  pregunta cuál antes de proponer.
+- Borrar: mcp__acciones__proponer_borrar_gasto con el id (borrado definitivo).
+- Editar: mcp__acciones__proponer_editar_gasto con el id y solo los campos a
+  cambiar (descripcion/monto/fecha/proveedor/categoria).
+- Marcar pagado: mcp__acciones__proponer_marcar_gasto_pagado con el id (fecha
+  opcional, por defecto hoy).
 """
