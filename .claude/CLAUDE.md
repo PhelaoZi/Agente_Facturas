@@ -71,6 +71,10 @@ python scripts/sync_compras.py                # Procesa XMLs de compras (usar /s
 
 # Backup de la base de datos
 python scripts/backup_db.py                   # Backup manual inmediato (la tarea corre sola a las 23:00)
+
+# Dashboard web + chat de negocio (Centro de Comando)
+python app/dashboard.py                       # o doble clic en iniciar_dashboard.bat → http://localhost:8777
+python -m pytest -q                           # Suite de tests del proyecto
 ```
 
 ---
@@ -134,6 +138,25 @@ wiki/                       # Brain compilado de clientes (Markdown + Obsidian)
   indices/                  # Sub-índices escalables: activos, morosos, incobrables
   conceptos/                # Páginas agregadas (top, morosos, inactivos)
     productos/              # Un concepto por producto principal
+app/                        # Capa de aplicación: dashboard web + agente de chat
+  dashboard.py              # Centro de Comando (servidor http.server, puerto 8777)
+  dashboard_ui.html         # UI oscura del dashboard + chat
+  config.py                 # DB_URL + _load_env()
+  negocio/                  # Lógica de negocio: funciones puras que reciben un cursor
+    ventas.py costos.py flujo.py
+    gastos.py               # validar/registrar/borrar/editar/marcar-pagado gasto
+    acciones.py             # Registro tipo_accion → (validar, ejecutar)
+  briefing/                 # data.py + render.py del brief diario
+  canvas/                   # artifacts.py (Artifact/Collector) + export/charts
+  agent/                    # Orquestador del Claude Agent SDK (chat)
+    orchestrator.py         # arma opciones MCP y corre el agente sobre el lienzo
+    system_prompt.py        # reglas del agente
+    tools_negocio.py        # tools de SOLO LECTURA (mcp__negocio__*)
+    publish_tools.py        # tools para publicar artefactos (mcp__lienzo__*)
+    tools_acciones.py       # tools que PROPONEN escrituras (mcp__acciones__proponer_*)
+tests/                      # Suite pytest (python -m pytest -q)
+briefs/                     # Briefs diarios generados (YYYY-MM-DD.md)
+docs/superpowers/           # Diseños (specs/) y planes (plans/) de cada feature
 .claude/skills/             # Skills de Claude Code (12 activas)
   consultar-ventas/scripts/query_ventas.py  # Queries hardcodeadas
   monitoreo-facturas/scripts/detectar_pendientes.py
@@ -483,6 +506,81 @@ Reporte de negocio generado cada mañana (Tarea Programada de Windows
 
 ---
 
+## Dashboard y chat de negocio (Centro de Comando)
+
+Panel web local (`app/dashboard.py`, servidor `http.server` en
+http://localhost:8777) que muestra la panorámica del negocio (ventas, cobranza,
+flujo, costos) y, sobre todo, un **chat con un agente** que responde preguntas y
+ejecuta acciones. Se abre con doble clic en `iniciar_dashboard.bat` o
+`python app/dashboard.py`. Las consultas son de solo lectura; las escrituras
+pasan por confirmación (ver abajo).
+
+### Arquitectura por capas (`app/`)
+
+| Capa | Archivos | Rol |
+|------|----------|-----|
+| Negocio | `app/negocio/{ventas,costos,flujo,gastos}.py` | Funciones puras que reciben un cursor y devuelven datos. Sin manejo de conexión. Testeadas con cursor falso. |
+| Acciones | `app/negocio/acciones.py` | Registro `tipo_accion → (validar, ejecutar)` de las escrituras confirmadas. |
+| Lienzo | `app/canvas/artifacts.py` | `Artifact` (tipo: kpi/grafico/tabla/informe/**accion**) + `Collector`. |
+| Agente | `app/agent/*` | Orquestador del Claude Agent SDK + tools MCP in-process + system prompt. |
+| Briefing | `app/briefing/{data,render}.py` | Datos y render del brief diario. |
+
+El orquestador (`app/agent/orchestrator.py`) corre el Claude Agent SDK con tres
+servidores MCP in-process — `lienzo` (publicar artefactos), `negocio` (lecturas)
+y `acciones` (proponer escrituras) — más el server `postgres` de solo lectura.
+`run_agent()` en `dashboard.py` devuelve `{texto, artefactos}` al frontend.
+
+### Herramientas del agente
+
+- **Lectura (`mcp__negocio__*`):** `deuda_total`, `deuda_cliente`,
+  `ranking_deudores`, `facturas_vencidas`, `ventas_total`, `ranking_clientes`,
+  `ventas_cliente`, `ventas_producto`, `flujo_caja`, `costos_sku`, `margenes`,
+  `listar_gastos`. Aplican las reglas canónicas (montos ajustados, excluir NC,
+  `fecha_pago`); el prompt obliga a usarlas en vez de improvisar SQL.
+- **Publicar en el lienzo (`mcp__lienzo__*`):** `publicar_kpi`,
+  `publicar_grafico`, `publicar_tabla`, `publicar_informe`.
+- **Proponer escrituras (`mcp__acciones__proponer_*`):** ver mecanismo abajo.
+
+### Acciones de escritura — patrón propose / confirm / execute (Fase 2b)
+
+**Invariante de seguridad (no negociable):** el agente **NUNCA escribe** en la
+BD. Sus tools de acción solo *proponen*: publican un `Artifact(tipo="accion")`
+con `{tipo_accion, params, resumen}`. El frontend lo dibuja como **tarjeta con
+botón Confirmar**. Al confirmar, el navegador hace `POST /api/ejecutar-accion` y
+un **endpoint determinista** valida y ejecuta el `INSERT/UPDATE/DELETE`. Ese
+endpoint es el único camino de escritura. **No se cambia `permission_mode`.**
+
+```
+Usuario pide algo → agente lista (listar_gastos) y llama proponer_X
+                  → publica Artifact accion {tipo_accion, params, resumen}
+Frontend dibuja tarjeta → [Confirmar] → POST /api/ejecutar-accion {tipo_accion, params}
+Endpoint: acciones.validar(tipo, params)        (ValueError → 400, sin tocar BD)
+          acciones.ejecutar(cur, tipo, clean)   (error de BD → 500; éxito → 200 {ok, **result})
+```
+
+- **Registro:** `app/negocio/acciones.py` mapea cada `tipo_accion` a un par
+  `(validar, ejecutar)`. Agregar una acción nueva = una fila ahí + una tool
+  `proponer_X` en `app/agent/tools_acciones.py`. La tarjeta del frontend no
+  vuelve a cambiar (es genérica: postea `{tipo_accion, params}`).
+- **Acciones de gasto (`cuentas_por_pagar`) implementadas:** `registrar_gasto`,
+  `borrar_gasto` (borrado definitivo), `editar_gasto` (UPDATE parcial; nombres
+  de columna desde whitelist, valores parametrizados) y `marcar_gasto_pagado`
+  (`pagado=TRUE, fecha_pago`). El agente las usa por descripción: primero
+  `listar_gastos` para ubicar el id; la tarjeta muestra los datos exactos antes
+  de confirmar (red de seguridad contra tocar el gasto equivocado).
+- **El endpoint nunca finge éxito:** 400 en validación o gasto inexistente, 500
+  en error de BD; cierra la conexión en `finally`.
+- Diseños y planes detallados en `docs/superpowers/specs/` y `.../plans/`
+  (`2026-06-21-registrar-gasto-confirmacion`,
+  `2026-06-22-acciones-gasto-mecanismo-generico`).
+
+### Próximas acciones (roadmap)
+
+Reutilizarán este mismo mecanismo: **marcar factura de venta como pagada**
+(`ventas.fecha_pago`) y **conciliar pagos del banco** desde el chat.
+
+---
+
 ## Convenciones del proyecto
 
 - XMLs del SII van en `facturas/` con nombre `DTE_DDMMYYYY`
@@ -501,4 +599,7 @@ Python 3.x
 psycopg2-binary
 pandas
 openpyxl
+claude-agent-sdk     # agente del chat del dashboard (orquestador)
+plotly + kaleido     # gráficos y export del dashboard
+pytest               # suite de tests (python -m pytest -q)
 ```
