@@ -1057,7 +1057,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             res = run_agent(q)
             self._send(200, json.dumps(res, default=_json_default, ensure_ascii=False))
-        elif path == "/api/registrar-gasto":
+        elif path == "/api/ejecutar-accion":
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(length) or b"{}") if length else {}
@@ -1065,15 +1065,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, json.dumps({"ok": False, "error": "JSON inválido"}))
                 return
             try:
-                from app.negocio import gastos
+                from app.negocio import acciones
             except Exception as e:  # pragma: no cover
-                self._send(500, json.dumps({"ok": False, "error": "módulo de gastos no disponible",
+                self._send(500, json.dumps({"ok": False, "error": "módulo de acciones no disponible",
                                             "detalle": str(e)}))
                 return
+            tipo_accion = body.get("tipo_accion")
+            params = body.get("params") or {}
             try:
-                limpio = gastos.validar_gasto(
-                    body.get("descripcion"), body.get("monto"), body.get("fecha"),
-                    body.get("proveedor"), body.get("categoria"))
+                clean = acciones.validar(tipo_accion, params)
             except ValueError as e:
                 self._send(400, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
                 return
@@ -1082,18 +1082,19 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     with conn:
                         with conn.cursor() as cur:
-                            new_id = gastos.registrar_gasto(cur, **limpio)
+                            result = acciones.ejecutar(cur, tipo_accion, clean)
                 finally:
                     conn.close()
+            except ValueError as e:
+                # p. ej. "El gasto N ya no existe" durante la ejecución
+                self._send(400, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+                return
             except Exception as e:
                 self._send(500, json.dumps({"ok": False, "error": "error al escribir en la base",
                                             "detalle": str(e)}, ensure_ascii=False))
                 return
-            monto_fmt = "$" + f"{int(round(float(limpio['monto']))):,}".replace(",", ".")
-            self._send(200, json.dumps(
-                {"ok": True, "id": new_id,
-                 "mensaje": f"Gasto registrado (id {new_id}): {limpio['descripcion']} · {monto_fmt}"},
-                ensure_ascii=False))
+            self._send(200, json.dumps({"ok": True, **result},
+                                       default=_json_default, ensure_ascii=False))
         else:
             self._send(404, json.dumps({"ok": False, "error": "no encontrado"}))
 
