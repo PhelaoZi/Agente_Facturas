@@ -14,6 +14,8 @@ from app.negocio import ventas as ventas_data
 from app.negocio import costos as costos_data
 from app.negocio import flujo as flujo_data
 from app.negocio import gastos as gastos_data
+from app.negocio import clientes as clientes_data
+from app.negocio import seguimiento as seguimiento_data
 
 
 def _con_cursor(fn, *args, **kwargs):
@@ -162,10 +164,37 @@ def build_negocio_server():
             + (f" · {g['proveedor']}" if g.get("proveedor") else "")
             for g in r))
 
+    @tool("clientes_en_riesgo",
+          "Clientes con señales de alerta comercial (dormido, caída de consumo, "
+          "baja frecuencia, nuevo sin recompra), priorizados (los grandes primero). "
+          "Úsala para diagnosticar la salud de la cartera y a quién contactar.", {})
+    async def clientes_en_riesgo(args):
+        r = _con_cursor(clientes_data.salud_clientes)
+        if not r:
+            return _texto("Ningún cliente con señales de alerta ahora mismo.")
+        lineas = [f"- [{c['prioridad']}] {c['cliente']} (RUT {c['rut']}): {c['motivo']}"
+                  for c in r]
+        return _texto("Clientes en riesgo (priorizados):\n" + "\n".join(lineas))
+
+    @tool("listar_seguimiento",
+          "Lista la lista de seguimiento comercial con su id y estado, para ubicar "
+          "uno antes de marcarlo. Opcional: estado (pendiente/contactado/descartado; "
+          "por defecto pendiente).", {"estado": str})
+    async def listar_seguimiento(args):
+        estado = (args.get("estado") or "pendiente").strip() or "pendiente"
+        r = _con_cursor(seguimiento_data.listar, estado)
+        if not r:
+            return _texto(f"No hay seguimientos en estado '{estado}'.")
+        return _texto("\n".join(
+            f"- id {s['id']} [{s['prioridad']}] "
+            f"{s.get('razon_social') or s['rut_cliente']}: {s['motivo']}"
+            for s in r))
+
     server = create_sdk_mcp_server(name="negocio", version="1.0.0", tools=[
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
         flujo_caja, costos_sku, margenes, listar_gastos,
+        clientes_en_riesgo, listar_seguimiento,
     ])
     tool_names = [
         "mcp__negocio__deuda_total", "mcp__negocio__deuda_cliente",
@@ -174,5 +203,6 @@ def build_negocio_server():
         "mcp__negocio__ventas_cliente", "mcp__negocio__ventas_producto",
         "mcp__negocio__flujo_caja", "mcp__negocio__costos_sku", "mcp__negocio__margenes",
         "mcp__negocio__listar_gastos",
+        "mcp__negocio__clientes_en_riesgo", "mcp__negocio__listar_seguimiento",
     ]
     return server, tool_names
