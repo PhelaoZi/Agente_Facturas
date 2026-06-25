@@ -63,3 +63,43 @@ def test_ejecutar_marcar_pagado_devuelve_resultado_uniforme():
     cur = FakeCursor(row={"descripcion": "Contadora"})
     r = acciones.ejecutar(cur, "marcar_gasto_pagado", {"id": 7, "fecha_pago": "2026-06-20"})
     assert "mensaje" in r
+
+
+# --- Tests para acciones de seguimiento comercial ---
+
+def test_validar_agregar_seguimiento_enruta():
+    clean = acciones.validar("agregar_seguimiento",
+                             {"rut_cliente": "77-1", "motivo": "Se enfrió"})
+    assert clean["rut_cliente"] == "77-1"
+    assert clean["prioridad"] == "media"
+
+
+def test_ejecutar_agregar_seguimiento_incluye_id_y_mensaje():
+    class Cur(FakeCursor):
+        def __init__(self):
+            super().__init__()
+            self._calls = 0
+
+        def fetchone(self):
+            self._calls += 1
+            return None if self._calls == 1 else {"id": 9}
+
+    r = acciones.ejecutar(Cur(), "agregar_seguimiento",
+                          {"rut_cliente": "77-1", "motivo": "Se enfrió",
+                           "prioridad": "alta", "senales": None,
+                           "fecha_objetivo": None, "notas": None})
+    assert r["id"] == 9
+    assert "Seguimiento creado" in r["mensaje"]
+
+
+def test_validar_marcar_seguimiento_enruta():
+    clean = acciones.validar("marcar_seguimiento", {"id": "5", "estado": "contactado"})
+    assert clean == {"id": 5, "estado": "contactado",
+                     "fecha_contacto": clean["fecha_contacto"]}
+
+
+def test_ejecutar_marcar_seguimiento_devuelve_mensaje():
+    cur = FakeCursor(row={"rut_cliente": "77-1", "motivo": "Se enfrió"})
+    r = acciones.ejecutar(cur, "marcar_seguimiento",
+                          {"id": 5, "estado": "contactado", "fecha_contacto": "2026-06-24"})
+    assert "mensaje" in r

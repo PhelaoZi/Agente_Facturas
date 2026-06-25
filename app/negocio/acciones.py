@@ -8,6 +8,7 @@ El endpoint determinista usa `validar` (sin BD → 400) y `ejecutar` (con BD →
 500/400). El agente nunca escribe: solo propone artefactos `accion`.
 """
 from app.negocio import gastos
+from app.negocio import seguimiento
 
 
 def _validar_registrar(params):
@@ -35,11 +36,21 @@ def _ejecutar_marcar_pagado(cur, clean):
     return gastos.marcar_gasto_pagado(cur, clean["id"], clean["fecha_pago"])
 
 
+def _ejecutar_agregar_seguimiento(cur, clean):
+    return seguimiento.agregar(cur, **clean)
+
+
+def _ejecutar_marcar_seguimiento(cur, clean):
+    return seguimiento.marcar(cur, clean["id"], clean["estado"], clean["fecha_contacto"])
+
+
 ACCIONES = {
     "registrar_gasto":     (_validar_registrar, _ejecutar_registrar),
     "borrar_gasto":        (gastos.validar_borrar, _ejecutar_borrar),
     "editar_gasto":        (gastos.validar_editar, _ejecutar_editar),
     "marcar_gasto_pagado": (gastos.validar_marcar_pagado, _ejecutar_marcar_pagado),
+    "agregar_seguimiento": (seguimiento.validar_agregar, _ejecutar_agregar_seguimiento),
+    "marcar_seguimiento":  (seguimiento.validar_marcar, _ejecutar_marcar_seguimiento),
 }
 
 
