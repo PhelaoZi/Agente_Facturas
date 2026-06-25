@@ -36,3 +36,11 @@ def test_system_prompt_menciona_acciones_de_gasto():
     assert "proponer_borrar_gasto" in SYSTEM_PROMPT
     assert "proponer_editar_gasto" in SYSTEM_PROMPT
     assert "proponer_marcar_gasto_pagado" in SYSTEM_PROMPT
+
+
+def test_system_prompt_incluye_gerente_comercial():
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "clientes_en_riesgo" in SYSTEM_PROMPT
+    assert "listar_seguimiento" in SYSTEM_PROMPT
+    assert "proponer_agregar_seguimiento" in SYSTEM_PROMPT
+    assert "proponer_marcar_seguimiento" in SYSTEM_PROMPT
