@@ -56,3 +56,33 @@ def test_build_acciones_server_incluye_las_tres_nuevas():
         assert n in tool_names
     # No rompe la existente:
     assert "mcp__acciones__proponer_gasto" in tool_names
+
+
+def test_agregar_seguimiento_artifact_arma_payload():
+    params = {"rut_cliente": "77-1", "cliente": "Bar X", "motivo": "Se enfrió",
+              "prioridad": "alta", "senales": "caida_consumo"}
+    art = tools_acciones.agregar_seguimiento_artifact(params)
+    assert art.tipo == "accion"
+    assert art.payload["tipo_accion"] == "agregar_seguimiento"
+    # El cliente (razón social) es solo para el resumen, no va en los params de la acción:
+    assert "cliente" not in art.payload["params"]
+    assert art.payload["params"]["rut_cliente"] == "77-1"
+    assert art.payload["params"]["motivo"] == "Se enfrió"
+    assert "Bar X" in art.payload["resumen"]
+
+
+def test_marcar_seguimiento_artifact_arma_payload():
+    s = {"id": 5, "rut_cliente": "77-1", "razon_social": "Bar X", "motivo": "Se enfrió"}
+    art = tools_acciones.marcar_seguimiento_artifact(s, "contactado")
+    assert art.payload["tipo_accion"] == "marcar_seguimiento"
+    assert art.payload["params"] == {"id": 5, "estado": "contactado"}
+    assert "Bar X" in art.payload["resumen"]
+    assert "contactado" in art.payload["resumen"]
+
+
+def test_build_acciones_server_incluye_las_de_seguimiento():
+    _server, tool_names = tools_acciones.build_acciones_server(Collector())
+    assert "mcp__acciones__proponer_agregar_seguimiento" in tool_names
+    assert "mcp__acciones__proponer_marcar_seguimiento" in tool_names
+    # No rompe las existentes:
+    assert "mcp__acciones__proponer_gasto" in tool_names

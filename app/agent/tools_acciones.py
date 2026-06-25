@@ -12,6 +12,7 @@ from app.canvas.artifacts import Artifact, Collector
 from app.config import DB_URL
 from app.negocio import gastos
 from app.negocio.gastos import validar_gasto
+from app.negocio import seguimiento
 
 
 def _pesos(n):
@@ -87,6 +88,40 @@ def editar_gasto_artifact(g, params, cambios) -> Artifact:
     resumen = f"Editar {g['descripcion']}: " + ", ".join(partes)
     return Artifact(tipo="accion", titulo="Confirmar edición",
         payload={"tipo_accion": "editar_gasto", "params": params, "resumen": resumen})
+
+
+def agregar_seguimiento_artifact(params: dict) -> Artifact:
+    """Tarjeta para agregar un cliente a la lista de seguimiento. `cliente`
+    (razón social) es solo para mostrar; no viaja en los params de la acción."""
+    quien = params.get("cliente") or params.get("rut_cliente")
+    resumen = f"Seguimiento: {quien} · {params.get('motivo', '')} · prioridad {params.get('prioridad', 'media')}"
+    accion_params = {
+        "rut_cliente": params.get("rut_cliente"),
+        "motivo": params.get("motivo"),
+        "prioridad": params.get("prioridad", "media"),
+        "senales": params.get("senales"),
+    }
+    return Artifact(tipo="accion", titulo="Confirmar seguimiento",
+        payload={"tipo_accion": "agregar_seguimiento", "params": accion_params,
+                 "resumen": resumen})
+
+
+def marcar_seguimiento_artifact(s, estado) -> Artifact:
+    quien = s.get("razon_social") or s["rut_cliente"]
+    resumen = f"Marcar {quien} como {estado}: {s.get('motivo', '')}"
+    return Artifact(tipo="accion", titulo="Confirmar seguimiento",
+        payload={"tipo_accion": "marcar_seguimiento",
+                 "params": {"id": s["id"], "estado": estado}, "resumen": resumen})
+
+
+def _obtener_seguimiento(id):
+    """Lee un seguimiento por id con su propia conexión de solo lectura."""
+    conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+    try:
+        with conn.cursor() as cur:
+            return seguimiento.obtener(cur, id)
+    finally:
+        conn.close()
 
 
 def build_acciones_server(collector: Collector):
@@ -170,13 +205,61 @@ def build_acciones_server(collector: Collector):
                 "text": f"Propuesta lista para confirmar — Editar {g['descripcion']}. "
                         "Quedó como tarjeta; el usuario debe apretar Confirmar. NO afirmes que ya se editó."}]}
 
+    @tool("proponer_agregar_seguimiento",
+          "Propone agregar un cliente a la lista de seguimiento comercial, para que "
+          "el usuario confirme. NO escribe: publica una tarjeta. Pasa rut_cliente, "
+          "cliente (razón social, para mostrar), motivo, prioridad (alta/media) y "
+          "senales (texto opcional). Úsala tras diagnosticar con clientes_en_riesgo.",
+          {"rut_cliente": str, "cliente": str, "motivo": str,
+           "prioridad": str, "senales": str})
+    async def proponer_agregar_seguimiento(args):
+        params = {"rut_cliente": args.get("rut_cliente"), "motivo": args.get("motivo"),
+                  "prioridad": (args.get("prioridad") or "media"),
+                  "senales": args.get("senales")}
+        try:
+            seguimiento.validar_agregar(params)
+        except ValueError as e:
+            return {"content": [{"type": "text",
+                    "text": f"No puedo proponer el seguimiento: {e}"}]}
+        collector.add(agregar_seguimiento_artifact({**params, "cliente": args.get("cliente")}))
+        quien = args.get("cliente") or args.get("rut_cliente")
+        return {"content": [{"type": "text",
+                "text": f"Propuesta lista para confirmar — seguimiento de {quien}. "
+                        "Quedó como tarjeta; el usuario debe apretar Confirmar. "
+                        "NO afirmes que ya quedó en la lista."}]}
+
+    @tool("proponer_marcar_seguimiento",
+          "Propone marcar un seguimiento como 'contactado' o 'descartado' por su id, "
+          "para que el usuario confirme. NO escribe: publica una tarjeta. Usa "
+          "listar_seguimiento primero para ubicar el id.",
+          {"id": int, "estado": str})
+    async def proponer_marcar_seguimiento(args):
+        s = _obtener_seguimiento(args.get("id"))
+        if not s:
+            return {"content": [{"type": "text",
+                    "text": f"No encontré un seguimiento con id {args.get('id')}. "
+                            "Usa listar_seguimiento para ver los ids."}]}
+        estado = (args.get("estado") or "").strip().lower()
+        if estado not in ("contactado", "descartado"):
+            return {"content": [{"type": "text",
+                    "text": "El estado debe ser 'contactado' o 'descartado'."}]}
+        collector.add(marcar_seguimiento_artifact(s, estado))
+        quien = s.get("razon_social") or s["rut_cliente"]
+        return {"content": [{"type": "text",
+                "text": f"Propuesta lista para confirmar — marcar {quien} como {estado}. "
+                        "Quedó como tarjeta; el usuario debe apretar Confirmar. "
+                        "NO afirmes que ya se marcó."}]}
+
     server = create_sdk_mcp_server(name="acciones", version="1.0.0", tools=[
         proponer_gasto, proponer_borrar_gasto, proponer_marcar_gasto_pagado, proponer_editar_gasto,
+        proponer_agregar_seguimiento, proponer_marcar_seguimiento,
     ])
     tool_names = [
         "mcp__acciones__proponer_gasto",
         "mcp__acciones__proponer_borrar_gasto",
         "mcp__acciones__proponer_marcar_gasto_pagado",
         "mcp__acciones__proponer_editar_gasto",
+        "mcp__acciones__proponer_agregar_seguimiento",
+        "mcp__acciones__proponer_marcar_seguimiento",
     ]
     return server, tool_names
