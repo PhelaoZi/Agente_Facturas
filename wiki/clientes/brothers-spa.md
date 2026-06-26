@@ -2,7 +2,7 @@
 rut: 76573828-8
 razon_social: "BROTHERS SPA"
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-06-25
 ---
 
 # BROTHERS SPA
@@ -11,21 +11,22 @@ ultima_actualizacion: 2026-06-03
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $1.180.050 |
-| Facturas emitidas | 10 |
-| Facturas pendientes | 9 ($1.180.050) |
-| Promedio días de pago | — |
+| Total vendido | $1.366.425 |
+| Facturas emitidas | 11 |
+| Facturas pendientes | 2 ($375.125) |
+| Promedio días de pago | 42 |
 | Último pago | 2026-05-18 |
 
 ## Estado de cuenta
 
-- 9 factura(s) pendiente(s) por $1.180.050
+- 2 factura(s) pendiente(s) por $375.125
 - Último pago registrado: 2026-05-18
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-01-22**
-- Frecuencia de compra: ~1 factura cada **50 días**
+- Frecuencia de compra: ~1 factura cada **47 días**
+- Comportamiento de pago: **normal** (42 días promedio)
 - Producto principal: **Barril 30L Sctout Cafe**
 
 ## Relacionados
@@ -38,6 +39,8 @@ ultima_actualizacion: 2026-06-03
 
 ## Notas del agente
 
+- 2026-06-25: ⚠️ 1 factura(s) vencida(s) (>30 días): #4684 por $188.750.
+- 2026-06-25: 📄 1 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 8 factura(s) vencida(s) (>30 días): #4208, #4213, #4230, #4284, #4357, #4368, #4474, #4569 por $991.300.
 - 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.
 - 2026-06-03: 📈 Deuda pendiente aumentó en $188.750.

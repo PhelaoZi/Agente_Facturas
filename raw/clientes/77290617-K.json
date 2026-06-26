@@ -1,18 +1,18 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-06-25",
   "cliente_desde": "2024-06-05",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 254255.0,
+  "deuda_pendiente": 139980.0,
   "direccion": "GENERAL SALVO 38",
   "estado": "activo",
-  "facturas_emitidas": 28,
-  "facturas_pendientes": 4,
-  "promedio_dias_pago": 13,
+  "facturas_emitidas": 30,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": 14,
   "razon_social": "ESPACIOS GASTRONOMICOS OCULTO SPA",
   "rut": "77290617-K",
   "top_productos": [
     {
-      "cantidad": 38.0,
+      "cantidad": 40.0,
       "nombre": "Barril 30L Scotch Ale"
     },
     {
@@ -24,6 +24,6 @@
       "nombre": "Barril 30L IPA W.C"
     }
   ],
-  "total_vendido": 3001327.0,
-  "ultimo_pago": "2026-04-06"
+  "total_vendido": 3141307.0,
+  "ultimo_pago": "2026-05-16"
 }

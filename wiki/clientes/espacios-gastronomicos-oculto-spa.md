@@ -2,7 +2,7 @@
 rut: 77290617-K
 razon_social: "ESPACIOS GASTRONOMICOS OCULTO SPA"
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-06-25
 ---
 
 # ESPACIOS GASTRONOMICOS OCULTO SPA
@@ -11,22 +11,22 @@ ultima_actualizacion: 2026-06-03
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $3.001.327 |
-| Facturas emitidas | 28 |
-| Facturas pendientes | 4 ($254.255) |
-| Promedio días de pago | 13 |
-| Último pago | 2026-04-06 |
+| Total vendido | $3.141.307 |
+| Facturas emitidas | 30 |
+| Facturas pendientes | 2 ($139.980) |
+| Promedio días de pago | 14 |
+| Último pago | 2026-05-16 |
 
 ## Estado de cuenta
 
-- 4 factura(s) pendiente(s) por $254.255
-- Último pago registrado: 2026-04-06
+- 2 factura(s) pendiente(s) por $139.980
+- Último pago registrado: 2026-05-16
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-06-05**
-- Frecuencia de compra: ~1 factura cada **26 días**
-- Comportamiento de pago: **rápido** (13 días promedio)
+- Frecuencia de compra: ~1 factura cada **25 días**
+- Comportamiento de pago: **rápido** (14 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-06-25: 📄 2 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 4 factura(s) vencida(s) (>30 días): #4649, #4660, #4063, #4641 por $254.255.
 - 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.
 - 2026-06-03: 📈 Deuda pendiente aumentó en $184.265.

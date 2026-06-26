@@ -1,22 +1,22 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-06-25",
   "cliente_desde": "2024-01-04",
   "comuna": "SAN MIGUEL",
-  "deuda_pendiente": 3424453.0,
+  "deuda_pendiente": 2008427.0,
   "direccion": "GRAN AVENIDA 5890",
   "estado": "activo",
-  "facturas_emitidas": 79,
-  "facturas_pendientes": 17,
-  "promedio_dias_pago": 37,
+  "facturas_emitidas": 83,
+  "facturas_pendientes": 9,
+  "promedio_dias_pago": 36,
   "razon_social": "A & C SERVICIOS GASTRONOMICOS LIMITADA",
   "rut": "76364354-9",
   "top_productos": [
     {
-      "cantidad": 141.0,
+      "cantidad": 151.0,
       "nombre": "Barril 30L Cream Ale"
     },
     {
-      "cantidad": 97.0,
+      "cantidad": 104.0,
       "nombre": "Barril 30L Scotch Ale"
     },
     {
@@ -24,6 +24,6 @@
       "nombre": "Logistica Cream Ale"
     }
   ],
-  "total_vendido": 15659994.0,
-  "ultimo_pago": "2026-04-05"
+  "total_vendido": 16704002.0,
+  "ultimo_pago": "2026-06-04"
 }

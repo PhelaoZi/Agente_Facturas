@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-06-25",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 6281414.0,
+  "deuda_pendiente": 678971.0,
   "direccion": "Manuel Montt 1201",
   "estado": "activo",
-  "facturas_emitidas": 90,
-  "facturas_pendientes": 54,
-  "promedio_dias_pago": 37,
+  "facturas_emitidas": 92,
+  "facturas_pendientes": 5,
+  "promedio_dias_pago": 57,
   "razon_social": "VDT SPA",
   "rut": "77220069-2",
   "top_productos": [
@@ -16,7 +16,7 @@
       "nombre": "Barril 30L Cream Ale"
     },
     {
-      "cantidad": 34.0,
+      "cantidad": 35.0,
       "nombre": "Barril 30L Scotch Ale"
     },
     {
@@ -24,6 +24,6 @@
       "nombre": "Logistica Cream Ale"
     }
   ],
-  "total_vendido": 10125897.0,
-  "ultimo_pago": "2026-03-27"
+  "total_vendido": 10424437.0,
+  "ultimo_pago": "2026-06-15"
 }
