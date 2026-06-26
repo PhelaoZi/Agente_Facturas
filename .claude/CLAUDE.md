@@ -49,7 +49,7 @@ Empresa: Elaboradora y Comercializadora Vintage SPA (Zigurat Brewery).
 /costos-sku --receta "Cream Ale"  # Costos de todos los formatos de una cerveza
 
 # Ejecutar scripts individuales (solo para debug, nunca en producción)
-python scripts/parse_dte.py facturas/DTE_DDMMYYYY
+python scripts/parse_dte.py facturas-ventas/DTE_DDMMYYYY
 python scripts/validate_changes.py changes.json
 python scripts/sync_db.py changes.json
 python scripts/wiki_update.py --ruts RUT1,RUT2 --origen "debug"
@@ -125,7 +125,7 @@ scripts/                    # Scripts Python del pipeline (NO mover ni renombrar
   wiki_update.py            # Genera/actualiza fichas en wiki/clientes/ (+ snapshot raw/)
   wiki_snapshot.py          # Refresh masivo de snapshots en raw/clientes/
   wiki_lint.py              # Audita consistencia wiki ↔ BD
-facturas/                   # XMLs del SII (formato DTE_DDMMYYYY)
+facturas-ventas/            # XMLs del SII de ventas (formato DTE_DDMMYYYY)
 Notas de Credito/           # XMLs de Notas de Crédito
 transferencias/             # Excel de transferencias Itaú
 logs/                       # Logs de ejecución
@@ -583,7 +583,7 @@ Reutilizarán este mismo mecanismo: **marcar factura de venta como pagada**
 
 ## Convenciones del proyecto
 
-- XMLs del SII van en `facturas/` con nombre `DTE_DDMMYYYY`
+- XMLs del SII de ventas van en `facturas-ventas/` con nombre `DTE_DDMMYYYY`
 - XMLs de NC van en `Notas de Credito/`
 - Encoding XML: ISO-8859-1 (latin-1)
 - `changes.json` es temporal — no editarlo manualmente

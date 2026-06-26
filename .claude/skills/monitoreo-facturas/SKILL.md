@@ -1,7 +1,7 @@
 ---
 name: monitoreo-facturas
 description: >
-  Detecta XMLs en facturas\ que aún no han sido sincronizados con la base de datos
+  Detecta XMLs en facturas-ventas\ que aún no han sido sincronizados con la base de datos
   y los procesa automáticamente. Usar cuando el usuario quiera saber si hay facturas
   pendientes, quiera procesar todas las nuevas de una vez, o pregunte "¿qué facturas
   faltan sincronizar?". Ejemplos: "hay facturas nuevas?", "sincroniza todo lo pendiente",
@@ -12,7 +12,7 @@ allowed-tools: Bash(python *)
 
 # Monitoreo de Facturas — Zigurat ERP
 
-Detecta y sincroniza automáticamente los XMLs en `facturas\` que no están en PostgreSQL.
+Detecta y sincroniza automáticamente los XMLs en `facturas-ventas\` que no están en PostgreSQL.
 
 ## Reglas
 
@@ -35,7 +35,7 @@ Analiza el output:
 Para cada archivo en la lista `__PENDIENTES__`, ejecutar los 3 pasos en orden:
 
 ```bash
-python scripts/parse_dte.py facturas/<ARCHIVO>
+python scripts/parse_dte.py facturas-ventas/<ARCHIVO>
 ```
 Si falla → reportar error y pasar al siguiente archivo.
 

@@ -32,7 +32,7 @@ Si `$ARGUMENTS` tiene valor: continuar al Paso 1 de inmediato.
 ## Paso 1 — Ejecutar inmediatamente
 
 ```bash
-python scripts/parse_dte.py facturas/$ARGUMENTS
+python scripts/parse_dte.py facturas-ventas/$ARGUMENTS
 ```
 
 Si falla: reportar error y detener todo.
@@ -59,7 +59,7 @@ Si exitoso: mostrar resumen del Paso 4.
 ## Paso 4 — Mostrar resumen final
 
 Reportar al usuario:
-- Archivo procesado: `facturas/$ARGUMENTS`
+- Archivo procesado: `facturas-ventas/$ARGUMENTS`
 - Facturas insertadas
 - Productos insertados
 - Folios duplicados omitidos (si hubo)

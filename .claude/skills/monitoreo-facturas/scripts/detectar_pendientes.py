@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 detectar_pendientes.py — Zigurat ERP
-Lista los XMLs en facturas\ que tienen folios no sincronizados con PostgreSQL.
+Lista los XMLs en facturas-ventas/ que tienen folios no sincronizados con PostgreSQL.
 
 Uso:
     python .claude/skills/monitoreo-facturas/scripts/detectar_pendientes.py
@@ -66,21 +66,21 @@ def get_folios_from_xml(xml_path):
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 def main():
-    facturas_dir = Path("facturas")
+    facturas_dir = Path("facturas-ventas")
     if not facturas_dir.exists():
-        print("ERROR: No existe el directorio facturas/")
+        print("ERROR: No existe el directorio facturas-ventas/")
         sys.exit(1)
 
     xmls = sorted(facturas_dir.glob("*.xml"))
     if not xmls:
-        print("No hay archivos XML en facturas/")
+        print("No hay archivos XML en facturas-ventas/")
         print("__PENDIENTES__:")
         sys.exit(0)
 
     print("=" * 60)
     print("ZIGURAT ERP — Monitor de Facturas")
     print("=" * 60)
-    print(f"\n  Verificando {len(xmls)} XML(s) en facturas/...\n")
+    print(f"\n  Verificando {len(xmls)} XML(s) en facturas-ventas/...\n")
 
     try:
         conn = psycopg2.connect(**DB_CONFIG)
