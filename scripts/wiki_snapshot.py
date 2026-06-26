@@ -20,6 +20,10 @@ del pipeline de fichas (ej: antes de una auditoría).
 import argparse
 import sys
 
+from _console import force_utf8
+
+force_utf8()
+
 # Reusa utilidades del módulo principal (conexión, queries, serialización)
 from wiki_update import (
     conectar,

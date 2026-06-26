@@ -17,6 +17,10 @@ import re
 import sys
 from pathlib import Path
 
+from _console import force_utf8
+
+force_utf8()
+
 
 # ─── Configuración ────────────────────────────────────────────────────────────
 TIPOS_DTE_VALIDOS = {"33", "34", "39", "41", "61", "52"}

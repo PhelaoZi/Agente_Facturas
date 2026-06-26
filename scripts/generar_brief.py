@@ -8,8 +8,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+from _console import force_utf8
+
+force_utf8()
 
 try:
     import psycopg2

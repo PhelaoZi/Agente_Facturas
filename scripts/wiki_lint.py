@@ -13,7 +13,9 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8")
+from _console import force_utf8
+
+force_utf8()
 
 try:
     import psycopg2

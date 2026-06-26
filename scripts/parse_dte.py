@@ -18,6 +18,10 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+from _console import force_utf8
+
+force_utf8()
+
 
 # ─── Items que son parte del costo pero NO son productos del catálogo ─────────
 # Se excluyen de la tabla `productos` pero siguen sumando en monto_total de la venta.

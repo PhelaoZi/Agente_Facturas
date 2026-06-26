@@ -19,6 +19,10 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+from _console import force_utf8
+
+force_utf8()
+
 try:
     import psycopg2
     from psycopg2.extras import execute_values

@@ -14,6 +14,10 @@ import os, sys, json, re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+from _console import force_utf8
+
+force_utf8()
+
 try:
     import psycopg2
 except ImportError:

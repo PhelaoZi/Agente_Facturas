@@ -19,6 +19,10 @@ import unicodedata
 from datetime import date, datetime
 from pathlib import Path
 
+from _console import force_utf8
+
+force_utf8()
+
 # Forzar salida UTF-8 en consola Windows
 if sys.stdout.encoding != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
