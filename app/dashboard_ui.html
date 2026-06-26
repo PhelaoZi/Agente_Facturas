@@ -158,6 +158,10 @@
   .pos{color:var(--green)} .neg{color:var(--red)} .acc{color:var(--accent2)}
 
   /* ---------- Asistente ---------- */
+  .chat-clear{margin-left:auto;background:#1c2230;color:var(--muted);border:1px solid var(--border2);
+    font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:9px;cursor:pointer;
+    display:none;align-items:center;gap:6px;transition:color .15s,border-color .15s}
+  .chat-clear:hover{color:var(--text);border-color:var(--accent)}
   .chat-log{display:flex;flex-direction:column;gap:12px;margin:6px 0 14px;max-height:440px;overflow:auto;padding-right:4px}
   .bubble{padding:11px 14px;border-radius:13px;font-size:13.5px;line-height:1.55;max-width:86%}
   .bubble.user{align-self:flex-end;background:linear-gradient(135deg,var(--accent),#ea580c);color:#fff;border-bottom-right-radius:4px}
@@ -412,7 +416,9 @@
   <!-- ============ ASISTENTE ============ -->
   <section class="sec hidden" id="sec-asistente">
     <div class="card hero">
-      <h3><span class="ic">💬</span> Pregúntame lo que quieras</h3>
+      <h3><span class="ic">💬</span> Pregúntame lo que quieras
+        <button class="chat-clear" id="chat-clear" title="Borrar la conversación">🧹 Limpiar</button>
+      </h3>
       <div class="csub">Escribe en lenguaje natural y te respondo con cifras, gráficos y tablas de tu base.</div>
       <div class="suggest" id="chat-suggest">
         <span class="chip">¿Quién me debe más?</span>
@@ -698,7 +704,15 @@ function mdBot(s){ s=esc(s||''); s=s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); retu
 function addBubble(cls, html){
   const log=document.getElementById('chat-log');
   const d=document.createElement('div'); d.className='bubble '+cls; d.innerHTML=html;
-  log.appendChild(d); log.scrollTop=log.scrollHeight; return d;
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+  // Con al menos una burbuja, ofrecemos limpiar el chat
+  document.getElementById('chat-clear').style.display='inline-flex';
+  return d;
+}
+// Vacia el chat (solo visual: el backend no guarda historial)
+function limpiarChat(){
+  document.getElementById('chat-log').innerHTML='';
+  document.getElementById('chat-clear').style.display='none';
 }
 function renderArtefactos(cont, arts){
   (arts||[]).forEach(a=>{
@@ -759,6 +773,7 @@ async function askAgent(q){
   }catch(e){ think.remove(); addBubble('bot','Error de conexión: '+esc(e.message)); }
   chatBusy=false;
 }
+document.getElementById('chat-clear').addEventListener('click', limpiarChat);
 document.getElementById('chat-send').addEventListener('click',()=>askAgent(document.getElementById('chat-q').value));
 document.getElementById('chat-q').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); askAgent(e.target.value);} });
 document.getElementById('chat-suggest').addEventListener('click',e=>{ if(e.target.classList.contains('chip')) askAgent(e.target.textContent); });
