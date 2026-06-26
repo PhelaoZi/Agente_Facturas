@@ -855,6 +855,27 @@ def _json_default(o):
     return str(o)
 
 
+def _log_agente_error(pregunta: str, detalle: str, trace: str) -> None:
+    """Registra en logs/agente_chat.log el fallo del agente para diagnosticarlo despues.
+
+    El error que ve el usuario ('Claude Code returned an error result: ...') es un
+    mensaje generico de la SDK cuando el subproceso del CLI sale con codigo != 0; la
+    causa real (rate limit, crash, etc.) solo queda aqui. Nunca debe romper la
+    respuesta, asi que va envuelto en su propio try/except.
+    """
+    try:
+        from datetime import datetime
+        log_path = PROJECT_ROOT / "logs" / "agente_chat.log"
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"\n===== {ts} =====\n")
+            f.write(f"PREGUNTA: {pregunta}\n")
+            f.write(f"DETALLE: {detalle}\n")
+            f.write(f"TRACE:\n{trace}\n")
+    except Exception:
+        pass  # nunca bloquear la respuesta por un fallo al loguear
+
+
 def run_agent(pregunta: str) -> dict:
     """Reutiliza el agente (Claude Agent SDK) del proyecto. Degrada con gracia."""
     try:
@@ -871,8 +892,10 @@ def run_agent(pregunta: str) -> dict:
         return {"ok": True, "texto": texto, "artefactos": arts}
     except Exception as e:
         import traceback
+        trace = traceback.format_exc()
+        _log_agente_error(pregunta, str(e), trace)
         return {"ok": False, "error": "error_agente", "detalle": str(e),
-                "trace": traceback.format_exc()[-1200:]}
+                "trace": trace[-1200:]}
 
 
 def _md_to_html(s: str) -> str:
