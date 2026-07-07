@@ -29,3 +29,6 @@ Pagos_Inv_Serv_Gas.xlsx
 
 # Scratch del framework de skills (superpowers)
 .superpowers/
+
+# Repos de referencia clonados aparte (no son parte del proyecto)
+github-repository/
