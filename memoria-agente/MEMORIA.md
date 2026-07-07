@@ -1,2 +1,2 @@
 # Memoria del agente Zigurat
-- [negocio] Barriles PET 30L sin línea de logística (barriles-pet-30l-sin-linea-de-logistica): Los barriles PET de 30L NO llevan ítem de "Logistica" en la factura (a diferencia del resto de los formatos, que se fact
+- [negocio] Facturación de barriles PET: logística sí, envase aparte (facturacion-de-barriles-pet-logistica-si-envase-aparte): Regla de facturación confirmada por Christian (folio 4664): 1. La línea "Logistica" NO es un servicio real: se desglosa 
