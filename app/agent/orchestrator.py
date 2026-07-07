@@ -51,6 +51,14 @@ def _build_options(collector: Collector) -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         cwd=str(PROJECT_ROOT),
+        # Modelo fijo: sin esto el chat usa el modelo por defecto del CLI (puede
+        # ser el más caro). Sonnet sobra para consultas de negocio con tools.
+        model="sonnet",
+        # Aislamiento del agente: no cargar CLAUDE.md ni settings del filesystem
+        # (el SYSTEM_PROMPT ya contiene las reglas canónicas) y usar SOLO los
+        # servidores MCP definidos aquí (ignora .mcp.json del repo).
+        setting_sources=[],
+        strict_mcp_config=True,
         mcp_servers={
             "lienzo": lienzo_server,
             "negocio": negocio_server,

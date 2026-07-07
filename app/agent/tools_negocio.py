@@ -5,6 +5,8 @@ Cada herramienta abre su propia conexión de solo lectura y reutiliza las
 funciones ya probadas de app/briefing/data.py y app/negocio/. Mismo patrón que
 app/agent/publish_tools.py (build_lienzo_server).
 """
+import functools
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -38,11 +40,29 @@ def _texto(s):
     return {"content": [{"type": "text", "text": s}]}
 
 
+def _tool_seguro(fn):
+    """Convierte un error de BD en un resultado de tool legible (is_error) en vez
+    de abortar el turno completo del agente (ej: Postgres caído)."""
+    @functools.wraps(fn)
+    async def wrapper(args):
+        try:
+            return await fn(args)
+        except psycopg2.Error as e:
+            return {
+                "content": [{"type": "text", "text":
+                    f"Error consultando la base de datos: {e}. "
+                    "Avisa al usuario que PostgreSQL puede estar caído."}],
+                "is_error": True,
+            }
+    return wrapper
+
+
 def build_negocio_server():
     """Construye el servidor MCP 'negocio'. Devuelve (server, lista_de_tool_names)."""
     from claude_agent_sdk import create_sdk_mcp_server, tool
 
     @tool("deuda_total", "Deuda total pendiente de cobro con desglose por antigüedad.", {})
+    @_tool_seguro
     async def deuda_total(args):
         r = _con_cursor(deuda_data.resumen_cobranza)
         b = r["buckets"]
@@ -53,6 +73,7 @@ def build_negocio_server():
         )
 
     @tool("deuda_cliente", "Deuda pendiente de un cliente, por nombre o RUT.", {"nombre": str})
+    @_tool_seguro
     async def deuda_cliente(args):
         r = _con_cursor(deuda_data.deuda_cliente, args["nombre"])
         if r["n_facturas"] == 0:
@@ -63,6 +84,7 @@ def build_negocio_server():
                       + "\n".join(lineas))
 
     @tool("ranking_deudores", "Top N clientes por deuda pendiente.", {"limite": int})
+    @_tool_seguro
     async def ranking_deudores(args):
         r = _con_cursor(deuda_data.top_deudores, args.get("limite", 5))
         if not r:
@@ -72,6 +94,7 @@ def build_negocio_server():
             for i, d in enumerate(r)))
 
     @tool("facturas_vencidas", "Facturas pendientes con más de N días (morosos).", {"dias": int})
+    @_tool_seguro
     async def facturas_vencidas(args):
         r = _con_cursor(deuda_data.facturas_vencidas, args.get("dias", 30))
         if not r:
@@ -82,12 +105,14 @@ def build_negocio_server():
 
     @tool("ventas_total", "Total vendido. Opcional: rango desde/hasta (YYYY-MM-DD).",
           {"desde": str, "hasta": str})
+    @_tool_seguro
     async def ventas_total(args):
         r = _con_cursor(ventas_data.total, args.get("desde"), args.get("hasta"))
         periodo = f" entre {r['desde']} y {r['hasta']}" if r["desde"] and r["hasta"] else ""
         return _texto(f"Ventas{periodo}: {_pesos(r['total'])} en {r['n']} facturas.")
 
     @tool("ranking_clientes", "Top N clientes por ventas.", {"limite": int})
+    @_tool_seguro
     async def ranking_clientes(args):
         r = _con_cursor(ventas_data.ranking, args.get("limite", 10))
         if not r:
@@ -96,12 +121,14 @@ def build_negocio_server():
                                 for i, c in enumerate(r)))
 
     @tool("ventas_cliente", "Ventas de un cliente, por nombre.", {"nombre": str})
+    @_tool_seguro
     async def ventas_cliente(args):
         r = _con_cursor(ventas_data.por_cliente, args["nombre"])
         return _texto(f"{args['nombre']}: {_pesos(r['total_real'])} en {r['n_facturas']} "
                       f"facturas ({r['n_notas_credito']} notas de crédito).")
 
     @tool("ventas_producto", "Buscar ventas por nombre de producto.", {"nombre": str})
+    @_tool_seguro
     async def ventas_producto(args):
         r = _con_cursor(ventas_data.por_producto, args["nombre"])
         if not r:
@@ -111,6 +138,7 @@ def build_negocio_server():
 
     @tool("flujo_caja", "Proyección de caja a 4 semanas (ingresos esperados − gastos). "
                         "Opcional: saldo_inicial.", {"saldo_inicial": float})
+    @_tool_seguro
     async def flujo_caja(args):
         r = _con_cursor(flujo_data.proyectar_flujo, args.get("saldo_inicial"))
         lineas = [
@@ -125,6 +153,7 @@ def build_negocio_server():
               f"egresos {_pesos(r['total_egresos'])}.")
 
     @tool("costos_sku", "Costo unitario por SKU. Opcional: filtrar por receta.", {"receta": str})
+    @_tool_seguro
     async def costos_sku(args):
         r = _con_cursor(costos_data.costos_sku, args.get("receta"))
         if not r:
@@ -135,6 +164,7 @@ def build_negocio_server():
 
     @tool("margenes", "Margen por cerveza/formato (precio venta − costo; solo barriles). "
                       "Opcional: filtrar por receta.", {"receta": str})
+    @_tool_seguro
     async def margenes(args):
         r = _con_cursor(costos_data.margenes, args.get("receta"))
         if not r:
@@ -154,6 +184,7 @@ def build_negocio_server():
                            "para ubicar uno antes de borrarlo, editarlo o marcarlo pagado. "
                            "Opcional: filtro de texto sobre la descripción.",
           {"filtro": str})
+    @_tool_seguro
     async def listar_gastos(args):
         r = _con_cursor(gastos_data.listar, args.get("filtro"))
         if not r:
@@ -168,6 +199,7 @@ def build_negocio_server():
           "Clientes con señales de alerta comercial (dormido, caída de consumo, "
           "baja frecuencia, nuevo sin recompra), priorizados (los grandes primero). "
           "Úsala para diagnosticar la salud de la cartera y a quién contactar.", {})
+    @_tool_seguro
     async def clientes_en_riesgo(args):
         r = _con_cursor(clientes_data.salud_clientes)
         if not r:
@@ -180,6 +212,7 @@ def build_negocio_server():
           "Lista la lista de seguimiento comercial con su id y estado, para ubicar "
           "uno antes de marcarlo. Opcional: estado (pendiente/contactado/descartado; "
           "por defecto pendiente).", {"estado": str})
+    @_tool_seguro
     async def listar_seguimiento(args):
         estado = (args.get("estado") or "pendiente").strip() or "pendiente"
         r = _con_cursor(seguimiento_data.listar, estado)

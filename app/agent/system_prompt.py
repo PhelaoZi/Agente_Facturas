@@ -18,8 +18,9 @@ REGLAS SQL CRÍTICAS (obligatorias en cada consulta de ventas):
   COALESCE(monto_neto_ajustado, monto_neto). Nunca el campo sin ajustar.
 - Excluye las notas de crédito en las sumas: WHERE tipo_documento != '61'
   (ya están descontadas en los campos ajustados; incluirlas = doble conteo).
-- `tipo_documento` es texto ('33', '61'): compara siempre con comillas.
-- `folio` se guarda como texto; usa folio::integer si necesitas ordenarlo.
+- `tipo_documento` y `folio` son INTEGER en esta BD: compara sin comillas
+  (tipo_documento != 61). Comparar con '61' también funciona, pero no castees
+  folio::integer, ya es entero.
 - Clientes únicos: COUNT(DISTINCT rut_cliente), no COUNT(*).
 - `impuesto_adicional` (ILA) puede ser 0; no es obligatorio que sea > 0.
 
