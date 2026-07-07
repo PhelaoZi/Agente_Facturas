@@ -1,0 +1,19 @@
+# Dependencias del proyecto Zigurat ERP — Agente Facturas
+# Instalar con: pip install -r requirements.txt
+# Versiones fijadas a las probadas en producción (2026-07-07). Actualizar a
+# propósito (correr la suite después), nunca por accidente.
+
+psycopg2-binary==2.9.11
+pandas==2.3.3
+openpyxl==3.1.5
+
+# Agente del chat del dashboard (orquestador). El ecosistema Anthropic se mueve
+# rápido: esta es la dependencia más sensible a cambios de versión.
+claude-agent-sdk==0.2.93
+
+# Gráficos y export del dashboard
+plotly==6.3.0
+kaleido==0.2.1
+
+# Tests (python -m pytest -q)
+pytest==8.4.2

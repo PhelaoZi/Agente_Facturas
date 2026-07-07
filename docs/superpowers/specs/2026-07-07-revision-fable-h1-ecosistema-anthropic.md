@@ -202,9 +202,14 @@ memoria-agente/
 - Complementa (no reemplaza) el `resume` de la Fase B: resume = memoria de la
   conversación en curso; memoria-agente = aprendizaje de largo plazo.
 
-### Fase C — Al pasar
-- `.env.example` (sin valores reales), pin de versión del SDK en requirements,
-  nota en CLAUDE.md de que el agente corre aislado (`setting_sources=[]`) y por qué.
+### Fase C — Al pasar ✅ COMPLETADA (2026-07-07)
+- `.env.example` creado (plantilla sin valores reales).
+- `requirements.txt` creado con versiones fijadas a las instaladas
+  (`claude-agent-sdk==0.2.93` y el resto), antes no existía.
+- CLAUDE.md actualizado: párrafo del orquestador (4 servers MCP, aislamiento,
+  modelo fijo, las dos memorias) + sección Dependencias apuntando a requirements.
+
+Con esto, el plan H1 completo (Fases A, B, B2 y C) queda cerrado.
 
 ### Explícitamente NO hacer en H1
 - Managed Agents / Vaults / Deployments (H2/H3).

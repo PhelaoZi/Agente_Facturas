@@ -554,10 +554,27 @@ pasan por confirmación (ver abajo).
 | Agente | `app/agent/*` | Orquestador del Claude Agent SDK + tools MCP in-process + system prompt. |
 | Briefing | `app/briefing/{data,render}.py` | Datos y render del brief diario. |
 
-El orquestador (`app/agent/orchestrator.py`) corre el Claude Agent SDK con tres
-servidores MCP in-process — `lienzo` (publicar artefactos), `negocio` (lecturas)
-y `acciones` (proponer escrituras) — más el server `postgres` de solo lectura.
-`run_agent()` en `dashboard.py` devuelve `{texto, artefactos}` al frontend.
+El orquestador (`app/agent/orchestrator.py`) corre el Claude Agent SDK con cuatro
+servidores MCP in-process — `lienzo` (publicar artefactos), `negocio` (lecturas),
+`acciones` (proponer escrituras) y `memoria` (aprendizaje persistente) — más el
+server `postgres` de solo lectura. `run_agent()` en `dashboard.py` devuelve
+`{texto, artefactos}` al frontend.
+
+**El agente del chat corre AISLADO y determinista** (hardening 2026-07-07):
+- `setting_sources=[]`: NO lee este CLAUDE.md ni settings del filesystem. Todo
+  su conocimiento vive en `app/agent/system_prompt.py` + su memoria persistente.
+  Si cambias una regla de negocio aquí, replicarla en el system prompt.
+- `strict_mcp_config=True`: ignora `.mcp.json`; usa solo los servers definidos
+  en código (credenciales desde `.env`).
+- `model="sonnet"` fijo: el chat no depende del modelo por defecto del CLI.
+
+**Memoria del agente (dos capas):**
+- Conversación: `run()` devuelve `(texto, session_id)` y reanuda con `resume`;
+  el botón "Limpiar" de la UI resetea vía `POST /api/chat-reset`.
+- Largo plazo: `memoria-agente/MEMORIA.md` (índice compacto, inyectado al system
+  prompt en cada consulta) + `memoria-agente/notas/*.md` (detalle bajo demanda,
+  tools `mcp__memoria__guardar_nota` / `leer_nota`). El agente aprende reglas
+  del negocio y correcciones del usuario; las notas se commitean a git.
 
 ### Herramientas del agente
 
@@ -623,6 +640,10 @@ Reutilizarán este mismo mecanismo: **marcar factura de venta como pagada**
 
 ## Dependencias
 
+Fijadas en `requirements.txt` (instalar con `pip install -r requirements.txt`).
+Actualizar versiones a propósito y correr la suite después — en especial
+`claude-agent-sdk`, la dependencia más sensible a cambios del ecosistema.
+
 ```
 Python 3.x
 psycopg2-binary
@@ -632,3 +653,5 @@ claude-agent-sdk     # agente del chat del dashboard (orquestador)
 plotly + kaleido     # gráficos y export del dashboard
 pytest               # suite de tests (python -m pytest -q)
 ```
+
+Config de entorno: copiar `.env.example` como `.env` y completar la clave de la BD.
