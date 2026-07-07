@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 1573220.0,
+  "deuda_pendiente": 0,
   "direccion": "DARDIGNAC 0192",
   "estado": "activo",
   "facturas_emitidas": 19,
-  "facturas_pendientes": 19,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 45,
   "razon_social": "UNCLE FLETCH CHILE SPA",
   "rut": "76296603-4",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 1573220.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-11-28"
 }

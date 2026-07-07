@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-04-19",
   "comuna": "VITACURA",
-  "deuda_pendiente": 602231.0,
+  "deuda_pendiente": 0,
   "direccion": "GERONIMO DE ALDERETE 1603",
   "estado": "activo",
   "facturas_emitidas": 5,
-  "facturas_pendientes": 5,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 48,
   "razon_social": "MAZACCONE SPA",
   "rut": "76177121-3",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 602231.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-12-12"
 }

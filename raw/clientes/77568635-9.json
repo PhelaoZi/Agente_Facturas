@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-01-12",
   "comuna": "VITACURA",
-  "deuda_pendiente": 1313167.0,
+  "deuda_pendiente": 0,
   "direccion": "NVA COSTANERA 3980   2",
   "estado": "incobrable",
   "facturas_emitidas": 10,
-  "facturas_pendientes": 10,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 50,
   "razon_social": "RPG ALIMENTOS SPA",
   "rut": "77568635-9",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 1313167.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2024-12-12"
 }

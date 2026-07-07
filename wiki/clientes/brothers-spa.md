@@ -2,7 +2,7 @@
 rut: 76573828-8
 razon_social: "BROTHERS SPA"
 estado: activo
-ultima_actualizacion: 2026-06-25
+ultima_actualizacion: 2026-07-07
 ---
 
 # BROTHERS SPA
@@ -25,7 +25,7 @@ ultima_actualizacion: 2026-06-25
 ## Patrón de comportamiento
 
 - Cliente desde **2025-01-22**
-- Frecuencia de compra: ~1 factura cada **47 días**
+- Frecuencia de compra: ~1 factura cada **48 días**
 - Comportamiento de pago: **normal** (42 días promedio)
 - Producto principal: **Barril 30L Sctout Cafe**
 
@@ -39,6 +39,7 @@ ultima_actualizacion: 2026-06-25
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4684 por $188.750.
 - 2026-06-25: ⚠️ 1 factura(s) vencida(s) (>30 días): #4684 por $188.750.
 - 2026-06-25: 📄 1 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 8 factura(s) vencida(s) (>30 días): #4208, #4213, #4230, #4284, #4357, #4368, #4474, #4569 por $991.300.

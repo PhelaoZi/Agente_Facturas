@@ -1,6 +1,6 @@
 # Top 10 clientes por ventas
 
-Actualizado: 2026-06-25
+Actualizado: 2026-07-07
 
 | # | Cliente | RUT | Total vendido |
 | --- | --- | --- | --- |

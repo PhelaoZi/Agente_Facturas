@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-02-13",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 64990.0,
+  "deuda_pendiente": 0,
   "direccion": "ORREGO LUCO 034",
   "estado": "activo",
   "facturas_emitidas": 20,
-  "facturas_pendientes": 1,
-  "promedio_dias_pago": -12,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 25,
   "razon_social": "GASTRONOMICA SUR SPA.",
   "rut": "76730367-K",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 1486984.0,
-  "ultimo_pago": "2025-12-12"
+  "ultimo_pago": "2026-01-25"
 }

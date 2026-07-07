@@ -1,29 +1,29 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-01-28",
   "comuna": "NATALES",
-  "deuda_pendiente": 1608987.0,
+  "deuda_pendiente": 0,
   "direccion": "CARLOS BORIES 430 LT 1",
   "estado": "activo",
   "facturas_emitidas": 2,
-  "facturas_pendientes": 2,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 12,
   "razon_social": "SOCIEDAD COMERCIAL Y TURÍSTICA UBUNTU PATAGONIA SPA",
   "rut": "77650861-6",
   "top_productos": [
-    {
-      "cantidad": 15.0,
-      "nombre": "Barril Pet 30 litros"
-    },
     {
       "cantidad": 4.0,
       "nombre": "Barril 30L Cream Ale"
     },
     {
-      "cantidad": 4.0,
-      "nombre": "Logistica Cream Ale"
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Scotch Ale"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Sour F/L"
     }
   ],
   "total_vendido": 1608987.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2026-03-26"
 }

@@ -2,7 +2,7 @@
 rut: 76524621-0
 razon_social: "RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L."
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-07-07
 ---
 
 # RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.
@@ -13,20 +13,20 @@ ultima_actualizacion: 2026-06-03
 | --- | --- |
 | Total vendido | $1.855.458 |
 | Facturas emitidas | 15 |
-| Facturas pendientes | 2 ($94.375) |
-| Promedio días de pago | 47 |
-| Último pago | 2026-05-15 |
+| Facturas pendientes | 1 ($0) |
+| Promedio días de pago | 44 |
+| Último pago | 2026-06-15 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $94.375
-- Último pago registrado: 2026-05-15
+- 1 factura(s) pendiente(s) por $0
+- Último pago registrado: 2026-06-15
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-31**
-- Frecuencia de compra: ~1 factura cada **57 días**
-- Comportamiento de pago: **lento** (47 días promedio)
+- Frecuencia de compra: ~1 factura cada **59 días**
+- Comportamiento de pago: **normal** (44 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.
 - 2026-06-03: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.
 - 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.

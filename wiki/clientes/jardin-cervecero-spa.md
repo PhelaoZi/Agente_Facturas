@@ -2,7 +2,7 @@
 rut: 78121649-6
 razon_social: "JARDIN CERVECERO SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # JARDIN CERVECERO SPA
@@ -13,19 +13,20 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $94.375 |
 | Facturas emitidas | 2 |
-| Facturas pendientes | 2 ($94.375) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 1 ($0) |
+| Promedio días de pago | 30 |
+| Último pago | 2026-01-01 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $94.375
-- Sin pagos registrados
+- 1 factura(s) pendiente(s) por $0
+- Último pago registrado: 2026-01-01
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-12-02**
-- Frecuencia de compra: ~1 factura cada **66 días**
+- Frecuencia de compra: ~1 factura cada **108 días**
+- Comportamiento de pago: **bueno** (30 días promedio)
 - Producto principal: **Barril 30L Sour P/L**
 
 ## Relacionados
@@ -44,6 +45,8 @@ Clientes que también compran **Barril 30L Sour P/L**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4516 por $0.
+- 2026-07-07: ⚠️ Cliente inactivo — 217 días sin nueva factura (última: 2025-12-02).
 - 2026-04-12: ⚠️ 2 factura(s) vencida(s) (>30 días): #4516, #4517 por $94.375.
 - 2026-04-12: ⚠️ Cliente inactivo — 131 días sin nueva factura (última: 2025-12-02).
 - 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #4516, #4517 por $94.375.

@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-03-19",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 824450.0,
+  "deuda_pendiente": 0,
   "direccion": "ORREGO LUCO 034 LC 1",
   "estado": "activo",
   "facturas_emitidas": 9,
-  "facturas_pendientes": 9,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 7,
   "razon_social": "CAFETERIA FYLGJA LIMITADA",
   "rut": "77854791-0",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 824450.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2026-05-02"
 }

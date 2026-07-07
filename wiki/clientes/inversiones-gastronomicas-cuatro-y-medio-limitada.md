@@ -2,7 +2,7 @@
 rut: 77113872-1
 razon_social: "INVERSIONES GASTRONÓMICAS CUATRO Y MEDIO LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # INVERSIONES GASTRONÓMICAS CUATRO Y MEDIO LIMITADA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $474.514 |
 | Facturas emitidas | 2 |
-| Facturas pendientes | 2 ($474.514) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 30 |
+| Último pago | 2026-01-01 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $474.514
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-04-04**
-- Frecuencia de compra: ~1 factura cada **186 días**
+- Frecuencia de compra: ~1 factura cada **230 días**
+- Comportamiento de pago: **bueno** (30 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -40,10 +40,11 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 373 días (>180), sin ningún pago registrado y con deuda de $474.514. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 217 días sin nueva factura (última: 2025-12-02).
 - 2026-04-12: ⚠️ 2 factura(s) vencida(s) (>30 días): #4286, #4518 por $474.514.
 - 2026-04-12: ⚠️ Cliente inactivo — 131 días sin nueva factura (última: 2025-12-02).
 - 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #4286, #4518 por $474.514.

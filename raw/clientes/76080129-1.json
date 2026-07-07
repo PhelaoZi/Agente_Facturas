@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-07-07",
+  "cliente_desde": "2026-06-15",
+  "comuna": "NUNOA",
+  "deuda_pendiente": 42444.0,
+  "direccion": "AVENIDA ITALIA 1797",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "L ART D MANGARE BENE DA NOI SPA",
+  "rut": "76080129-1",
+  "top_productos": [
+    {
+      "cantidad": 12.0,
+      "nombre": "Botella 330cc Scotch Ale"
+    },
+    {
+      "cantidad": 12.0,
+      "nombre": "Botella 330cc Stout Cafe"
+    }
+  ],
+  "total_vendido": 42444.0,
+  "ultimo_pago": null
+}

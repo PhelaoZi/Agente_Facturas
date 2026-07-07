@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-08-13",
   "comuna": "SANTIAGO",
-  "deuda_pendiente": 342952.0,
+  "deuda_pendiente": 0,
   "direccion": "HUERFANOS 2979 2987",
   "estado": "activo",
   "facturas_emitidas": 4,
-  "facturas_pendientes": 4,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 30,
   "razon_social": "INVERSIONES GASTRONÓMICAS LOS PUTAMADRE LIMITADA",
   "rut": "78130985-0",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 342952.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-12-31"
 }

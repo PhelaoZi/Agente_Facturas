@@ -2,7 +2,7 @@
 rut: 76145092-1
 razon_social: "SOCIEDAD CUENCA SUR INVERSIONES LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # SOCIEDAD CUENCA SUR INVERSIONES LIMITADA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $61.500 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($61.500) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 16 |
+| Último pago | 2024-03-17 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $61.500
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-03-01**
 - Solo 1 compra registrada
+- Comportamiento de pago: **bueno** (16 días promedio)
 - Producto principal: **Lata 470cc Sour Berries**
 
 ## Relacionados
@@ -39,10 +39,11 @@ Clientes que también compran **Lata 470cc Sour Berries**:
 
 ## Inconsistencias
 
-- Cliente desde hace 772 días (>180), sin ningún pago registrado y con deuda de $61.500. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 858 días sin nueva factura (última: 2024-03-01).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3985 por $61.500.
 - 2026-04-12: ⚠️ Cliente inactivo — 772 días sin nueva factura (última: 2024-03-01).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3985 por $61.500.

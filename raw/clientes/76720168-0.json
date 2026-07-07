@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-01-08",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 114440.0,
+  "deuda_pendiente": 0,
   "direccion": "GENERAL FLORES 51",
   "estado": "incobrable",
   "facturas_emitidas": 1,
-  "facturas_pendientes": 1,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 54,
   "razon_social": "INVERSIONES KOME LIMITADA",
   "rut": "76720168-0",
   "top_productos": [
@@ -17,5 +17,5 @@
     }
   ],
   "total_vendido": 114440.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-03-03"
 }

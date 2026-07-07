@@ -2,7 +2,7 @@
 rut: 77029032-5
 razon_social: "SOCIEDAD DE RESTAURANTES CERVECEROS SABUGO HERMANOS LIMITADA"
 estado: incobrable
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # SOCIEDAD DE RESTAURANTES CERVECEROS SABUGO HERMANOS LIMITADA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $177.200 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($177.200) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 7 |
+| Último pago | 2024-01-17 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $177.200
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-10**
 - Solo 1 compra registrada
+- Comportamiento de pago: **rápido** (7 días promedio)
 - Producto principal: **Barril 30L Cream Ale**
 - ⚠ **Cliente marcado como incobrable**
 
@@ -41,7 +41,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 823 días (>180), sin ningún pago registrado y con deuda de $177.200. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 

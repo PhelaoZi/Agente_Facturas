@@ -2,7 +2,7 @@
 rut: 77568635-9
 razon_social: "RPG ALIMENTOS SPA"
 estado: incobrable
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # RPG ALIMENTOS SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $1.313.167 |
 | Facturas emitidas | 10 |
-| Facturas pendientes | 10 ($1.313.167) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 50 |
+| Último pago | 2024-12-12 |
 
 ## Estado de cuenta
 
-- 10 factura(s) pendiente(s) por $1.313.167
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-12**
-- Frecuencia de compra: ~1 factura cada **82 días**
+- Frecuencia de compra: ~1 factura cada **91 días**
+- Comportamiento de pago: **lento** (50 días promedio)
 - Producto principal: **Barril 30L Cream Ale**
 - ⚠ **Cliente marcado como incobrable**
 
@@ -41,7 +41,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 821 días (>180), sin ningún pago registrado y con deuda de $1.313.167. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 

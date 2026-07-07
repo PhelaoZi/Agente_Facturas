@@ -2,7 +2,7 @@
 rut: 76231880-6
 razon_social: "RESTOBAR RUBIK LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-07-07
 ---
 
 # RESTOBAR RUBIK LIMITADA
@@ -13,20 +13,19 @@ ultima_actualizacion: 2026-06-03
 | --- | --- |
 | Total vendido | $2.233.030 |
 | Facturas emitidas | 23 |
-| Facturas pendientes | 14 ($1.378.631) |
-| Promedio días de pago | 5 |
-| Último pago | 2025-01-13 |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 6 |
+| Último pago | 2026-04-27 |
 
 ## Estado de cuenta
 
-- 14 factura(s) pendiente(s) por $1.378.631
-- Último pago registrado: 2025-01-13
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **38 días**
-- Comportamiento de pago: **rápido** (5 días promedio)
+- Frecuencia de compra: ~1 factura cada **40 días**
+- Comportamiento de pago: **rápido** (6 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -45,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 75 días sin nueva factura (última: 2026-04-23).
 - 2026-06-03: ⚠️ 14 factura(s) vencida(s) (>30 días): #4014, #4655, #4225, #4242, #4282, #4324, #4395, #4425, #4468, #4506, #4532, #4574, #4603, #4638 por $1.378.631.
 - 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.
 - 2026-06-03: 📈 Deuda pendiente aumentó en $114.275.

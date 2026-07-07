@@ -2,7 +2,7 @@
 rut: 77256711-1
 razon_social: "OPERACIÓN PIURE SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # OPERACIÓN PIURE SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $105.015 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($105.015) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 26 |
+| Último pago | 2024-03-07 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $105.015
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-02-10**
 - Solo 1 compra registrada
+- Comportamiento de pago: **bueno** (26 días promedio)
 - Producto principal: **Barril 30L Sour Berries**
 
 ## Relacionados
@@ -40,10 +40,11 @@ Clientes que también compran **Barril 30L Sour Berries**:
 
 ## Inconsistencias
 
-- Cliente desde hace 792 días (>180), sin ningún pago registrado y con deuda de $105.015. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 878 días sin nueva factura (última: 2024-02-10).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3964 por $105.015.
 - 2026-04-12: ⚠️ Cliente inactivo — 792 días sin nueva factura (última: 2024-02-10).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3964 por $105.015.

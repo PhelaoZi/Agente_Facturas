@@ -2,7 +2,7 @@
 rut: 77290617-K
 razon_social: "ESPACIOS GASTRONOMICOS OCULTO SPA"
 estado: activo
-ultima_actualizacion: 2026-06-25
+ultima_actualizacion: 2026-07-07
 ---
 
 # ESPACIOS GASTRONOMICOS OCULTO SPA
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4697 por $69.990.
 - 2026-06-25: 📄 2 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 4 factura(s) vencida(s) (>30 días): #4649, #4660, #4063, #4641 por $254.255.
 - 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.

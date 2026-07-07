@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-07-23",
   "comuna": "SAN MIGUEL",
-  "deuda_pendiente": 278640.0,
+  "deuda_pendiente": 239260.0,
   "direccion": "CHILOÉ 3575",
   "estado": "activo",
-  "facturas_emitidas": 3,
-  "facturas_pendientes": 3,
-  "promedio_dias_pago": null,
+  "facturas_emitidas": 4,
+  "facturas_pendientes": 2,
+  "promedio_dias_pago": 10,
   "razon_social": "INVERSIONES FDL SPA",
   "rut": "76990452-2",
   "top_productos": [
@@ -17,13 +17,13 @@
     },
     {
       "cantidad": 1.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "nombre": "Barril 30L RIS"
     },
     {
       "cantidad": 1.0,
-      "nombre": "Barril 30L Stout Caf/Ca"
+      "nombre": "Barril 30L Scotch Ale"
     }
   ],
-  "total_vendido": 278640.0,
-  "ultimo_pago": null
+  "total_vendido": 403625.0,
+  "ultimo_pago": "2026-05-20"
 }

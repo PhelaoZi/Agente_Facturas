@@ -2,7 +2,7 @@
 rut: 76315087-9
 razon_social: "PRODUCTOS SIBARITAS DEL SUR SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # PRODUCTOS SIBARITAS DEL SUR SPA
@@ -13,31 +13,38 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $473.600 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($473.600) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 9 |
+| Último pago | 2024-02-21 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $473.600
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-02-12**
 - Solo 1 compra registrada
-- Producto principal: **Barriles Pet 30L**
+- Comportamiento de pago: **rápido** (9 días promedio)
+- Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
 
-- Sin clientes relacionados detectados
+Clientes que también compran **Barril 30L Scotch Ale**:
+
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
+- [[VDT SPA]] (77220069-2)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
-- Cliente desde hace 790 días (>180), sin ningún pago registrado y con deuda de $473.600. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 876 días sin nueva factura (última: 2024-02-12).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3965 por $473.600.
 - 2026-04-12: ⚠️ Cliente inactivo — 790 días sin nueva factura (última: 2024-02-12).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3965 por $473.600.

@@ -2,7 +2,7 @@
 rut: 78019027-2
 razon_social: "CAUR BAR SPA"
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-07-07
 ---
 
 # CAUR BAR SPA
@@ -13,36 +13,40 @@ ultima_actualizacion: 2026-06-03
 | --- | --- |
 | Total vendido | $1.476.916 |
 | Facturas emitidas | 7 |
-| Facturas pendientes | 7 ($1.476.916) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 1 ($0) |
+| Promedio días de pago | 28 |
+| Último pago | 2026-06-03 |
 
 ## Estado de cuenta
 
-- 7 factura(s) pendiente(s) por $1.476.916
-- Sin pagos registrados
+- 1 factura(s) pendiente(s) por $0
+- Último pago registrado: 2026-06-03
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-03-15**
-- Frecuencia de compra: ~1 factura cada **64 días**
-- Producto principal: **Barril Pet 30L**
+- Frecuencia de compra: ~1 factura cada **68 días**
+- Comportamiento de pago: **bueno** (28 días promedio)
+- Producto principal: **Barril 30L IPA W.C**
 
 ## Relacionados
 
-Clientes que también compran **Barril Pet 30L**:
+Clientes que también compran **Barril 30L IPA W.C**:
 
 - [[INVERSIONES BARDOS SPA]] (76922048-8)
-- [[COPAYAPU BREW-HOUSE SPA]] (76586346-5)
-- [[SOCIEDAD GASTRONOMICA LOS ULMOS LIMITADA]] (76910858-0)
-- [[SOCIEDAD GASTRONÓMICA ARAMON LIMITADA]] (76261485-5)
+- [[VDT SPA]] (77220069-2)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[RESTAURANT S&S LIMITADA]] (76442128-0)
+- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
 
 ## Inconsistencias
 
-- Cliente desde hace 445 días (>180), sin ningún pago registrado y con deuda de $1.476.916. Revisar si falta conciliar o es cliente moroso crónico.
+- Producto principal histórico = **Barril 30L IPA W.C**, pero en las últimas 3 facturas predomina **Barril 30L RIS**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4534 por $0.
+- 2026-07-07: ⚠️ Cliente inactivo — 67 días sin nueva factura (última: 2026-05-01).
 - 2026-06-03: ⚠️ 7 factura(s) vencida(s) (>30 días): #4664, #4259, #4312, #4358, #4408, #4534, #4535 por $1.476.916.
 - 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.
 - 2026-06-03: 📈 Deuda pendiente aumentó en $222.345.

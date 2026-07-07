@@ -2,7 +2,7 @@
 rut: 76586346-5
 razon_social: "COPAYAPU BREW-HOUSE SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # COPAYAPU BREW-HOUSE SPA
@@ -13,19 +13,20 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $254.016 |
 | Facturas emitidas | 3 |
-| Facturas pendientes | 3 ($254.016) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 1 ($0) |
+| Promedio días de pago | 30 |
+| Último pago | 2024-09-08 |
 
 ## Estado de cuenta
 
-- 3 factura(s) pendiente(s) por $254.016
-- Sin pagos registrados
+- 1 factura(s) pendiente(s) por $0
+- Último pago registrado: 2024-09-08
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-07-30**
-- Frecuencia de compra: ~1 factura cada **207 días**
+- Frecuencia de compra: ~1 factura cada **236 días**
+- Comportamiento de pago: **bueno** (30 días promedio)
 - Producto principal: **Barril 30L Black IPA**
 
 ## Relacionados
@@ -40,10 +41,12 @@ Clientes que también compran **Barril 30L Black IPA**:
 
 ## Inconsistencias
 
-- Cliente desde hace 621 días (>180), sin ningún pago registrado y con deuda de $254.016. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4303 por $0.
+- 2026-07-07: ⚠️ Cliente inactivo — 433 días sin nueva factura (última: 2025-04-30).
 - 2026-04-12: ⚠️ 3 factura(s) vencida(s) (>30 días): #4076, #4084, #4303 por $254.016.
 - 2026-04-12: ⚠️ Cliente inactivo — 347 días sin nueva factura (última: 2025-04-30).
 - 2026-04-08: ⚠️ 3 factura(s) vencida(s) (>30 días): #4076, #4084, #4303 por $254.016.

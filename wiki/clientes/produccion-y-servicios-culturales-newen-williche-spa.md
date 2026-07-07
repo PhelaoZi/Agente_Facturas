@@ -2,7 +2,7 @@
 rut: 76883673-6
 razon_social: "PRODUCCIÓN Y SERVICIOS CULTURALES NEWEN WILLICHE SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # PRODUCCIÓN Y SERVICIOS CULTURALES NEWEN WILLICHE SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $0 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($0) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 30 |
+| Último pago | 2024-03-16 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $0
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-02-15**
 - Solo 1 compra registrada
+- Comportamiento de pago: **bueno** (30 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -44,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 873 días sin nueva factura (última: 2024-02-15).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3972 por $0.
 - 2026-04-12: ⚠️ Cliente inactivo — 787 días sin nueva factura (última: 2024-02-15).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3972 por $0.

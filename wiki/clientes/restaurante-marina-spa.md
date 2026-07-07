@@ -2,7 +2,7 @@
 rut: 77126823-4
 razon_social: "RESTAURANTE MARINA SPA"
 estado: activo
-ultima_actualizacion: 2026-06-25
+ultima_actualizacion: 2026-07-07
 ---
 
 # RESTAURANTE MARINA SPA
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 2 factura(s) vencida(s) (>30 días): #4491, #4568 por $0.
 - 2026-06-25: 📄 2 factura(s) nueva(s) desde 2026-06-25.
 - 2026-06-25: 📈 Deuda pendiente aumentó en $139.981.
 - 2026-06-25: ⚠️ 2 factura(s) vencida(s) (>30 días): #4491, #4568 por $0.

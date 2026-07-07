@@ -1,18 +1,18 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2026-03-10",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 156418.0,
+  "deuda_pendiente": 0,
   "direccion": "SANTA MAGDALENA 80  7",
   "estado": "activo",
-  "facturas_emitidas": 3,
-  "facturas_pendientes": 3,
-  "promedio_dias_pago": null,
+  "facturas_emitidas": 4,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 25,
   "razon_social": "GR RESTAURANTES LIMITADA",
   "rut": "76081959-K",
   "top_productos": [
     {
-      "cantidad": 86.0,
+      "cantidad": 110.0,
       "nombre": "Botella 330cc Cream Ale"
     },
     {
@@ -20,6 +20,6 @@
       "nombre": "Botella 330cc Scotch Ale"
     }
   ],
-  "total_vendido": 156418.0,
-  "ultimo_pago": null
+  "total_vendido": 195514.0,
+  "ultimo_pago": "2026-06-15"
 }

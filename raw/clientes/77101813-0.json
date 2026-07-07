@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 341410.0,
+  "deuda_pendiente": 0,
   "direccion": "AVENIDA ITALIA 1228",
   "estado": "incobrable",
   "facturas_emitidas": 4,
-  "facturas_pendientes": 4,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 46,
   "razon_social": "INVERSIONES BADALU SPA",
   "rut": "77101813-0",
   "top_productos": [
@@ -21,5 +21,5 @@
     }
   ],
   "total_vendido": 341410.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2024-07-17"
 }

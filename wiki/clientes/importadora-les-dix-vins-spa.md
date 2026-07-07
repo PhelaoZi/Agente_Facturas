@@ -2,7 +2,7 @@
 rut: 76358171-3
 razon_social: "IMPORTADORA LES DIX VINS SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # IMPORTADORA LES DIX VINS SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $53.670 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($53.670) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 34 |
+| Último pago | 2024-03-05 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $53.670
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-31**
 - Solo 1 compra registrada
+- Comportamiento de pago: **normal** (34 días promedio)
 - Producto principal: **Lata 470cc Cream Ale**
 
 ## Relacionados
@@ -37,10 +37,11 @@ Clientes que también compran **Lata 470cc Cream Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 802 días (>180), sin ningún pago registrado y con deuda de $53.670. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 888 días sin nueva factura (última: 2024-01-31).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3956 por $53.670.
 - 2026-04-12: ⚠️ Cliente inactivo — 802 días sin nueva factura (última: 2024-01-31).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3956 por $53.670.

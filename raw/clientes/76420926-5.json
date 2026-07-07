@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-04-22",
   "comuna": "SANTIAGO",
-  "deuda_pendiente": 1001660.0,
+  "deuda_pendiente": 0,
   "direccion": "AMUNATEGUI 74   L.1",
   "estado": "activo",
   "facturas_emitidas": 12,
-  "facturas_pendientes": 12,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": 29,
   "razon_social": "COMERCIAL MONKEY SPA",
   "rut": "76420926-5",
   "top_productos": [
@@ -17,13 +17,13 @@
     },
     {
       "cantidad": 3.0,
-      "nombre": "Barril 30L West Coast IPA"
+      "nombre": "Barril 30L Black IPA"
     },
     {
       "cantidad": 3.0,
-      "nombre": "Barril 30L Black IPA"
+      "nombre": "Barril 30L West Coast IPA"
     }
   ],
   "total_vendido": 1001660.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-08-16"
 }

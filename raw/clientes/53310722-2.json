@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-01-17",
   "comuna": "LAS CONDES",
-  "deuda_pendiente": 111033.0,
+  "deuda_pendiente": 0,
   "direccion": "LOS DOMINICOS             8134",
   "estado": "activo",
   "facturas_emitidas": 2,
-  "facturas_pendientes": 2,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 30,
   "razon_social": "SUCESION GERMAN GARCIA GARIN",
   "rut": "53310722-2",
   "top_productos": [
@@ -25,5 +25,5 @@
     }
   ],
   "total_vendido": 111033.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2024-03-14"
 }

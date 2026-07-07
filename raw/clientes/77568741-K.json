@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-01-26",
   "comuna": "VITACURA",
-  "deuda_pendiente": 110110.0,
+  "deuda_pendiente": 0,
   "direccion": "AV VITACURA 4607  2A 2",
   "estado": "activo",
   "facturas_emitidas": 1,
-  "facturas_pendientes": 1,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 126,
   "razon_social": "TAPROOM TRES SPA",
   "rut": "77568741-K",
   "top_productos": [
@@ -17,5 +17,5 @@
     }
   ],
   "total_vendido": 110110.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2024-05-31"
 }

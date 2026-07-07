@@ -2,7 +2,7 @@
 rut: 53310722-2
 razon_social: "SUCESION GERMAN GARCIA GARIN"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # SUCESION GERMAN GARCIA GARIN
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $111.033 |
 | Facturas emitidas | 2 |
-| Facturas pendientes | 2 ($111.033) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 30 |
+| Último pago | 2024-03-14 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $111.033
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-17**
-- Frecuencia de compra: ~1 factura cada **408 días**
+- Frecuencia de compra: ~1 factura cada **451 días**
+- Comportamiento de pago: **bueno** (30 días promedio)
 - Producto principal: **Lata 470cc Scotch Ale**
 
 ## Relacionados
@@ -38,10 +38,11 @@ Clientes que también compran **Lata 470cc Scotch Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 816 días (>180), sin ningún pago registrado y con deuda de $111.033. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 875 días sin nueva factura (última: 2024-02-13).
 - 2026-04-12: ⚠️ 2 factura(s) vencida(s) (>30 días): #3938, #3969 por $111.033.
 - 2026-04-12: ⚠️ Cliente inactivo — 789 días sin nueva factura (última: 2024-02-13).
 - 2026-04-08: ⚠️ 2 factura(s) vencida(s) (>30 días): #3938, #3969 por $111.033.

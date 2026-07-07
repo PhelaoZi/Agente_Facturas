@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-04-23",
   "comuna": "ANTOFAGASTA",
-  "deuda_pendiente": 5522611.0,
+  "deuda_pendiente": 0,
   "direccion": "ANGAMOS 1309",
   "estado": "activo",
   "facturas_emitidas": 10,
-  "facturas_pendientes": 9,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 7,
   "razon_social": "INVERSIONES BARDOS SPA",
   "rut": "76922048-8",
   "top_productos": [
@@ -20,10 +20,10 @@
       "nombre": "Lata 470cc RedHouse"
     },
     {
-      "cantidad": 23.0,
-      "nombre": "Barril Pet 30L"
+      "cantidad": 18.0,
+      "nombre": "Barril 30L RIS"
     }
   ],
   "total_vendido": 5522611.0,
-  "ultimo_pago": "2026-04-17"
+  "ultimo_pago": "2026-05-18"
 }

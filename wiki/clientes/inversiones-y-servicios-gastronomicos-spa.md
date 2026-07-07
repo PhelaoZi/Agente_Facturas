@@ -2,7 +2,7 @@
 rut: 76701686-7
 razon_social: "INVERSIONES Y SERVICIOS GASTRONOMICOS SPA"
 estado: activo
-ultima_actualizacion: 2026-06-25
+ultima_actualizacion: 2026-07-07
 ---
 
 # INVERSIONES Y SERVICIOS GASTRONOMICOS SPA
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 5 factura(s) vencida(s) (>30 días): #4699, #4537, #4682, #4688, #4692 por $840.002.
 - 2026-06-25: ⚠️ 3 factura(s) vencida(s) (>30 días): #4537, #4682, #4688 por $360.000.
 - 2026-06-25: 📄 3 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 17 factura(s) vencida(s) (>30 días): #4646, #4653, #4609, #4659, #4343, #4613, #4537, #4621, #4572, #4635, #4629, #4602, #4589, #4597, #4637, #4579, #4585 por $3.010.029.

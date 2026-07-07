@@ -2,7 +2,7 @@
 rut: 76407717-2
 razon_social: "COMERCIAL BACO SPA"
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-07-07
 ---
 
 # COMERCIAL BACO SPA
@@ -13,19 +13,20 @@ ultima_actualizacion: 2026-06-03
 | --- | --- |
 | Total vendido | $2.040.480 |
 | Facturas emitidas | 9 |
-| Facturas pendientes | 9 ($2.040.480) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 2 ($0) |
+| Promedio días de pago | 27 |
+| Último pago | 2026-05-22 |
 
 ## Estado de cuenta
 
-- 9 factura(s) pendiente(s) por $2.040.480
-- Sin pagos registrados
+- 2 factura(s) pendiente(s) por $0
+- Último pago registrado: 2026-05-22
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-12-12**
-- Frecuencia de compra: ~1 factura cada **19 días**
+- Frecuencia de compra: ~1 factura cada **23 días**
+- Comportamiento de pago: **bueno** (27 días promedio)
 - Producto principal: **Barril 30L Sout Cafe**
 
 ## Relacionados
@@ -38,6 +39,7 @@ ultima_actualizacion: 2026-06-03
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 2 factura(s) vencida(s) (>30 días): #4529, #4541 por $0.
 - 2026-06-03: ⚠️ 8 factura(s) vencida(s) (>30 días): #4529, #4541, #4565, #4575, #4632, #4587, #4552, #4553 por $1.700.400.
 - 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.
 - 2026-06-03: 📈 Deuda pendiente aumentó en $340.080.

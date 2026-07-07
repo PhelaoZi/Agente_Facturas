@@ -2,7 +2,7 @@
 rut: 76568508-7
 razon_social: "PEPPERLAND BAR SPA"
 estado: incobrable
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # PEPPERLAND BAR SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $258.084 |
 | Facturas emitidas | 2 |
-| Facturas pendientes | 2 ($258.084) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 5 |
+| Último pago | 2024-01-29 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $258.084
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-06**
-- Frecuencia de compra: ~1 factura cada **414 días**
+- Frecuencia de compra: ~1 factura cada **456 días**
+- Comportamiento de pago: **rápido** (5 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 - ⚠ **Cliente marcado como incobrable**
 
@@ -41,7 +41,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 827 días (>180), sin ningún pago registrado y con deuda de $258.084. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 

@@ -2,7 +2,7 @@
 rut: 77605437-2
 razon_social: "ALPINO LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # ALPINO LIMITADA
@@ -13,14 +13,13 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $139.981 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($139.981) |
+| Facturas pendientes | 0 ($0) |
 | Promedio días de pago | — |
-| Último pago | — |
+| Último pago | 2025-02-19 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $139.981
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
@@ -40,10 +39,11 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 417 días (>180), sin ningún pago registrado y con deuda de $139.981. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 503 días sin nueva factura (última: 2025-02-19).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4237 por $139.981.
 - 2026-04-12: ⚠️ Cliente inactivo — 417 días sin nueva factura (última: 2025-02-19).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4237 por $139.981.

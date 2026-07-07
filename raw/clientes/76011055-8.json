@@ -1,18 +1,18 @@
 {
-  "_snapshot_fecha": "2026-06-03",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2026-02-04",
   "comuna": "SANTIAGO",
-  "deuda_pendiente": 279961.0,
+  "deuda_pendiente": 0,
   "direccion": "VERGARA                   65",
   "estado": "activo",
-  "facturas_emitidas": 4,
-  "facturas_pendientes": 4,
-  "promedio_dias_pago": null,
+  "facturas_emitidas": 5,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": 10,
   "razon_social": "SOCIEDAD GASTRONOMICA PRIMOS LIMITADA",
   "rut": "76011055-8",
   "top_productos": [
     {
-      "cantidad": 5.0,
+      "cantidad": 6.0,
       "nombre": "Barril 30L Scotch Ale"
     },
     {
@@ -20,6 +20,6 @@
       "nombre": "Barril 30L Cream Ale"
     }
   ],
-  "total_vendido": 279961.0,
-  "ultimo_pago": null
+  "total_vendido": 349951.0,
+  "ultimo_pago": "2026-06-15"
 }

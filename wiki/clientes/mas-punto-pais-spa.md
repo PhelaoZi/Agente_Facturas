@@ -2,7 +2,7 @@
 rut: 77303179-7
 razon_social: "MAS PUNTO PAIS SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # MAS PUNTO PAIS SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $107.340 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($107.340) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 2 |
+| Último pago | 2024-01-19 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $107.340
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-17**
 - Solo 1 compra registrada
+- Comportamiento de pago: **rápido** (2 días promedio)
 - Producto principal: **Lata 470cc Cream Ale**
 
 ## Relacionados
@@ -37,10 +37,11 @@ Clientes que también compran **Lata 470cc Cream Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 816 días (>180), sin ningún pago registrado y con deuda de $107.340. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 902 días sin nueva factura (última: 2024-01-17).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3939 por $107.340.
 - 2026-04-12: ⚠️ Cliente inactivo — 816 días sin nueva factura (última: 2024-01-17).
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #3939 por $107.340.

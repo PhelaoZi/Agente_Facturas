@@ -2,7 +2,7 @@
 rut: 76364354-9
 razon_social: "A & C SERVICIOS GASTRONOMICOS LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-06-25
+ultima_actualizacion: 2026-07-07
 ---
 
 # A & C SERVICIOS GASTRONOMICOS LIMITADA
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 6 factura(s) vencida(s) (>30 días): #4700, #4538, #4667, #4681, #4687, #4691 por $1.264.421.
 - 2026-06-25: ⚠️ 4 factura(s) vencida(s) (>30 días): #4538, #4667, #4681, #4687 por $660.009.
 - 2026-06-25: 📄 4 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 13 factura(s) vencida(s) (>30 días): #3999, #4647, #4652, #4608, #4054, #4658, #4538, #4612, #4620, #4628, #4606, #4601, #4636 por $2.460.034.

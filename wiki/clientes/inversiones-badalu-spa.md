@@ -2,7 +2,7 @@
 rut: 77101813-0
 razon_social: "INVERSIONES BADALU SPA"
 estado: incobrable
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # INVERSIONES BADALU SPA
@@ -13,19 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $341.410 |
 | Facturas emitidas | 4 |
-| Facturas pendientes | 4 ($341.410) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 46 |
+| Último pago | 2024-07-17 |
 
 ## Estado de cuenta
 
-- 4 factura(s) pendiente(s) por $341.410
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **208 días**
+- Frecuencia de compra: ~1 factura cada **229 días**
+- Comportamiento de pago: **lento** (46 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 - ⚠ **Cliente marcado como incobrable**
 
@@ -41,7 +41,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Inconsistencias
 
-- Cliente desde hace 830 días (>180), sin ningún pago registrado y con deuda de $341.410. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 

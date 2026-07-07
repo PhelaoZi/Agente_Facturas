@@ -2,7 +2,7 @@
 rut: 77352780-6
 razon_social: "SOC COMERCIAL EBANO LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-06-03
+ultima_actualizacion: 2026-07-07
 ---
 
 # SOC COMERCIAL EBANO LIMITADA
@@ -13,20 +13,19 @@ ultima_actualizacion: 2026-06-03
 | --- | --- |
 | Total vendido | $6.599.954 |
 | Facturas emitidas | 42 |
-| Facturas pendientes | 3 ($608.981) |
-| Promedio días de pago | 10 |
-| Último pago | 2026-04-09 |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 9 |
+| Último pago | 2026-06-06 |
 
 ## Estado de cuenta
 
-- 3 factura(s) pendiente(s) por $608.981
-- Último pago registrado: 2026-04-09
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-24**
-- Frecuencia de compra: ~1 factura cada **20 días**
-- Comportamiento de pago: **rápido** (10 días promedio)
+- Frecuencia de compra: ~1 factura cada **21 días**
+- Comportamiento de pago: **rápido** (9 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados

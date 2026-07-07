@@ -2,7 +2,7 @@
 rut: 76949132-5
 razon_social: "LEIVA, MC CARTHY Y SALAS SPA"
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # LEIVA, MC CARTHY Y SALAS SPA
@@ -13,20 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $4.187.526 |
 | Facturas emitidas | 29 |
-| Facturas pendientes | 8 ($1.017.085) |
-| Promedio días de pago | 10 |
-| Último pago | 2025-01-27 |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 15 |
+| Último pago | 2025-06-25 |
 
 ## Estado de cuenta
 
-- 8 factura(s) pendiente(s) por $1.017.085
-- Último pago registrado: 2025-01-27
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-10**
-- Frecuencia de compra: ~1 factura cada **28 días**
-- Comportamiento de pago: **rápido** (10 días promedio)
+- Frecuencia de compra: ~1 factura cada **31 días**
+- Comportamiento de pago: **rápido** (15 días promedio)
 - Producto principal: **Barril 30L Cream Ale**
 
 ## Relacionados
@@ -45,6 +44,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 426 días sin nueva factura (última: 2025-05-07).
 - 2026-04-12: ⚠️ 8 factura(s) vencida(s) (>30 días): #4023, #4206, #4221, #4231, #4245, #4264, #4277, #4311 por $1.017.085.
 - 2026-04-12: ⚠️ Cliente inactivo — 340 días sin nueva factura (última: 2025-05-07).
 - 2026-04-08: ⚠️ 8 factura(s) vencida(s) (>30 días): #4023, #4206, #4221, #4231, #4245, #4264, #4277, #4311 por $1.017.085.

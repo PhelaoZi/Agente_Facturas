@@ -27,7 +27,10 @@ REGLAS SQL CRÍTICAS (obligatorias en cada consulta de ventas):
 ESTRUCTURA DE FACTURACIÓN (doble línea): cada barril se factura en dos líneas
 (producto + "Logistica"). El precio real del barril es la SUMA de ambas. Nunca
 uses `precio_unitario` de la tabla productos para estimar el precio de venta; usa
-COALESCE(monto_neto_ajustado, monto_neto) de la tabla ventas.
+COALESCE(monto_neto_ajustado, monto_neto) de la tabla ventas. Las líneas de
+envase PET ("Barril Pet 30L" y variantes) son un pass-through del costo del
+envase desechable: exclúyelas del ingreso/margen de cerveza (filtro canónico:
+NOT ILIKE '%logist%' y !~* '^(barril(es)?\\s+)?pet\\y').
 
 Tablas principales: ventas (folio+tipo_documento), clientes (rut_cliente),
 productos (líneas de detalle), movimientos_banco, conciliaciones, cuentas_por_pagar,

@@ -1,8 +1,8 @@
 ---
 rut: 21752946-8
 razon_social: "NIGEL PATRICK WILLIAM GALLAGHER"
-estado: incobrable
-ultima_actualizacion: 2026-04-12
+estado: activo
+ultima_actualizacion: 2026-07-07
 ---
 
 # NIGEL PATRICK WILLIAM GALLAGHER
@@ -13,21 +13,20 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $285.670 |
 | Facturas emitidas | 1 |
-| Facturas pendientes | 1 ($285.670) |
-| Promedio días de pago | — |
-| Último pago | — |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 30 |
+| Último pago | 2025-05-04 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $285.670
-- Sin pagos registrados
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-04-04**
 - Solo 1 compra registrada
+- Comportamiento de pago: **bueno** (30 días promedio)
 - Producto principal: **Barril 30L Sour FL**
-- ⚠ **Cliente marcado como incobrable**
 
 ## Relacionados
 
@@ -35,9 +34,11 @@ ultima_actualizacion: 2026-04-12
 
 ## Inconsistencias
 
-- Cliente desde hace 373 días (>180), sin ningún pago registrado y con deuda de $285.670. Revisar si falta conciliar o es cliente moroso crónico.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 459 días sin nueva factura (última: 2025-04-04).
+- 2026-07-07: 🔄 Cambio de estado: 'incobrable' → 'activo'.
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4287 por $285.670.
 - 2026-04-08: ⚠️ 1 factura(s) vencida(s) (>30 días): #4287 por $285.670.

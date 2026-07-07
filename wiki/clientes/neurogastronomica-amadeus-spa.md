@@ -2,7 +2,7 @@
 rut: 77166721-K
 razon_social: "NEUROGASTRONOMICA AMADEUS SPA"
 estado: activo
-ultima_actualizacion: 2026-06-25
+ultima_actualizacion: 2026-07-07
 ---
 
 # NEUROGASTRONOMICA AMADEUS SPA
@@ -25,7 +25,7 @@ ultima_actualizacion: 2026-06-25
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **30 días**
+- Frecuencia de compra: ~1 factura cada **31 días**
 - Comportamiento de pago: **normal** (38 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4685 por $69.990.
 - 2026-06-25: ⚠️ 1 factura(s) vencida(s) (>30 días): #4685 por $69.990.
 - 2026-06-25: 📄 1 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 15 factura(s) vencida(s) (>30 días): #4195, #4217, #4228, #4234, #4249, #4057, #4334, #4405, #4066, #4441, #4473, #4509, #4523, #4600, #4562 por $954.320.

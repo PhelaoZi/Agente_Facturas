@@ -2,7 +2,7 @@
 rut: 76730367-K
 razon_social: "GASTRONOMICA SUR SPA."
 estado: activo
-ultima_actualizacion: 2026-04-12
+ultima_actualizacion: 2026-07-07
 ---
 
 # GASTRONOMICA SUR SPA.
@@ -13,20 +13,19 @@ ultima_actualizacion: 2026-04-12
 | --- | --- |
 | Total vendido | $1.486.984 |
 | Facturas emitidas | 20 |
-| Facturas pendientes | 1 ($64.990) |
-| Promedio días de pago | -12 |
-| Último pago | 2025-12-12 |
+| Facturas pendientes | 0 ($0) |
+| Promedio días de pago | 25 |
+| Último pago | 2026-01-25 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $64.990
-- Último pago registrado: 2025-12-12
+- Sin facturas pendientes de pago
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-02-13**
-- Frecuencia de compra: ~1 factura cada **39 días**
-- Comportamiento de pago: **rápido** (-12 días promedio)
+- Frecuencia de compra: ~1 factura cada **44 días**
+- Comportamiento de pago: **bueno** (25 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
 ## Relacionados
@@ -45,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-07-07: ⚠️ Cliente inactivo — 173 días sin nueva factura (última: 2026-01-15).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4561 por $64.990.
 - 2026-04-12: ⚠️ 12 factura(s) vencida(s) (>30 días): #4218, #4256, #4309, #4337, #4363, #4407, #4430, #4475, #4502, #4521, #4545, #4561 por $794.880.
 - 2026-04-12: ⚠️ Cliente inactivo — 87 días sin nueva factura (última: 2026-01-15).

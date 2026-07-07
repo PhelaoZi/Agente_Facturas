@@ -1,6 +1,6 @@
 # Wiki Zigurat — Índice de Clientes
 
-Actualizado: 2026-06-25 | **68** clientes (61 activos, 12 morosos, 7 incobrables)
+Actualizado: 2026-07-07 | **68** clientes (61 activos, 12 morosos, 7 incobrables)
 
 ## Sub-índices por estado
 

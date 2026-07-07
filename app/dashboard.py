@@ -218,7 +218,13 @@ def q_top_clientes(cur, cols, limit=10):
 
 
 def q_top_productos(cur, cols, limit=12):
-    """Productos mas vendidos por unidades (barriles/botellas). Excluye 'Logistica'."""
+    """Productos mas vendidos por unidades (barriles/botellas).
+
+    Excluye lineas que no son producto (regla documentada en CLAUDE.md):
+    - 'Logistica *': desglose tributario del precio del barril (no es servicio).
+    - 'Barril Pet *' / 'Pet *': envase desechable traspasado al cliente
+      (pass-through sin margen, no es venta de cerveza).
+    """
     if "productos" not in cols:
         return []
     pcols = cols.get("productos", set())
@@ -236,6 +242,7 @@ def q_top_productos(cur, cols, limit=12):
                      AND v.tipo_documento::text = p.tipo_documento::text
         WHERE {NOT_NC}
           AND p.{name_col} NOT ILIKE '%%logist%%'
+          AND p.{name_col} !~* '^(barril(es)?\\s+)?pet\\y'
         GROUP BY p.{name_col}
         ORDER BY unidades DESC NULLS LAST
         LIMIT %s

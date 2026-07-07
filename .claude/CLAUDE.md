@@ -204,6 +204,35 @@ Esta estructura se usa para optimizar la carga tributaria: el ILA (20,5%) solo a
 - **El ítem "Logistica" en `productos` NO es un servicio separado** — es parte del precio de la cerveza disfrazado para reducir ILA.
 - **`impuesto_adicional` en `ventas`** = ILA (20,5%) aplicado solo sobre el valor neto del ítem cerveza.
 
+### Línea de envase "Barril PET" — pass-through, NO es venta de cerveza
+
+Cuando la cerveza se vende en barril PET (envase desechable, a diferencia del
+barril de acero que se recupera), la factura trae una **tercera línea** además de
+producto + Logistica: el envase ("Barril Pet 30L", "Barril PET 30L", "Barriles
+Pet 30L", "Pet 20L"… hay variantes de escritura). Reglas (confirmadas por el
+productor, folio 4664 como ejemplo):
+
+- La línea PET es el **costo del envase traspasado al cliente** (pass-through
+  sin margen): NO es venta de cerveza ni un producto del catálogo, aunque SÍ es
+  parte del monto total facturado.
+- La Logistica aplica a TODOS los formatos, **incluido PET** (es desglose
+  tributario para reducir ILA, no un servicio real).
+- Precio/margen real de la cerveza en PET = línea producto + línea Logistica,
+  **excluyendo** la línea del envase.
+
+**Filtro canónico para rankings/agregados por producto** (aplicado en
+`app/dashboard.py`, `scripts/wiki_update.py` y la skill reporte-semanal):
+
+```sql
+AND p.nombre_producto NOT ILIKE '%logist%'
+AND p.nombre_producto !~* '^(barril(es)?\s+)?pet\y'
+```
+
+> Ojo con `parse_dte.py`: `ITEMS_NO_CATALOGO = {"logistica"}` filtra por match
+> EXACTO, así que las variantes reales ("Logistica Cream Ale", "Logistic", …)
+> **sí quedan en `productos`**. La tabla `productos` contiene todas esas líneas;
+> la exclusión correcta se hace al consultar, con el filtro de arriba.
+
 ### Precios de venta por barril 30L (neto, confirmados por el productor)
 
 | Cerveza | Ítem cerveza | Ítem logística | **Total neto** | Total con impuestos |

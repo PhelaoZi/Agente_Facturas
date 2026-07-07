@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-01-04",
   "comuna": "SANTIAGO",
-  "deuda_pendiente": 828824.0,
+  "deuda_pendiente": 0,
   "direccion": "ALONSO DE OVALLE 884 DP 1209",
   "estado": "activo",
   "facturas_emitidas": 8,
-  "facturas_pendientes": 8,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 11,
   "razon_social": "BEBIDA SOCIAL SPA",
   "rut": "77391728-0",
   "top_productos": [
@@ -21,9 +21,9 @@
     },
     {
       "cantidad": 1.0,
-      "nombre": "Logistica Latas"
+      "nombre": "Barril 30L Black IPA"
     }
   ],
   "total_vendido": 828824.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2024-08-07"
 }

@@ -1,12 +1,12 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-02-19",
   "comuna": "MACHALI",
-  "deuda_pendiente": 139981.0,
+  "deuda_pendiente": 0,
   "direccion": "AV. SAN JUAN 2043",
   "estado": "activo",
   "facturas_emitidas": 1,
-  "facturas_pendientes": 1,
+  "facturas_pendientes": 0,
   "promedio_dias_pago": null,
   "razon_social": "ALPINO LIMITADA",
   "rut": "77605437-2",
@@ -17,5 +17,5 @@
     }
   ],
   "total_vendido": 139981.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-02-19"
 }

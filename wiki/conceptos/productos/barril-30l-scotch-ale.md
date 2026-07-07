@@ -1,6 +1,6 @@
 # Producto: Barril 30L Scotch Ale
 
-Actualizado: 2026-06-25
+Actualizado: 2026-07-07
 
 ## Clientes que lo compran
 

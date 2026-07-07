@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2024-07-30",
   "comuna": "COPIAPO",
-  "deuda_pendiente": 254016.0,
+  "deuda_pendiente": 0,
   "direccion": "INFANTE 631",
   "estado": "activo",
   "facturas_emitidas": 3,
-  "facturas_pendientes": 3,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": 30,
   "razon_social": "COPAYAPU BREW-HOUSE SPA",
   "rut": "76586346-5",
   "top_productos": [
@@ -16,14 +16,14 @@
       "nombre": "Barril 30L Black IPA"
     },
     {
-      "cantidad": 2.0,
-      "nombre": "Barril Pet 30L"
+      "cantidad": 1.0,
+      "nombre": "Barril 30L Paint it Black"
     },
     {
       "cantidad": 1.0,
-      "nombre": "Barril 30L Paint it Black"
+      "nombre": "Barril 30L Scotch Ale"
     }
   ],
   "total_vendido": 254016.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2024-09-08"
 }

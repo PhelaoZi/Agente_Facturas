@@ -90,6 +90,10 @@ QUERY_TOP_PRODUCTOS = """
     JOIN ventas v ON v.folio = p.folio AND v.tipo_documento = p.tipo_documento
     WHERE v.tipo_documento != '61'
       AND v.fecha BETWEEN %s AND %s
+      -- Excluir lineas que no son producto (ver CLAUDE.md): desglose de
+      -- Logistica y envases PET traspasados al cliente (pass-through).
+      AND p.nombre_producto NOT ILIKE '%%logist%%'
+      AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y'
     GROUP BY p.nombre_producto
     ORDER BY total DESC
     LIMIT 5

@@ -1,6 +1,6 @@
 # Producto: Barril 30L Sout Cafe
 
-Actualizado: 2026-06-25
+Actualizado: 2026-07-07
 
 ## Clientes que lo compran
 

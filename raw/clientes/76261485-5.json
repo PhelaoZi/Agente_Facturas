@@ -1,13 +1,13 @@
 {
-  "_snapshot_fecha": "2026-04-12",
+  "_snapshot_fecha": "2026-07-07",
   "cliente_desde": "2025-07-02",
   "comuna": "OSORNO",
-  "deuda_pendiente": 147400.0,
+  "deuda_pendiente": 0,
   "direccion": "los colonos 2050  LC 15 OSORNO",
   "estado": "activo",
   "facturas_emitidas": 2,
-  "facturas_pendientes": 2,
-  "promedio_dias_pago": null,
+  "facturas_pendientes": 0,
+  "promedio_dias_pago": 13,
   "razon_social": "SOCIEDAD GASTRONÓMICA ARAMON LIMITADA",
   "rut": "76261485-5",
   "top_productos": [
@@ -18,12 +18,8 @@
     {
       "cantidad": 1.0,
       "nombre": "Barril 30L Scotch Ale"
-    },
-    {
-      "cantidad": 1.0,
-      "nombre": "Barril Pet 30L"
     }
   ],
   "total_vendido": 147400.0,
-  "ultimo_pago": null
+  "ultimo_pago": "2025-10-21"
 }
