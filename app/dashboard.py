@@ -876,6 +876,11 @@ def _log_agente_error(pregunta: str, detalle: str, trace: str) -> None:
         pass  # nunca bloquear la respuesta por un fallo al loguear
 
 
+# Sesion de chat vigente (servidor mono-usuario): permite que el agente recuerde
+# la conversacion entre preguntas. El boton "Limpiar" la resetea via /api/chat-reset.
+CHAT_SESSION = {"id": None}
+
+
 def run_agent(pregunta: str) -> dict:
     """Reutiliza el agente (Claude Agent SDK) del proyecto. Degrada con gracia."""
     try:
@@ -887,7 +892,8 @@ def run_agent(pregunta: str) -> dict:
         return {"ok": False, "error": "asistente_no_disponible", "detalle": str(e)}
     try:
         col = Collector()
-        texto = orchestrator.run(pregunta, col)
+        texto, session_id = orchestrator.run(pregunta, col, CHAT_SESSION["id"])
+        CHAT_SESSION["id"] = session_id
         arts = [{"tipo": a.tipo, "titulo": a.titulo, "payload": a.payload} for a in col.items]
         return {"ok": True, "texto": texto, "artefactos": arts}
     except Exception as e:
@@ -1080,6 +1086,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             res = run_agent(q)
             self._send(200, json.dumps(res, default=_json_default, ensure_ascii=False))
+        elif path == "/api/chat-reset":
+            # "Limpiar" en la UI: descarta la sesion para partir una conversacion nueva.
+            CHAT_SESSION["id"] = None
+            self._send(200, json.dumps({"ok": True}))
         elif path == "/api/ejecutar-accion":
             try:
                 length = int(self.headers.get("Content-Length", 0))

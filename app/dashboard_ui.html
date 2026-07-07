@@ -709,10 +709,11 @@ function addBubble(cls, html){
   document.getElementById('chat-clear').style.display='inline-flex';
   return d;
 }
-// Vacia el chat (solo visual: el backend no guarda historial)
+// Vacia el chat y resetea la sesion del agente (parte una conversacion nueva)
 function limpiarChat(){
   document.getElementById('chat-log').innerHTML='';
   document.getElementById('chat-clear').style.display='none';
+  fetch('/api/chat-reset',{method:'POST'}).catch(()=>{});
 }
 function renderArtefactos(cont, arts){
   (arts||[]).forEach(a=>{

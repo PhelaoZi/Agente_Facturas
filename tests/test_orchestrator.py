@@ -34,12 +34,14 @@ def test_build_options_incluye_tools_permitidos():
 def test_run_agrega_texto_de_la_respuesta(monkeypatch):
     async def fake_query(prompt, options):
         yield types.SimpleNamespace(
-            content=[types.SimpleNamespace(text="Respuesta del agente")]
+            content=[types.SimpleNamespace(text="Respuesta del agente")],
+            session_id="ses-1",
         )
 
     monkeypatch.setattr(orchestrator, "query", fake_query)
-    out = orchestrator.run("¿ventas?", Collector())
-    assert out == "Respuesta del agente"
+    texto, session_id = orchestrator.run("¿ventas?", Collector())
+    assert texto == "Respuesta del agente"
+    assert session_id == "ses-1"
 
 
 def test_build_options_incluye_tools_de_negocio():

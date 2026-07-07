@@ -151,10 +151,56 @@ En `app/agent/orchestrator.py`, `_build_options()`:
 6. Verificar: levantar el dashboard, hacer 3 preguntas (deuda, ventas, una acción de gasto) y
    una con Postgres detenido. `python -m pytest -q` verde.
 
-### Fase B — Memoria de conversación en el chat (1 sesión)
-- Migrar `query()` → `ClaudeSDKClient` con sesión persistente por pestaña del dashboard
-  (botón "Limpiar" ya existente = nueva sesión). Sin cambios en tools ni en el patrón de
-  escritura. Diseñar spec corto antes (superpowers:brainstorming).
+### Fase B — Memoria de conversación en el chat ✅ COMPLETADA (2026-07-07)
+Implementada con `resume` (más simple que ClaudeSDKClient y calza con el servidor
+request/response): `orchestrator.run()` devuelve `(texto, session_id)` y reanuda si
+se le pasa uno; `dashboard.py` guarda la sesión vigente (`CHAT_SESSION`) y expone
+`POST /api/chat-reset`; el botón "Limpiar" de la UI resetea la sesión. Verificado
+e2e: el agente respondió una pregunta de seguimiento recordando el turno anterior.
+
+### Fase B2 — Memoria persistente entre sesiones ✅ COMPLETADA (2026-07-07)
+Implementada según el diseño de abajo (`app/agent/memoria.py` + tools
+`mcp__memoria__*` + índice inyectado al system prompt + instrucciones de cuándo
+guardar). Verificado e2e en tres pasos: (1) el agente guardó una regla del negocio
+en `memoria-agente/`, (2) recordó el turno anterior vía resume, y (3) una SESIÓN
+NUEVA respondió correctamente usando la memoria persistente. 163 tests verdes.
+
+Diseño original:
+
+**Objetivo:** que el agente del dashboard recuerde entre sesiones (aunque se cierre
+el dashboard o el navegador), aprenda de sus errores y acumule conocimiento del
+negocio, sin inflar los tokens de cada consulta.
+
+**Patrón elegido: memoria basada en archivos con índice compacto** — el mismo que
+usa Anthropic oficialmente (memory tool de la API, memoria de Claude Code) y el
+mismo patrón Karpathy que el proyecto ya usa en `wiki/`:
+
+```
+memoria-agente/
+  MEMORIA.md          ← índice: UNA línea por aprendizaje. Se inyecta al system
+                        prompt en CADA consulta (costo acotado: tope de caracteres).
+  notas/<slug>.md     ← el detalle de cada aprendizaje. El agente lo lee SOLO
+                        cuando lo necesita (divulgación progresiva).
+```
+
+**Piezas:**
+- `app/agent/memoria.py`: `leer_indice()`, `guardar_nota()`, `leer_nota()` +
+  servidor MCP in-process `memoria` con tools `mcp__memoria__guardar_nota` y
+  `mcp__memoria__leer_nota`.
+- `orchestrator.py`: inyecta el índice al final del system prompt (truncado a un
+  tope) y registra el server `memoria`.
+- `system_prompt.py`: sección nueva que instruye CUÁNDO guardar (correcciones del
+  usuario, reglas del negocio, datos no obvios de la BD, errores cometidos) y
+  cuándo NO (cifras que cambian, lo que ya está en las reglas).
+- Las notas son committeables a git → historial de lo que el agente aprendió.
+
+**Por qué esto y no otra cosa:**
+- Sin tokens desbordados: solo el índice viaja siempre; el detalle es bajo demanda.
+- Sin infraestructura nueva: archivos en el repo, cero dependencias.
+- Es la versión chica del memory stores de Managed Agents → si algún día pasas a
+  H2/H3, el contenido migra tal cual.
+- Complementa (no reemplaza) el `resume` de la Fase B: resume = memoria de la
+  conversación en curso; memoria-agente = aprendizaje de largo plazo.
 
 ### Fase C — Al pasar
 - `.env.example` (sin valores reales), pin de versión del SDK en requirements,

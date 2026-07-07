@@ -8,6 +8,7 @@ if sys.platform == "win32":
 
 from claude_agent_sdk import ClaudeAgentOptions, query
 
+from app.agent import memoria
 from app.agent.publish_tools import build_lienzo_server
 from app.agent.system_prompt import SYSTEM_PROMPT
 from app.agent.tools_negocio import build_negocio_server
@@ -43,13 +44,32 @@ def _extract_text(messages) -> str:
     return ""
 
 
-def _build_options(collector: Collector) -> ClaudeAgentOptions:
+def _extract_session_id(messages) -> str | None:
+    """Obtiene el session_id que asignó el CLI (para reanudar la conversación)."""
+    for m in messages:
+        sid = getattr(m, "session_id", None)
+        if isinstance(sid, str) and sid:
+            return sid
+        data = getattr(m, "data", None)
+        if isinstance(data, dict) and data.get("session_id"):
+            return data["session_id"]
+    return None
+
+
+def _build_options(collector: Collector, session_id: str | None = None) -> ClaudeAgentOptions:
     lienzo_server, lienzo_tools = build_lienzo_server(collector)
     negocio_server, negocio_tools = build_negocio_server()
     acciones_server, acciones_tools = build_acciones_server(collector)
+    memoria_server, memoria_tools = memoria.build_memoria_server()
     claude_path = shutil.which("claude")
+    # Memoria de largo plazo: el índice compacto viaja en cada consulta; el
+    # detalle de cada nota se lee bajo demanda con mcp__memoria__leer_nota.
+    indice = memoria.leer_indice()
+    system_prompt = SYSTEM_PROMPT
+    if indice:
+        system_prompt += "\n\nMEMORIA DEL NEGOCIO (aprendida en sesiones anteriores):\n" + indice
     return ClaudeAgentOptions(
-        system_prompt=SYSTEM_PROMPT,
+        system_prompt=system_prompt,
         cwd=str(PROJECT_ROOT),
         # Modelo fijo: sin esto el chat usa el modelo por defecto del CLI (puede
         # ser el más caro). Sonnet sobra para consultas de negocio con tools.
@@ -59,26 +79,37 @@ def _build_options(collector: Collector) -> ClaudeAgentOptions:
         # servidores MCP definidos aquí (ignora .mcp.json del repo).
         setting_sources=[],
         strict_mcp_config=True,
+        # Memoria de conversación: si hay una sesión previa, se reanuda para que
+        # el agente recuerde las preguntas anteriores ("¿y el mes pasado?").
+        resume=session_id,
         mcp_servers={
             "lienzo": lienzo_server,
             "negocio": negocio_server,
             "acciones": acciones_server,
+            "memoria": memoria_server,
             "postgres": _postgres_server(),
         },
-        allowed_tools=lienzo_tools + negocio_tools + acciones_tools + ["mcp__postgres__query"],
+        allowed_tools=lienzo_tools + negocio_tools + acciones_tools + memoria_tools
+                      + ["mcp__postgres__query"],
         permission_mode="bypassPermissions",
         max_turns=MAX_TURNS,
         cli_path=claude_path,
     )
 
-async def _run(pregunta: str, collector: Collector) -> str:
-    options = _build_options(collector)
+async def _run(pregunta: str, collector: Collector,
+               session_id: str | None = None) -> tuple[str, str | None]:
+    options = _build_options(collector, session_id)
     mensajes = []
     async for message in query(prompt=pregunta, options=options):
         mensajes.append(message)
-    return _extract_text(mensajes)
+    return _extract_text(mensajes), _extract_session_id(mensajes) or session_id
 
 
-def run(pregunta: str, collector: Collector) -> str:
-    """Punto de entrada síncrono para Streamlit. Llena `collector` con artefactos."""
-    return asyncio.run(_run(pregunta, collector))
+def run(pregunta: str, collector: Collector,
+        session_id: str | None = None) -> tuple[str, str | None]:
+    """Punto de entrada síncrono. Llena `collector` con artefactos.
+
+    Devuelve (texto, session_id). Pasar el session_id devuelto en la siguiente
+    llamada reanuda la conversación (memoria de chat); None inicia una nueva.
+    """
+    return asyncio.run(_run(pregunta, collector, session_id))
