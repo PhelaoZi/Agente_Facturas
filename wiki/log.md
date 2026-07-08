@@ -32,4 +32,5 @@
 - **sync-nc** (22:13): Actualizadas 2 ficha(s): RESTAURANTE MARINA SPA, LE BISTROT DU VIET NAM LIMITADA
 
 ## 2026-07-07
+- **correccion fechas de pago (6 folios)** (19:15): Actualizadas 1 ficha(s): VDT SPA
 - **fix filtro productos (Logistica/PET)** (07:08): Actualizadas 68 ficha(s): A & C SERVICIOS GASTRONOMICOS LIMITADA, ALPINO LIMITADA, BAR CERVECERÍA ORIGINAL SPA, BEBIDA SOCIAL SPA, BIER BAR SPA y 63 más

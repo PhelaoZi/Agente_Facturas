@@ -27,16 +27,29 @@ def validar_marcar_pagada(params):
     anterior a la factura (los prepagos existen)."""
     folio = _validar_folio(params)
     raw = params.get("fecha_pago") or params.get("fecha")
-    if not raw:
-        fecha_pago = date.today()
-    else:
-        try:
-            fecha_pago = datetime.strptime(str(raw).strip(), "%Y-%m-%d").date()
-        except (ValueError, TypeError):
-            raise ValueError(f"Fecha inválida: {raw!r}. Formato esperado: YYYY-MM-DD.")
-    if fecha_pago > date.today():
-        raise ValueError(f"La fecha de pago no puede ser futura: {fecha_pago.isoformat()}.")
+    fecha_pago = _parsear_fecha_pago(raw) if raw else date.today()
     return {"folio": folio, "fecha_pago": fecha_pago.isoformat()}
+
+
+def _parsear_fecha_pago(raw):
+    """Parsea una fecha YYYY-MM-DD y rechaza futuras. Lanza ValueError."""
+    try:
+        fecha = datetime.strptime(str(raw).strip(), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        raise ValueError(f"Fecha inválida: {raw!r}. Formato esperado: YYYY-MM-DD.")
+    if fecha > date.today():
+        raise ValueError(f"La fecha de pago no puede ser futura: {fecha.isoformat()}.")
+    return fecha
+
+
+def validar_corregir_fecha_pago(params):
+    """Valida corregir-fecha-pago: folio válido y fecha OBLIGATORIA (una
+    corrección sin fecha explícita no tiene sentido; nada de default a hoy)."""
+    folio = _validar_folio(params)
+    raw = params.get("fecha_pago") or params.get("fecha")
+    if not raw:
+        raise ValueError("Para corregir necesitas la fecha de pago correcta (YYYY-MM-DD).")
+    return {"folio": folio, "fecha_pago": _parsear_fecha_pago(raw).isoformat()}
 
 
 def obtener_factura(cur, folio):
@@ -76,4 +89,31 @@ def marcar_factura_pagada(cur, folio, fecha_pago):
         "cliente": f["razon_social"],
         "total": float(f["total"]),
         "mensaje": f"Factura {folio} de {f['razon_social']} marcada como pagada el {fecha_pago}.",
+    }
+
+
+def corregir_fecha_pago(cur, folio, fecha_pago):
+    """Corrige la fecha_pago de una factura YA pagada (fecha mal registrada).
+    Lanza ValueError si la factura no existe, no está pagada (para eso está
+    marcar_factura_pagada) o ya tiene exactamente esa fecha."""
+    f = obtener_factura(cur, folio)
+    if not f:
+        raise ValueError(f"No existe una factura con folio {folio}.")
+    if f["fecha_pago"] is None:
+        raise ValueError(
+            f"La factura {folio} no está marcada como pagada; no hay fecha que "
+            "corregir. Usa marcar_factura_pagada.")
+    anterior = str(f["fecha_pago"])
+    if anterior == fecha_pago:
+        raise ValueError(f"La factura {folio} ya tiene fecha de pago {anterior}.")
+    cur.execute(
+        "UPDATE ventas SET fecha_pago = %s WHERE folio = %s AND tipo_documento != 61",
+        (fecha_pago, folio),
+    )
+    return {
+        "folio": folio,
+        "cliente": f["razon_social"],
+        "fecha_anterior": anterior,
+        "mensaje": (f"Fecha de pago de la factura {folio} de {f['razon_social']} "
+                    f"corregida: {anterior} → {fecha_pago}."),
     }

@@ -121,3 +121,19 @@ def test_ejecutar_marcar_factura_pagada_devuelve_mensaje():
                           {"folio": 4664, "fecha_pago": "2026-07-03"})
     assert r["folio"] == 4664
     assert "pagada" in r["mensaje"]
+
+
+def test_validar_corregir_fecha_pago_enruta():
+    clean = acciones.validar("corregir_fecha_pago",
+                             {"folio": "4686", "fecha_pago": "2026-06-30"})
+    assert clean == {"folio": 4686, "fecha_pago": "2026-06-30"}
+
+
+def test_ejecutar_corregir_fecha_pago_devuelve_mensaje():
+    factura = {"folio": 4686, "fecha": "2026-05-15", "fecha_pago": "2026-06-09",
+               "rut_cliente": "77-2", "razon_social": "VDT SPA", "total": 100000}
+    cur = FakeCursor(row=factura)
+    r = acciones.ejecutar(cur, "corregir_fecha_pago",
+                          {"folio": 4686, "fecha_pago": "2026-06-30"})
+    assert r["fecha_anterior"] == "2026-06-09"
+    assert "corregida" in r["mensaje"]

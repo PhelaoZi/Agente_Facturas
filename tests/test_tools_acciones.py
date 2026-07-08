@@ -97,6 +97,23 @@ def test_build_acciones_server_incluye_marcar_factura_pagada():
     assert "mcp__acciones__proponer_marcar_factura_pagada" in tool_names
 
 
+def test_corregir_fecha_pago_artifact_muestra_antes_despues():
+    f = {"folio": 4686, "razon_social": "VDT SPA", "total": 100000,
+         "fecha": "2026-05-15", "fecha_pago": "2026-06-09", "rut_cliente": "77-2"}
+    art = tools_acciones.corregir_fecha_pago_artifact(f, "2026-06-30")
+    assert art.tipo == "accion"
+    assert art.payload["tipo_accion"] == "corregir_fecha_pago"
+    assert art.payload["params"] == {"folio": 4686, "fecha_pago": "2026-06-30"}
+    assert "09/06/2026" in art.payload["resumen"]
+    assert "30/06/2026" in art.payload["resumen"]
+    assert "VDT SPA" in art.payload["resumen"]
+
+
+def test_build_acciones_server_incluye_corregir_fecha_pago():
+    _server, tool_names = tools_acciones.build_acciones_server(Collector())
+    assert "mcp__acciones__proponer_corregir_fecha_pago" in tool_names
+
+
 def test_build_acciones_server_incluye_las_de_seguimiento():
     _server, tool_names = tools_acciones.build_acciones_server(Collector())
     assert "mcp__acciones__proponer_agregar_seguimiento" in tool_names

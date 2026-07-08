@@ -83,9 +83,28 @@ Se permite fecha de pago anterior a la fecha de la factura (prepagos existen).
 - `tests/test_tools_acciones.py` — el artifact arma el payload correcto y la
   tool aparece en `build_acciones_server`.
 
+## Extensión (mismo día): acción `corregir_fecha_pago`
+
+Caso real que la motivó: VDT SPA tenía 6 facturas con `fecha_pago` mal
+registrada y `marcar_factura_pagada` (correctamente) rechaza facturas ya
+pagadas, así que el agente no tenía ningún camino para corregirlas.
+
+- `cobranza.validar_corregir_fecha_pago` — folio válido; fecha **obligatoria**
+  (una corrección sin fecha explícita no tiene sentido: sin default a hoy),
+  formato YYYY-MM-DD, no futura.
+- `cobranza.corregir_fecha_pago(cur, folio, fecha_pago)` — exige que la factura
+  exista y **ya esté pagada** (si no, el camino es `marcar_factura_pagada`);
+  rechaza corregir a la misma fecha (no-op). Devuelve `fecha_anterior` en el
+  resultado.
+- Tool `proponer_corregir_fecha_pago` + registro `corregir_fecha_pago` en
+  `acciones.py`. La tarjeta muestra `fecha anterior → nueva` para que el
+  usuario vea exactamente qué está pisando antes de confirmar.
+- System prompt: ante varias correcciones, una tarjeta por factura y verificar
+  primero qué fecha tiene hoy cada una (solo proponer las que difieren).
+
 ## Fuera de alcance
 
-- Desmarcar un pago (quitar `fecha_pago`).
+- Desmarcar un pago (dejar `fecha_pago` en NULL, volver a pendiente).
 - Conciliar movimientos del banco desde el chat (siguiente ítem del roadmap).
 - `wiki_update` automático del cliente tras confirmar (el endpoint se mantiene
   simple; la wiki se refresca con los flujos existentes).

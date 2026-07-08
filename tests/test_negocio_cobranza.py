@@ -102,3 +102,56 @@ def test_marcar_factura_ya_pagada_lanza_valueerror_con_fecha():
         cobranza.marcar_factura_pagada(cur, 4664, "2026-07-03")
     # No debe haber intentado el UPDATE
     assert len(cur.sqls) == 1
+
+
+# --- validar_corregir_fecha_pago (pura) ---
+
+def test_validar_corregir_exige_fecha_explicita():
+    # Una corrección sin fecha no tiene sentido: no hay default a hoy
+    with pytest.raises(ValueError):
+        cobranza.validar_corregir_fecha_pago({"folio": 4686})
+
+
+def test_validar_corregir_acepta_folio_y_fecha():
+    r = cobranza.validar_corregir_fecha_pago({"folio": "4686", "fecha_pago": "2026-06-30"})
+    assert r == {"folio": 4686, "fecha_pago": "2026-06-30"}
+
+
+def test_validar_corregir_rechaza_fecha_futura_o_mala():
+    manana = (date.today() + timedelta(days=1)).isoformat()
+    for mala in (manana, "30/06/2026"):
+        with pytest.raises(ValueError):
+            cobranza.validar_corregir_fecha_pago({"folio": 4686, "fecha_pago": mala})
+
+
+# --- corregir_fecha_pago ---
+
+def test_corregir_fecha_pago_actualiza_y_muestra_anterior():
+    pagada = {**FACTURA, "fecha_pago": "2026-06-09"}
+    cur = FakeCursor(rows_queue=[pagada, None])
+    r = cobranza.corregir_fecha_pago(cur, 4664, "2026-06-30")
+    assert r["folio"] == 4664
+    assert r["fecha_anterior"] == "2026-06-09"
+    assert "2026-06-09" in r["mensaje"] and "2026-06-30" in r["mensaje"]
+    update_sql = cur.sqls[1]
+    assert "UPDATE ventas" in update_sql and "!= 61" in update_sql
+    assert cur.params_list[1] == ("2026-06-30", 4664)
+
+
+def test_corregir_factura_no_pagada_lanza_valueerror():
+    cur = FakeCursor(rows_queue=[FACTURA])  # fecha_pago None
+    with pytest.raises(ValueError, match="no está marcada como pagada"):
+        cobranza.corregir_fecha_pago(cur, 4664, "2026-06-30")
+    assert len(cur.sqls) == 1  # sin UPDATE
+
+
+def test_corregir_con_la_misma_fecha_lanza_valueerror():
+    pagada = {**FACTURA, "fecha_pago": "2026-06-30"}
+    cur = FakeCursor(rows_queue=[pagada])
+    with pytest.raises(ValueError, match="ya tiene"):
+        cobranza.corregir_fecha_pago(cur, 4664, "2026-06-30")
+
+
+def test_corregir_factura_inexistente_lanza_valueerror():
+    with pytest.raises(ValueError, match="9999"):
+        cobranza.corregir_fecha_pago(FakeCursor(row=None), 9999, "2026-06-30")

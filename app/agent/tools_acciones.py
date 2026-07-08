@@ -124,6 +124,15 @@ def marcar_factura_pagada_artifact(f, fecha_pago) -> Artifact:
                  "resumen": resumen})
 
 
+def corregir_fecha_pago_artifact(f, fecha_pago) -> Artifact:
+    resumen = (f"Corregir pago F.{f['folio']} · {f['razon_social']} · "
+               f"{_fecha_dmy(f['fecha_pago'])} → {_fecha_dmy(fecha_pago)}")
+    return Artifact(tipo="accion", titulo="Confirmar corrección de fecha de pago",
+        payload={"tipo_accion": "corregir_fecha_pago",
+                 "params": {"folio": f["folio"], "fecha_pago": fecha_pago},
+                 "resumen": resumen})
+
+
 def _obtener_factura(folio):
     """Lee una factura por folio con su propia conexión de solo lectura."""
     conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
@@ -300,10 +309,43 @@ def build_acciones_server(collector: Collector):
                         "tarjeta; el usuario debe apretar Confirmar. NO afirmes que "
                         "ya quedó pagada."}]}
 
+    @tool("proponer_corregir_fecha_pago",
+          "Propone CORREGIR la fecha de pago de una factura de venta YA marcada "
+          "como pagada (fecha mal registrada). Requiere folio y la fecha correcta "
+          "(YYYY-MM-DD, obligatoria). NO escribe: publica una tarjeta de "
+          "confirmación que muestra la fecha anterior y la nueva.",
+          {"folio": int, "fecha": str})
+    async def proponer_corregir_fecha_pago(args):
+        try:
+            limpio = cobranza.validar_corregir_fecha_pago(
+                {"folio": args.get("folio"), "fecha": args.get("fecha")})
+        except ValueError as e:
+            return {"content": [{"type": "text",
+                    "text": f"No puedo proponer la corrección: {e}"}]}
+        f = _obtener_factura(limpio["folio"])
+        if not f:
+            return {"content": [{"type": "text",
+                    "text": f"No encontré una factura con folio {limpio['folio']}."}]}
+        if f["fecha_pago"] is None:
+            return {"content": [{"type": "text",
+                    "text": f"La factura {f['folio']} no está marcada como pagada; no hay "
+                            "fecha que corregir. Usa proponer_marcar_factura_pagada."}]}
+        if str(f["fecha_pago"]) == limpio["fecha_pago"]:
+            return {"content": [{"type": "text",
+                    "text": f"La factura {f['folio']} ya tiene fecha de pago "
+                            f"{f['fecha_pago']}. No hay nada que corregir."}]}
+        collector.add(corregir_fecha_pago_artifact(f, limpio["fecha_pago"]))
+        return {"content": [{"type": "text",
+                "text": f"Propuesta lista para confirmar — Corregir la fecha de pago de la "
+                        f"factura {f['folio']} de {f['razon_social']}: "
+                        f"{_fecha_dmy(f['fecha_pago'])} → {_fecha_dmy(limpio['fecha_pago'])}. "
+                        "Quedó como tarjeta; el usuario debe apretar Confirmar. NO afirmes "
+                        "que ya se corrigió."}]}
+
     server = create_sdk_mcp_server(name="acciones", version="1.0.0", tools=[
         proponer_gasto, proponer_borrar_gasto, proponer_marcar_gasto_pagado, proponer_editar_gasto,
         proponer_agregar_seguimiento, proponer_marcar_seguimiento,
-        proponer_marcar_factura_pagada,
+        proponer_marcar_factura_pagada, proponer_corregir_fecha_pago,
     ])
     tool_names = [
         "mcp__acciones__proponer_gasto",
@@ -313,5 +355,6 @@ def build_acciones_server(collector: Collector):
         "mcp__acciones__proponer_agregar_seguimiento",
         "mcp__acciones__proponer_marcar_seguimiento",
         "mcp__acciones__proponer_marcar_factura_pagada",
+        "mcp__acciones__proponer_corregir_fecha_pago",
     ]
     return server, tool_names

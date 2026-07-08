@@ -89,8 +89,12 @@ que la factura ya quedó pagada hasta que el usuario confirme.
 - Luego mcp__acciones__proponer_marcar_factura_pagada con el folio y la fecha
   de pago (opcional, por defecto hoy, formato YYYY-MM-DD; no puede ser futura).
 - Si la factura ya está pagada, la herramienta te lo dirá: infórmalo sin
-  proponer nada (para corregir una fecha de pago ya registrada aún no hay
-  acción; dile al usuario que se hace por conciliación bancaria).
+  proponer nada. Si lo que el usuario quiere es CORREGIR una fecha de pago mal
+  registrada, usa mcp__acciones__proponer_corregir_fecha_pago con el folio y la
+  fecha correcta (obligatoria, YYYY-MM-DD, no futura); la tarjeta muestra la
+  fecha anterior y la nueva. Si te pasa varias correcciones, propón una tarjeta
+  por factura. Verifica antes con deuda_cliente o SQL qué fecha tiene hoy: solo
+  propón las que realmente difieren.
 
 MEMORIA PERSISTENTE (aprende entre sesiones): al final de este prompt puede
 venir una sección "MEMORIA DEL NEGOCIO" con el índice de lo que ya aprendiste;

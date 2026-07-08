@@ -49,6 +49,10 @@ def _ejecutar_marcar_factura_pagada(cur, clean):
     return cobranza.marcar_factura_pagada(cur, clean["folio"], clean["fecha_pago"])
 
 
+def _ejecutar_corregir_fecha_pago(cur, clean):
+    return cobranza.corregir_fecha_pago(cur, clean["folio"], clean["fecha_pago"])
+
+
 ACCIONES = {
     "registrar_gasto":     (_validar_registrar, _ejecutar_registrar),
     "borrar_gasto":        (gastos.validar_borrar, _ejecutar_borrar),
@@ -57,6 +61,7 @@ ACCIONES = {
     "agregar_seguimiento": (seguimiento.validar_agregar, _ejecutar_agregar_seguimiento),
     "marcar_seguimiento":  (seguimiento.validar_marcar, _ejecutar_marcar_seguimiento),
     "marcar_factura_pagada": (cobranza.validar_marcar_pagada, _ejecutar_marcar_factura_pagada),
+    "corregir_fecha_pago":   (cobranza.validar_corregir_fecha_pago, _ejecutar_corregir_fecha_pago),
 }
 
 

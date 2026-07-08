@@ -15,12 +15,12 @@ ultima_actualizacion: 2026-07-07
 | Facturas emitidas | 92 |
 | Facturas pendientes | 5 ($678.971) |
 | Promedio días de pago | 57 |
-| Último pago | 2026-06-15 |
+| Último pago | 2026-06-30 |
 
 ## Estado de cuenta
 
 - 5 factura(s) pendiente(s) por $678.971
-- Último pago registrado: 2026-06-15
+- Último pago registrado: 2026-06-30
 
 ## Patrón de comportamiento
 
