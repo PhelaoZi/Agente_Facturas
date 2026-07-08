@@ -103,3 +103,21 @@ def test_ejecutar_marcar_seguimiento_devuelve_mensaje():
     r = acciones.ejecutar(cur, "marcar_seguimiento",
                           {"id": 5, "estado": "contactado", "fecha_contacto": "2026-06-24"})
     assert "mensaje" in r
+
+
+# --- Tests para acciones de cobranza (marcar factura pagada) ---
+
+def test_validar_marcar_factura_pagada_enruta():
+    clean = acciones.validar("marcar_factura_pagada",
+                             {"folio": "4664", "fecha_pago": "2026-07-03"})
+    assert clean == {"folio": 4664, "fecha_pago": "2026-07-03"}
+
+
+def test_ejecutar_marcar_factura_pagada_devuelve_mensaje():
+    factura = {"folio": 4664, "fecha": "2026-06-15", "fecha_pago": None,
+               "rut_cliente": "77-1", "razon_social": "BOTILLERIA X", "total": 69990}
+    cur = FakeCursor(row=factura)
+    r = acciones.ejecutar(cur, "marcar_factura_pagada",
+                          {"folio": 4664, "fecha_pago": "2026-07-03"})
+    assert r["folio"] == 4664
+    assert "pagada" in r["mensaje"]

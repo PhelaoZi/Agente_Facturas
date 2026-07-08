@@ -614,6 +614,13 @@ Endpoint: acciones.validar(tipo, params)        (ValueError → 400, sin tocar B
   (`pagado=TRUE, fecha_pago`). El agente las usa por descripción: primero
   `listar_gastos` para ubicar el id; la tarjeta muestra los datos exactos antes
   de confirmar (red de seguridad contra tocar el gasto equivocado).
+- **Acción de cobranza implementada:** `marcar_factura_pagada` escribe
+  `ventas.fecha_pago` (fuente de verdad del estado de cobro). Lógica en
+  `app/negocio/cobranza.py` (`ventas.py` sigue siendo solo lectura). El agente
+  ubica el folio con `deuda_cliente`/`facturas_vencidas` y propone con
+  `proponer_marcar_factura_pagada` (fecha opcional, default hoy, nunca futura).
+  Rechaza doble marcado: si la factura ya tiene `fecha_pago` no propone ni
+  ejecuta (no pisa pagos registrados por conciliación bancaria).
 - **El endpoint nunca finge éxito:** 400 en validación o gasto inexistente, 500
   en error de BD; cierra la conexión en `finally`.
 - Diseños y planes detallados en `docs/superpowers/specs/` y `.../plans/`
@@ -622,8 +629,9 @@ Endpoint: acciones.validar(tipo, params)        (ValueError → 400, sin tocar B
 
 ### Próximas acciones (roadmap)
 
-Reutilizarán este mismo mecanismo: **marcar factura de venta como pagada**
-(`ventas.fecha_pago`) y **conciliar pagos del banco** desde el chat.
+Reutilizarán este mismo mecanismo: **conciliar pagos del banco** desde el chat
+y **corregir/desmarcar una `fecha_pago` ya registrada** (hoy solo por
+conciliación bancaria).
 
 ---
 

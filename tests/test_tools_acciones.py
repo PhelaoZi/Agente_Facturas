@@ -80,6 +80,23 @@ def test_marcar_seguimiento_artifact_arma_payload():
     assert "contactado" in art.payload["resumen"]
 
 
+def test_marcar_factura_pagada_artifact_arma_payload():
+    f = {"folio": 4664, "razon_social": "BOTILLERIA X", "total": 69990,
+         "fecha": "2026-06-15", "fecha_pago": None, "rut_cliente": "77-1"}
+    art = tools_acciones.marcar_factura_pagada_artifact(f, "2026-07-03")
+    assert art.tipo == "accion"
+    assert art.payload["tipo_accion"] == "marcar_factura_pagada"
+    assert art.payload["params"] == {"folio": 4664, "fecha_pago": "2026-07-03"}
+    assert "BOTILLERIA X" in art.payload["resumen"]
+    assert "69.990" in art.payload["resumen"]
+    assert "03/07/2026" in art.payload["resumen"]
+
+
+def test_build_acciones_server_incluye_marcar_factura_pagada():
+    _server, tool_names = tools_acciones.build_acciones_server(Collector())
+    assert "mcp__acciones__proponer_marcar_factura_pagada" in tool_names
+
+
 def test_build_acciones_server_incluye_las_de_seguimiento():
     _server, tool_names = tools_acciones.build_acciones_server(Collector())
     assert "mcp__acciones__proponer_agregar_seguimiento" in tool_names

@@ -7,6 +7,7 @@ Cada acción es un par (validar, ejecutar) de interfaz uniforme:
 El endpoint determinista usa `validar` (sin BD → 400) y `ejecutar` (con BD →
 500/400). El agente nunca escribe: solo propone artefactos `accion`.
 """
+from app.negocio import cobranza
 from app.negocio import gastos
 from app.negocio import seguimiento
 
@@ -44,6 +45,10 @@ def _ejecutar_marcar_seguimiento(cur, clean):
     return seguimiento.marcar(cur, clean["id"], clean["estado"], clean["fecha_contacto"])
 
 
+def _ejecutar_marcar_factura_pagada(cur, clean):
+    return cobranza.marcar_factura_pagada(cur, clean["folio"], clean["fecha_pago"])
+
+
 ACCIONES = {
     "registrar_gasto":     (_validar_registrar, _ejecutar_registrar),
     "borrar_gasto":        (gastos.validar_borrar, _ejecutar_borrar),
@@ -51,6 +56,7 @@ ACCIONES = {
     "marcar_gasto_pagado": (gastos.validar_marcar_pagado, _ejecutar_marcar_pagado),
     "agregar_seguimiento": (seguimiento.validar_agregar, _ejecutar_agregar_seguimiento),
     "marcar_seguimiento":  (seguimiento.validar_marcar, _ejecutar_marcar_seguimiento),
+    "marcar_factura_pagada": (cobranza.validar_marcar_pagada, _ejecutar_marcar_factura_pagada),
 }
 
 

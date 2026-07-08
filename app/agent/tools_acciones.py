@@ -10,6 +10,7 @@ from psycopg2.extras import RealDictCursor
 
 from app.canvas.artifacts import Artifact, Collector
 from app.config import DB_URL
+from app.negocio import cobranza
 from app.negocio import gastos
 from app.negocio.gastos import validar_gasto
 from app.negocio import seguimiento
@@ -112,6 +113,25 @@ def marcar_seguimiento_artifact(s, estado) -> Artifact:
     return Artifact(tipo="accion", titulo="Confirmar seguimiento",
         payload={"tipo_accion": "marcar_seguimiento",
                  "params": {"id": s["id"], "estado": estado}, "resumen": resumen})
+
+
+def marcar_factura_pagada_artifact(f, fecha_pago) -> Artifact:
+    resumen = (f"Marcar pagada F.{f['folio']} · {f['razon_social']} · "
+               f"{_pesos(f['total'])} · pago el {_fecha_dmy(fecha_pago)}")
+    return Artifact(tipo="accion", titulo="Confirmar pago de factura",
+        payload={"tipo_accion": "marcar_factura_pagada",
+                 "params": {"folio": f["folio"], "fecha_pago": fecha_pago},
+                 "resumen": resumen})
+
+
+def _obtener_factura(folio):
+    """Lee una factura por folio con su propia conexión de solo lectura."""
+    conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+    try:
+        with conn.cursor() as cur:
+            return cobranza.obtener_factura(cur, folio)
+    finally:
+        conn.close()
 
 
 def _obtener_seguimiento(id):
@@ -250,9 +270,40 @@ def build_acciones_server(collector: Collector):
                         "Quedó como tarjeta; el usuario debe apretar Confirmar. "
                         "NO afirmes que ya se marcó."}]}
 
+    @tool("proponer_marcar_factura_pagada",
+          "Propone marcar una FACTURA DE VENTA como pagada por su folio, con la "
+          "fecha de pago (opcional, por defecto hoy, formato YYYY-MM-DD). NO "
+          "escribe: publica una tarjeta de confirmación. Ubica primero el folio "
+          "con deuda_cliente o facturas_vencidas.",
+          {"folio": int, "fecha": str})
+    async def proponer_marcar_factura_pagada(args):
+        try:
+            limpio = cobranza.validar_marcar_pagada(
+                {"folio": args.get("folio"), "fecha": args.get("fecha")})
+        except ValueError as e:
+            return {"content": [{"type": "text",
+                    "text": f"No puedo proponer el pago: {e}"}]}
+        f = _obtener_factura(limpio["folio"])
+        if not f:
+            return {"content": [{"type": "text",
+                    "text": f"No encontré una factura con folio {limpio['folio']}. "
+                            "Usa deuda_cliente para ver los folios pendientes."}]}
+        if f["fecha_pago"] is not None:
+            return {"content": [{"type": "text",
+                    "text": f"La factura {f['folio']} de {f['razon_social']} ya está "
+                            f"pagada desde el {f['fecha_pago']}. No propongo nada."}]}
+        collector.add(marcar_factura_pagada_artifact(f, limpio["fecha_pago"]))
+        return {"content": [{"type": "text",
+                "text": f"Propuesta lista para confirmar — Marcar pagada la factura "
+                        f"{f['folio']} de {f['razon_social']} ({_pesos(f['total'])}) "
+                        f"con fecha {_fecha_dmy(limpio['fecha_pago'])}. Quedó como "
+                        "tarjeta; el usuario debe apretar Confirmar. NO afirmes que "
+                        "ya quedó pagada."}]}
+
     server = create_sdk_mcp_server(name="acciones", version="1.0.0", tools=[
         proponer_gasto, proponer_borrar_gasto, proponer_marcar_gasto_pagado, proponer_editar_gasto,
         proponer_agregar_seguimiento, proponer_marcar_seguimiento,
+        proponer_marcar_factura_pagada,
     ])
     tool_names = [
         "mcp__acciones__proponer_gasto",
@@ -261,5 +312,6 @@ def build_acciones_server(collector: Collector):
         "mcp__acciones__proponer_editar_gasto",
         "mcp__acciones__proponer_agregar_seguimiento",
         "mcp__acciones__proponer_marcar_seguimiento",
+        "mcp__acciones__proponer_marcar_factura_pagada",
     ]
     return server, tool_names
