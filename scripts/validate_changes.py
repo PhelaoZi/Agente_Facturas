@@ -12,12 +12,16 @@ Retorna:
     Exit code 1 → hay errores, NO insertar
 """
 
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 
-from _console import force_utf8
+try:
+    from _console import force_utf8          # ejecutado como script
+except ImportError:
+    from scripts._console import force_utf8  # importado como paquete (tests)
 
 force_utf8()
 
@@ -73,6 +77,12 @@ def validar_totales(venta):
 def validar_folio(folio):
     """Valida que el folio sea un número positivo."""
     return isinstance(folio, int) and folio > 0
+
+
+def hash_changes(ruta):
+    """SHA-256 del changes.json. El flag .changes_validated guarda este hash
+    para que sync_db.py rechace un changes.json regenerado tras la validación."""
+    return hashlib.sha256(Path(ruta).read_bytes()).hexdigest()
 
 
 # ─── Lógica principal ─────────────────────────────────────────────────────────
@@ -270,8 +280,10 @@ def main():
         print("=" * 60)
         sys.exit(1)
 
-    # Todo OK — crear flag para que sync_db.py sepa que fue validado
-    Path(".changes_validated").write_text("ok", encoding="utf-8")
+    # Todo OK — crear flag para que sync_db.py sepa que fue validado.
+    # Guarda el hash del archivo validado: si changes.json se regenera después
+    # (otro parse_dte.py), sync_db.py detecta el cambio y exige re-validar.
+    Path(".changes_validated").write_text(hash_changes(ruta), encoding="utf-8")
 
     print("=" * 60)
     print("✅ VALIDACIÓN EXITOSA — Sin errores")

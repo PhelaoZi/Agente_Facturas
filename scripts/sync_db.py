@@ -13,13 +13,17 @@ Flujo completo:
     3. python sync_db.py changes.json        ← este script
 """
 
+import hashlib
 import json
 import os
 import sys
 from pathlib import Path
 from datetime import datetime
 
-from _console import force_utf8
+try:
+    from _console import force_utf8          # ejecutado como script
+except ImportError:
+    from scripts._console import force_utf8  # importado como paquete (tests)
 
 force_utf8()
 
@@ -54,6 +58,23 @@ DB_CONFIG = {
     "user":     os.environ.get("DB_USER", "postgres"),
     "password": os.environ.get("DB_PASSWORD", ""),
 }
+
+
+# ─── Verificación del flag de validación ──────────────────────────────────────
+
+def flag_valido(ruta_changes, flag_path):
+    """True solo si el flag existe y su hash coincide con el changes.json actual.
+
+    validate_changes.py guarda el SHA-256 del archivo validado; si changes.json
+    se regeneró después (otro parse_dte.py sin re-validar), el hash no coincide
+    y hay que bloquear el sync. Un flag con formato antiguo ('ok') tampoco vale.
+    """
+    flag = Path(flag_path)
+    if not flag.exists():
+        return False
+    esperado = flag.read_text(encoding="utf-8").strip()
+    actual = hashlib.sha256(Path(ruta_changes).read_bytes()).hexdigest()
+    return esperado == actual
 
 
 # ─── Conexión ─────────────────────────────────────────────────────────────────
@@ -440,10 +461,16 @@ def main():
         changes = json.load(f)
 
     # ── Verificar que validate_changes.py fue ejecutado primero ───────────────
+    # El flag guarda el hash del changes.json validado: bloquea tanto la falta
+    # de validación como un changes.json regenerado después de validarse.
     validated_flag = Path(".changes_validated")
-    if not validated_flag.exists():
+    if not flag_valido(ruta, validated_flag):
         print("=" * 60)
-        print("❌ BLOQUEADO: changes.json no ha sido validado.")
+        if validated_flag.exists():
+            print("❌ BLOQUEADO: changes.json cambió después de validarse")
+            print("   (o el flag es de una versión anterior).")
+        else:
+            print("❌ BLOQUEADO: changes.json no ha sido validado.")
         print("   Ejecuta validate_changes.py primero:")
         print("   python scripts/validate_changes.py changes.json")
         print("=" * 60)
