@@ -21,18 +21,39 @@ NUNCA determinar el estado de cobro con un JOIN a conciliaciones (es solo
 evidencia bancaria de respaldo y puede estar incompleta).
 """
 import argparse
+import os
 import sys
+from pathlib import Path
 
 import psycopg2
 
 sys.stdout.reconfigure(encoding="utf-8")
 
+# Raíz del proyecto: .claude/skills/consultar-ventas/scripts/ → 4 niveles arriba
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+
+
+def _load_env():
+    """Carga .env de la raíz sin depender de python-dotenv (patrón del proyecto).
+    Las credenciales NUNCA van hardcodeadas en el código."""
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        with open(env_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+_load_env()
+
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "dte_facturas_chile",
-    "user": "postgres",
-    "password": "zigurat",
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "port": int(os.environ.get("DB_PORT", "5432")),
+    "dbname": os.environ.get("DB_NAME", "dte_facturas_chile"),
+    "user": os.environ.get("DB_USER", "postgres"),
+    "password": os.environ.get("DB_PASSWORD", ""),
 }
 
 TIPO_DOC = {

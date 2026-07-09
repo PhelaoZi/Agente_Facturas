@@ -61,8 +61,8 @@ DB_CONFIG = {
     "port": int(os.environ.get("DB_PORT", "5432")),
     "dbname": os.environ.get("DB_NAME", "dte_facturas_chile"),
     "user": os.environ.get("DB_USER", "postgres"),
-    # El proyecto usa la clave del .env; fallback a la conocida del repo.
-    "password": os.environ.get("DB_PASSWORD", "zigurat"),
+    # La clave vive SOLO en el .env (nunca hardcodeada como fallback).
+    "password": os.environ.get("DB_PASSWORD", ""),
 }
 
 

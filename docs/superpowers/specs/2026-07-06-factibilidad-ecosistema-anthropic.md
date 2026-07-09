@@ -90,7 +90,7 @@ Palancas de ahorro: **Batch API −50%**, **prompt caching** (lecturas ~0,1×), 
 - 3 servidores MCP in-process correctos, `allowed_tools` con formato `mcp__server__tool`, `max_turns=20`, credenciales fuera del repo (`.env` y `.mcp.json` en `.gitignore`), manejo de error de alto nivel en `run_agent()`.
 
 ### 🔴 Críticos (2) — aislamiento, ~1 línea cada uno
-1. **`strict_mcp_config` no seteado** (`orchestrator.py:51`). El repo tiene un `.mcp.json` con un **segundo** servidor `postgres` de credenciales hardcodeadas y **distintas** (`postgres:zigurat@...`). Sin `strict`, el SDK puede combinarlo/chocarlo con el que arma desde `.env`. No determinista desde el código. → `strict_mcp_config=True`.
+1. **`strict_mcp_config` no seteado** (`orchestrator.py:51`). El repo tiene un `.mcp.json` con un **segundo** servidor `postgres` de credenciales hardcodeadas y **distintas** (`postgres:<clave>@...`). Sin `strict`, el SDK puede combinarlo/chocarlo con el que arma desde `.env`. No determinista desde el código. → `strict_mcp_config=True`.
 2. **`setting_sources` no seteado** (`orchestrator.py:51`). Con default `None`, el agente carga **el CLAUDE.md completo** en cada turno, encima del `SYSTEM_PROMPT` de 90 líneas. Infla tokens, puede confundir al modelo, no queda documentado en código. → `setting_sources=[]`. **(Este hallazgo se cruza con el costo: fijarlo abarata cada consulta y hace el agente 100% reproducible.)**
 
 ### 🟡 Advertencias (5)

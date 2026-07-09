@@ -554,7 +554,7 @@ for line in env.read_text().splitlines():
         k,v = line.split('=',1)
         os.environ.setdefault(k.strip(), v.strip())
 
-conn = psycopg2.connect(host='localhost', dbname='dte_facturas_chile', user='postgres', password='zigurat')
+conn = psycopg2.connect(host='localhost', dbname='dte_facturas_chile', user='postgres', password=os.environ['DB_PASSWORD'])
 cur = conn.cursor()
 cur.execute('SELECT COUNT(*), MAX(fecha) FROM movimientos_banco WHERE conciliado = FALSE')
 print(cur.fetchone())
@@ -910,7 +910,7 @@ from pathlib import Path
 for line in Path('.env').read_text().splitlines():
     if '=' in line and not line.startswith('#'):
         k,v=line.split('=',1); os.environ.setdefault(k.strip(),v.strip())
-conn = psycopg2.connect(host='localhost',dbname='dte_facturas_chile',user='postgres',password='zigurat')
+conn = psycopg2.connect(host='localhost',dbname='dte_facturas_chile',user='postgres',password=os.environ['DB_PASSWORD'])
 cur = conn.cursor()
 cur.execute('SELECT COUNT(*) FROM ventas WHERE fecha_pago IS NOT NULL')
 print('Facturas con fecha_pago:', cur.fetchone()[0])
@@ -1756,7 +1756,7 @@ from pathlib import Path
 for line in Path('.env').read_text().splitlines():
     if '=' in line and not line.startswith('#'):
         k,v=line.split('=',1); os.environ.setdefault(k.strip(),v.strip())
-conn = psycopg2.connect(host='localhost',dbname='dte_facturas_chile',user='postgres',password='zigurat')
+conn = psycopg2.connect(host='localhost',dbname='dte_facturas_chile',user='postgres',password=os.environ['DB_PASSWORD'])
 with conn:
     conn.cursor().execute(\"DELETE FROM cuentas_por_pagar WHERE descripcion = 'Prueba de gasto'\")
 conn.close()
