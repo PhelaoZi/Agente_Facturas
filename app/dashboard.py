@@ -888,6 +888,26 @@ def _log_agente_error(pregunta: str, detalle: str, trace: str) -> None:
 CHAT_SESSION = {"id": None}
 
 
+# ── Protección anti-CSRF de los endpoints POST ────────────────────────────────
+# El servidor escucha solo en 127.0.0.1, pero cualquier página abierta en el
+# navegador puede hacer POST a http://localhost:8777 (borrar gastos, marcar
+# facturas pagadas). Se exige Host local (bloquea DNS rebinding) y, si el
+# navegador manda Origin (siempre lo hace en POST cross-origin), que sea el
+# del propio dashboard. Sin Origin (curl, scripts locales) se permite.
+HOSTS_PERMITIDOS = {f"localhost:{PORT}", f"127.0.0.1:{PORT}"}
+ORIGENES_PERMITIDOS = {f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}"}
+
+
+def origen_permitido(host, origin):
+    """True si el request viene del propio dashboard (o de un cliente local
+    sin Origin). False para POST cross-origin o Host ajeno."""
+    if (host or "") not in HOSTS_PERMITIDOS:
+        return False
+    if not origin:
+        return True
+    return origin in ORIGENES_PERMITIDOS
+
+
 def run_agent(pregunta: str) -> dict:
     """Reutiliza el agente (Claude Agent SDK) del proyecto. Degrada con gracia."""
     try:
@@ -1080,6 +1100,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, json.dumps({"ok": False, "error": "no encontrado"}))
 
     def do_POST(self):
+        if not origen_permitido(self.headers.get("Host"), self.headers.get("Origin")):
+            self._send(403, json.dumps({"ok": False, "error": "origen no permitido"}))
+            return
         path = self.path.split("?")[0]
         if path == "/api/ask":
             try:
