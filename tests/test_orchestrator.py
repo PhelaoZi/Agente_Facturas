@@ -66,3 +66,13 @@ def test_build_options_incluye_tool_de_accion():
 def test_build_options_no_cambia_permission_mode():
     options = orchestrator._build_options(Collector())
     assert options.permission_mode == "bypassPermissions"
+
+
+def test_build_options_bloquea_tools_builtin():
+    # Con bypassPermissions las tools built-in del CLI (Bash, Write, ...) quedan
+    # auto-aprobadas: hay que vetarlas explícitamente para que el invariante
+    # "el agente nunca escribe" sea capacidad real y no solo prompt.
+    options = orchestrator._build_options(Collector())
+    for tool in ["Bash", "Write", "Edit", "NotebookEdit",
+                 "Read", "Glob", "Grep", "WebFetch", "WebSearch", "Task"]:
+        assert tool in options.disallowed_tools, f"falta vetar {tool}"

@@ -18,6 +18,17 @@ from app.config import DB_URL, PROJECT_ROOT
 
 MAX_TURNS = 20
 
+# Tools built-in del CLI vetadas. Con permission_mode="bypassPermissions" todo
+# lo no vetado queda auto-aprobado: sin esta lista el agente podría ejecutar
+# Bash (y escribir en la BD vía psql), editar archivos o leer el .env, y el
+# invariante "el agente nunca escribe" dependería solo del system prompt.
+# El agente del chat solo necesita sus tools MCP (negocio/lienzo/acciones/
+# memoria/postgres).
+DISALLOWED_TOOLS = [
+    "Bash", "Write", "Edit", "MultiEdit", "NotebookEdit",
+    "Read", "Glob", "Grep", "WebFetch", "WebSearch", "Task",
+]
+
 
 def _postgres_server() -> dict:
     """Servidor MCP de Postgres (solo lectura) igual al de .mcp.json."""
@@ -91,6 +102,7 @@ def _build_options(collector: Collector, session_id: str | None = None) -> Claud
         },
         allowed_tools=lienzo_tools + negocio_tools + acciones_tools + memoria_tools
                       + ["mcp__postgres__query"],
+        disallowed_tools=DISALLOWED_TOOLS,
         permission_mode="bypassPermissions",
         max_turns=MAX_TURNS,
         cli_path=claude_path,
