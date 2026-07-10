@@ -41,6 +41,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 HERE = Path(__file__).resolve().parent
 PORT = int(os.environ.get("ZIGURAT_DASH_PORT", "8777"))
 
+# Al lanzar "python app/dashboard.py", sys.path[0] es la carpeta app/, no la
+# raiz del proyecto: sin esto, "from app.negocio import acciones" (accion) y
+# "from app.agent import orchestrator" (chat) fallan con ModuleNotFoundError.
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 
 def _load_env() -> None:
     """Carga .env de la raiz sin depender de python-dotenv (patron del proyecto)."""
@@ -911,8 +917,6 @@ def origen_permitido(host, origin):
 def run_agent(pregunta: str) -> dict:
     """Reutiliza el agente (Claude Agent SDK) del proyecto. Degrada con gracia."""
     try:
-        if str(PROJECT_ROOT) not in sys.path:
-            sys.path.insert(0, str(PROJECT_ROOT))
         from app.agent import orchestrator
         from app.canvas.artifacts import Collector
     except Exception as e:
