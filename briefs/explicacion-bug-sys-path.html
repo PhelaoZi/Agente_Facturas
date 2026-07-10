@@ -1,0 +1,382 @@
+<title>El cajón que faltaba</title>
+<style>
+  :root {
+    --bg: #F1F2ED;
+    --ink: #1E2420;
+    --muted: #5C655F;
+    --accent: #B15E2B;
+    --accent-soft: #EAD9C8;
+    --line: #DBDACF;
+    --card: #FBFAF6;
+    --ok: #3F8F55;
+    --ok-soft: #E1EFE3;
+    --pending: #8A7145;
+    --shadow: 0 1px 2px rgba(30, 36, 32, 0.04), 0 6px 20px rgba(30, 36, 32, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151813;
+      --ink: #EAE7DE;
+      --muted: #9AA39B;
+      --accent: #E08A48;
+      --accent-soft: #3A2A1C;
+      --line: #2A2E28;
+      --card: #1B1E19;
+      --ok: #6FCE8B;
+      --ok-soft: #1E2E22;
+      --pending: #D6B679;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.28);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151813; --ink: #EAE7DE; --muted: #9AA39B; --accent: #E08A48;
+    --accent-soft: #3A2A1C; --line: #2A2E28; --card: #1B1E19;
+    --ok: #6FCE8B; --ok-soft: #1E2E22; --pending: #D6B679;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+  }
+  :root[data-theme="light"] {
+    --bg: #F1F2ED; --ink: #1E2420; --muted: #5C655F; --accent: #B15E2B;
+    --accent-soft: #EAD9C8; --line: #DBDACF; --card: #FBFAF6;
+    --ok: #3F8F55; --ok-soft: #E1EFE3; --pending: #8A7145;
+    --shadow: 0 1px 2px rgba(30,36,32,.04), 0 6px 20px rgba(30,36,32,.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", "Iowan Old Style", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+  }
+
+  code, .mono {
+    font-family: ui-monospace, "Cascadia Code", "Consolas", "SFMono-Regular", monospace;
+    font-size: 0.9em;
+  }
+
+  code {
+    background: var(--accent-soft);
+    color: var(--ink);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  /* ---------- Header ---------- */
+  header.masthead {
+    margin-bottom: 3rem;
+  }
+
+  .eyebrow {
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    margin-bottom: 1rem;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 1.6em;
+    height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: clamp(1.9rem, 5vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 0.7rem;
+  }
+
+  .dek {
+    color: var(--muted);
+    font-size: 1.08rem;
+    max-width: 34em;
+    text-wrap: pretty;
+    margin: 0;
+  }
+
+  /* ---------- Sections ---------- */
+  section {
+    margin-top: 3rem;
+  }
+
+  h2 {
+    font-family: Charter, "Iowan Old Style", Georgia, serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 0 0 1.1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  h2 .tab {
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 3px;
+    padding: 0.22em 0.5em;
+    text-transform: uppercase;
+  }
+
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ---------- Drawer diagram ---------- */
+  .diagram {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 1.6rem;
+    margin: 1.5rem 0;
+  }
+
+  .diagram-row {
+    display: flex;
+    gap: 1.2rem;
+    align-items: stretch;
+  }
+
+  @media (max-width: 560px) {
+    .diagram-row { flex-direction: column; }
+  }
+
+  .diagram-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .diagram-label {
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 0.2rem;
+  }
+
+  .drawer {
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+  }
+
+  .drawer .dot {
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  .drawer.known {
+    border-color: var(--ok);
+    background: var(--ok-soft);
+  }
+  .drawer.known .dot { background: var(--ok); }
+
+  .drawer.unknown {
+    border-style: dashed;
+    color: var(--muted);
+  }
+  .drawer.unknown .dot { background: var(--muted); }
+
+  .result {
+    margin-top: 0.3rem;
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .result.fail { color: #B94A3D; }
+  .result.ok { color: var(--ok); }
+
+  .diagram-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 1.3rem;
+    padding: 0 0.2rem;
+  }
+
+  @media (max-width: 560px) {
+    .diagram-divider { transform: rotate(90deg); padding: 0.4rem 0; }
+  }
+
+  /* ---------- Callout ---------- */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 10px 10px 0;
+    padding: 1rem 1.3rem;
+    margin: 1.5rem 0;
+    font-size: 0.98rem;
+  }
+  .callout strong { color: var(--accent); }
+
+  /* ---------- Status card ---------- */
+  .status-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 1.6rem 1.7rem;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .status-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .status-item:first-child { padding-top: 0; }
+
+  .pill {
+    flex: none;
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.28em 0.6em;
+    border-radius: 999px;
+    margin-top: 0.15em;
+  }
+  .pill.done { background: var(--ok-soft); color: var(--ok); }
+  .pill.pending {
+    background: transparent;
+    color: var(--pending);
+    border: 1px dashed var(--pending);
+  }
+
+  .status-text { flex: 1; }
+  .status-text .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">Nota técnica · Zigurat ERP</div>
+    <h1>El cajón que faltaba</h1>
+    <p class="dek">Por qué confirmar una acción en el dashboard a veces fallaba, y por qué nadie lo había notado antes.</p>
+  </header>
+
+  <section>
+    <h2><span class="tab">idea central</span> Una lista de "dónde buscar"</h2>
+    <p>Tu programa está dividido en carpetas, como cajones separados dentro de un mueble: uno para el chat, otro para los gastos, otro para los clientes. Cuando una parte del programa necesita algo de otro cajón, primero tiene que saber en qué cajones tiene permiso de mirar. Esa lista corta de "cajones conocidos" es lo que en Python se llama <code>sys.path</code>.</p>
+    <p>Si el cajón correcto no está anotado en esa lista, el programa no lo encuentra — aunque el archivo esté ahí, guardado, perfectamente bien.</p>
+  </section>
+
+  <section>
+    <h2><span class="tab">el bug</span> Lo que pasaba al confirmar una acción</h2>
+    <p>Al prender el dashboard, el programa anota en la lista <strong>solo el cajón chico donde arrancó</strong> — no el mueble completo que contiene todos los cajones del proyecto. La pieza que confirma acciones (marcar un seguimiento, agregar un gasto) vivía en un cajón que nunca quedaba anotado.</p>
+
+    <div class="diagram">
+      <div class="diagram-row">
+        <div class="diagram-col">
+          <div class="diagram-label">Recién prendido</div>
+          <div class="drawer known"><span class="dot"></span>app/</div>
+          <div class="drawer unknown"><span class="dot"></span>raíz del proyecto (acciones.py vive acá)</div>
+          <div class="result fail">✕ no encontrado</div>
+        </div>
+        <div class="diagram-divider">→</div>
+        <div class="diagram-col">
+          <div class="diagram-label">Después del arreglo</div>
+          <div class="drawer known"><span class="dot"></span>app/</div>
+          <div class="drawer known"><span class="dot"></span>raíz del proyecto (acciones.py vive acá)</div>
+          <div class="result ok">✓ encontrado</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tab">por qué no se notaba</span> El post-it pegado en un solo cajón</h2>
+    <p>La parte del <strong>chat</strong> sí tenía un arreglo puesto a mano: cada vez que alguien escribía algo, esa pieza de código anotaba el mueble completo en la lista. Pero era como un post-it pegado solo en el cajón del chat — no quedaba anotado para el resto del programa hasta que alguien usaba el chat primero.</p>
+    <div class="callout">
+      Si primero escribías en el chat y <strong>después</strong> confirmabas una tarjeta, funcionaba. Si reiniciabas el dashboard y confirmabas una acción <strong>sin</strong> pasar por el chat antes, fallaba. Eso fue justo lo que me pasó probando "marcar como contactado".
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="tab">el arreglo</span> Un solo post-it, pegado al prender</h2>
+    <p>Moví esa anotación al principio del programa, para que se registre <strong>una sola vez, apenas prende el dashboard</strong> — sin depender de si usas el chat primero o confirmas una acción primero.</p>
+  </section>
+
+  <section>
+    <h2><span class="tab">alcance</span> Por qué importaba</h2>
+    <p>No era un problema chico de "salud de clientes" en particular: el mismo mecanismo roto afecta <em>cualquier</em> acción de escritura del dashboard — marcar gastos pagados, agregar gastos, marcar facturas pagadas, corregir fechas de pago, agregar o marcar seguimientos.</p>
+  </section>
+
+  <section>
+    <h2><span class="tab">estado actual</span> Qué quedó verificado</h2>
+    <div class="status-card">
+      <div class="status-item">
+        <span class="pill done">Hecho</span>
+        <div class="status-text">Arreglo aplicado en <code>app/dashboard.py</code></div>
+      </div>
+      <div class="status-item">
+        <span class="pill done">Hecho</span>
+        <div class="status-text">Batería completa de pruebas automáticas: <span class="num">198 / 198</span> pasaron</div>
+      </div>
+      <div class="status-item">
+        <span class="pill done">Hecho</span>
+        <div class="status-text">Probado a mano contra el dashboard real: marcar un seguimiento como "contactado" funcionó</div>
+      </div>
+      <div class="status-item">
+        <span class="pill done">Hecho</span>
+        <div class="status-text">Probado a mano: agregar dos seguimientos pendientes para el mismo cliente — el segundo se rechazó correctamente</div>
+      </div>
+      <div class="status-item">
+        <span class="pill pending">Pendiente</span>
+        <div class="status-text">Decidir si el arreglo queda guardado en git (commit) o si lo revisas primero</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Escrito por Claude Code mientras probaba la feature "salud de clientes" (/salud) — 2026-07-10.
+  </footer>
+
+</div>
