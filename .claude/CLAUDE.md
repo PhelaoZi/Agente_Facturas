@@ -14,68 +14,24 @@ Empresa: Elaboradora y Comercializadora Vintage SPA (Zigurat Brewery).
 
 ## Comandos frecuentes
 
+Los flujos de negocio se ejecutan con las skills del proyecto — cada una
+documenta su uso y argumentos en `.claude/skills/`:
+
+- **Pipeline DTE:** `/sync-facturas`, `/sync-nc`, `/sync-compras`, `/monitoreo-facturas`
+- **Conciliación bancaria:** `/importar-transferencias`, `/conciliar-banco`, `/flujo-caja`, `/agregar-gasto`
+- **Consultas:** `/consultar-ventas`, `/perfil-cliente`
+- **Wiki de clientes:** `/wiki-init`, `/wiki-lint`
+- **Costos:** `/actualizar-precio-insumo`, `/cargar-receta`, `/costos-sku`
+
 ```bash
-# Procesar XML de facturas (pipeline completo: parse → validate → sync)
-/sync-facturas DTE_DDMMYYYY
-
-# Procesar Notas de Crédito
-/sync-nc NOMBRE_ARCHIVO
-
-# Procesar facturas de compra
-/sync-compras                     # Procesa XMLs en facturas-compras/ → actualiza precios + gastos_operativos
-
-# Detectar y sincronizar XMLs pendientes
-/monitoreo-facturas
-
-# Consultar ventas en lenguaje natural
-/consultar-ventas
-
-# Pipeline de conciliación bancaria
-/importar-transferencias          # 1. Importa Excel Itaú → movimientos_banco
-/conciliar-banco                  # 2. Cruza transferencias con facturas
-/flujo-caja                       # 3. Proyección 4 semanas
-/agregar-gasto "desc" monto YYYY-MM-DD [proveedor] [categoría]
-
-# Wiki de clientes (brain compilado estilo Karpathy)
-/wiki-init                        # Genera todas las fichas de clientes desde cero
-/perfil-cliente <nombre>          # Muestra perfil narrativo de un cliente
-/wiki-lint                        # Audita consistencia wiki ↔ BD
-
-# Costos de producción (capa B)
-/actualizar-precio-insumo "Lupulo Citra" gr 9500 lupulo
-/cargar-receta                    # Carga/actualiza receta + BOM desde JSON
-/costos-sku                       # Tabla de costo unitario por SKU
-/costos-sku --sku CREAM-330-C12   # Costo de un SKU específico
-/costos-sku --receta "Cream Ale"  # Costos de todos los formatos de una cerveza
-
-# Ejecutar scripts individuales (solo para debug, nunca en producción)
-python scripts/parse_dte.py facturas-ventas/DTE_DDMMYYYY
-python scripts/validate_changes.py changes.json
-python scripts/sync_db.py changes.json
-python scripts/wiki_update.py --ruts RUT1,RUT2 --origen "debug"
-python scripts/wiki_update.py --todos --origen "debug"
-python scripts/wiki_snapshot.py --todos            # refresh masivo de raw/clientes/
-python scripts/wiki_lint.py
-python scripts/actualizar_insumo.py "nombre" unidad precio cat
-python scripts/cargar_receta.py recipe.json
-python scripts/cargar_sku.py sku.json
-python scripts/costo_sku.py [--sku COD | --receta NOMBRE]
-
-# Migración de esquema (idempotente)
-python scripts/migrate_flujo_caja.py
-python scripts/migrate_costos_v2.py                # Migración esquema costos (capa B)
-python scripts/migrate_gastos_operativos.py   # Crea tabla gastos_operativos
-python scripts/migrate_costos_v3.py           # Corrige precios maestro_insumos + agrega insumos
-python scripts/cargar_recetas_v2.py           # Recarga 4 recetas desde Recetas.xlsx
-python scripts/sync_compras.py                # Procesa XMLs de compras (usar /sync-compras)
-
-# Backup de la base de datos
-python scripts/backup_db.py                   # Backup manual inmediato (la tarea corre sola a las 23:00)
-
-# Dashboard web + chat de negocio (Centro de Comando)
-python app/dashboard.py                       # o doble clic en iniciar_dashboard.bat → http://localhost:8777
-python -m pytest -q                           # Suite de tests del proyecto
+python -m pytest -q                  # Suite de tests del proyecto
+python app/dashboard.py              # Dashboard web → http://localhost:8777 (o iniciar_dashboard.bat)
+python scripts/generar_brief.py      # Brief diario manual
+python scripts/backup_db.py          # Backup manual (la tarea programada corre sola a las 23:00)
 ```
+
+Los scripts de `scripts/` se ejecutan directo solo para debug, nunca en
+producción. Las migraciones de esquema (`scripts/migrate_*.py`) son idempotentes.
 
 ---
 
@@ -309,173 +265,14 @@ RUTs en `movimientos_banco` se normalizan al formato `77126823-4` (con guión, s
 
 ---
 
-## Wiki de clientes (Karpathy LLM Wiki)
+## Reglas por área (`.claude/rules/`)
 
-Brain compilado en Markdown que funciona como alternativa a RAG: cada cliente
-tiene una ficha ejecutiva (~30 líneas) con métricas, patrón de pago, y notas
-del agente. Las fichas se consultan con `/perfil-cliente` y son compatibles
-con Obsidian (graph view, backlinks).
+Instrucciones detalladas que cargan automáticamente solo al trabajar con
+archivos de cada área (frontmatter `paths:`):
 
-### Flujo de actualización
-
-```
-1. /wiki-init                 → genera TODAS las fichas desde BD (una sola vez)
-2. Cada sync/conciliación     → actualiza solo los RUTs afectados (auto, no-bloqueante)
-3. /perfil-cliente <nombre>   → lee ficha + complementa con BD en tiempo real
-4. /wiki-lint                 → audita: fichas faltantes, huérfanas o desactualizadas
-```
-
-### Regeneración vs preservación
-
-`wiki_update.py` regenera completamente cada ficha excepto la sección
-**"Notas del agente"**, que es append-only. Los eventos notables (facturas
-vencidas >30 días, multi-pagos en misma transferencia, cliente inactivo >60
-días) se detectan automáticamente con `detectar_eventos()` y se anexan como
-viñetas con fecha.
-
-### Capa raw/ — snapshots inmutables (fuente de verdad histórica)
-
-Siguiendo el patrón Karpathy, `raw/clientes/<rut>.json` contiene un snapshot
-de los datos crudos del cliente cada vez que se regenera su ficha. Estos
-archivos son **sobrescribibles solo desde código** (`wiki_update.py` o
-`wiki_snapshot.py`) y **nunca se editan a mano**. Commiteables a git para
-obtener `git diff` del estado del negocio entre ingestas.
-
-`detectar_cambios_snapshot()` compara el snapshot anterior con los datos
-actuales y emite eventos adicionales: cambio de estado, facturas nuevas,
-caída en total vendido (posible NC no registrada), o aumento significativo
-de deuda pendiente. Estos eventos se anexan a "Notas del agente" como los
-demás.
-
-Refresh masivo independiente del pipeline: `python scripts/wiki_snapshot.py --todos`.
-
-### Integración en skills existentes
-
-Las skills `/sync-facturas`, `/sync-nc`, `/monitoreo-facturas` y
-`/conciliar-banco` llaman a `wiki_update.py --ruts` como **último paso
-no-bloqueante**: si falla solo muestra warning, no rompe el pipeline de datos.
-
-### Estructura de ficha
-
-Cada `wiki/clientes/<slug>.md` tiene:
-- Frontmatter YAML: `rut`, `razon_social`, `estado`, `ultima_actualizacion`
-- Métricas: total facturado, ticket promedio, nº facturas, primera/última venta
-- Estado de cuenta: pendiente, al día, vencido
-- Patrón de pago: días promedio, comportamiento descriptivo
-- Relacionados: `[[wikilinks]]` a 5 clientes que comparten el producto principal
-- Inconsistencias: contra-argumentos detectados (incobrable con ventas recientes,
-  notas contradictorias con BD, cambio de patrón de compra, etc.). "Ninguna detectada"
-  si no hay problemas.
-- Notas del agente: append-only, preserva observaciones entre regeneraciones
-
-### Conceptos y sub-índices
-
-Además de las fichas por cliente, `wiki_update.py` regenera:
-- `wiki/conceptos/clientes-top.md` — top 10 por ventas
-- `wiki/conceptos/clientes-morosos.md` — vencidas >30 días
-- `wiki/conceptos/clientes-inactivos.md` — >60 días sin compra
-- `wiki/conceptos/productos/<slug>.md` — un archivo por producto con sus top 10 compradores
-- `wiki/indices/{activos,morosos,incobrables}.md` — sub-índices escalables
-
-El `index.md` principal es un resumen corto que enlaza a los sub-índices y conceptos.
-Preparado para escalar a 500+ clientes sin saturar contexto.
-
----
-
-## Costos de producción (capa B)
-
-Calcula el costo unitario real de cada SKU vendible (cerveza × formato)
-combinando insumos de líquido + envasado + mano de obra + servicios
-variables del lote.
-
-### Tablas
-
-| Tabla | Propósito |
-|-------|-----------|
-| `maestro_insumos` | Catálogo de insumos con `categoria` (malta, lupulo, levadura, adjunto, clarificante, envase, tapa, etiqueta, caja) y `precio_neto_unitario`. |
-| `recetas` | Una fila por cerveza, con `costo_mano_obra_lote`, `costo_servicios_lote` y `merma_porcentaje`. |
-| `receta_detalle` | BOM de líquido por receta. |
-| `formatos` | Catálogo plano: Botella 330ml / Barril 30L acero / Barril 30L PET. |
-| `sku` | Una fila por (receta, formato, unidades_caja). Caja 12 y caja 24 son SKUs distintos. |
-| `sku_envasado` | BOM de envasado por SKU. Vacío para barriles retornables. |
-
-### Vista
-
-`vista_costo_sku` entrega `costo_liquido_unitario`, `costo_envasado_unitario`
-y `costo_total_unitario` por cada SKU activo. **Nunca calcular costo a mano** — consultar siempre la vista.
-
-### Flujo de uso
-
-```
-/actualizar-precio-insumo  → mantiene maestro_insumos
-/cargar-receta             → mantiene recetas + receta_detalle
-/cargar-sku (CLI)          → mantiene sku + sku_envasado
-/costos-sku                → consulta vista_costo_sku
-```
-
-### Parámetros estándar (lote 540 L, 4 lotes/mes)
-
-- Mano de obra: $300.000/lote (retiros tuyo + socio).
-- Servicios variables (agua/luz/gas): $185.000/lote.
-- Merma de envasado: 5%.
-
-Editables por receta.
-
-### Lo que NO hace esta capa
-
-- No descuenta inventario al producir.
-- No registra órdenes de producción.
-- No prorratea costos fijos / overhead (capa C).
-- No procesa DTEs recibidos (sub-proyecto aparte).
-
----
-
-## Backup de la base de datos
-
-Backup diario automatizado (Tarea Programada de Windows "Zigurat - Backup BD",
-23:00, corre al encender si el notebook estaba apagado):
-
-- **Cuándo corre:** la tarea es `LogonType: Interactive` + `StartWhenAvailable`.
-  Corre a las 23:00 si hay sesión iniciada; si el notebook estaba apagado o sin
-  sesión, corre apenas inicias sesión ese día. Es decir: **basta con que
-  prendas el notebook e inicies sesión en el día para tener backup.** No corre
-  con la sesión cerrada (aceptable para un equipo mono-usuario).
-- **Script:** `scripts/backup_db.py` — pg_dump formato custom comprimido,
-  verificado con `pg_restore --list` (lee el header/TOC: detecta un dump
-  truncado o sin cabecera, no corrupción interna de bloques) antes de quedar
-  firme. La garantía real de restaurabilidad se validó restaurando a una BD
-  temporal y comparando conteos (ver el plan).
-- **Destino:** `C:\Users\cdela\OneDrive\Backups\zigurat-db\` (OneDrive lo sube
-  a la nube). `_estado.json` ahí mismo registra el último intento y último OK.
-- **Retención:** 60 días de dumps diarios + el primer dump de cada mes para
-  siempre.
-- **Log:** `logs/backup_db.log`.
-- **Restaurar:** procedimiento completo en el docstring de `backup_db.py`
-  (createdb + pg_restore; selectivo por tabla con `-t`).
-- **Reinstalar la tarea** (cambio de hora o de ruta del proyecto):
-  `powershell -ExecutionPolicy Bypass -File scripts\instalar_tarea_backup.ps1`.
-
-El spec completo está en `docs/superpowers/specs/2026-06-11-backup-bd-design.md`.
-
----
-
-## Brief diario automático
-
-Reporte de negocio generado cada mañana (Tarea Programada de Windows
-"Zigurat - Brief Diario", 08:00, `StartWhenAvailable` igual que el backup):
-
-- **Qué incluye:** deuda total con desglose por antigüedad, top 5 deudores,
-  facturas vencidas (+30 días), cobrado y ventas de los últimos 7 días,
-  clientes inactivos (+60 días).
-- **Solo lectura:** no modifica la BD. Reutiliza las reglas canónicas de
-  cobranza (`fecha_pago IS NULL`, excluye NC e `incobrable`).
-- **Capa de datos:** `app/briefing/data.py` (funciones reutilizables, testeadas
-  con cursor falso en `tests/test_briefing_data.py`). Render en
-  `app/briefing/render.py`.
-- **Salida:** `briefs/YYYY-MM-DD.md` (historial committeable del negocio).
-- **Generar manualmente:** `python scripts/generar_brief.py`
-- **Reinstalar la tarea:**
-  `powershell -ExecutionPolicy Bypass -File scripts\instalar_tarea_brief.ps1`
+- `wiki-clientes.md` — wiki Karpathy y snapshots `raw/` (carga con `scripts/wiki_*.py`, `wiki/`, `raw/`)
+- `costos-produccion.md` — costos capa B: tablas, vista, parámetros de lote (carga con los scripts de costos/recetas/SKU)
+- `backup-y-brief.md` — backup diario de la BD y brief diario (carga con sus scripts y `app/briefing/`)
 
 ---
 
