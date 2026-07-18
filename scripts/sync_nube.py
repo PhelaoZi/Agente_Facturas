@@ -195,6 +195,9 @@ def aplicar_esquema(conn_nube):
         with conn_nube.cursor() as cur:
             cur.execute(SQL_PREREQUISITOS)
             cur.execute(limpiar_meta_comandos(r.stdout))
+            # El dump de pg_dump deja search_path vacio (set_config de
+            # seguridad); restaurarlo para que las views se creen en public.
+            cur.execute("SET search_path TO public")
             cur.execute(SQL_VIEWS.read_text(encoding="utf-8"))
     log("Esquema y views aplicados en la nube (--init)")
 
