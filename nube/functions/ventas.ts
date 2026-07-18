@@ -24,7 +24,7 @@ export default async function handler(req: Request): Promise<Response> {
     WHERE fecha >= CURRENT_DATE - make_interval(months => ${meses})
     GROUP BY 1, 2 ORDER BY total DESC LIMIT 10`;
   const productos = await sql`
-    SELECT descripcion, SUM(cantidad) AS unidades
+    SELECT nombre_producto, SUM(cantidad) AS unidades
     FROM v_ventas_producto
     WHERE fecha >= CURRENT_DATE - make_interval(months => ${meses})
     GROUP BY 1 ORDER BY unidades DESC LIMIT 10`;
