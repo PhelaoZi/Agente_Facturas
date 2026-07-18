@@ -4,7 +4,7 @@
 
 **Goal:** Réplica de solo lectura del Postgres local en InsForge, con views canónicas y edge functions de consulta (`/api/kpis`, `/api/pendientes`, `/api/ventas`, `/api/flujo`) verificadas por paridad de cifras contra la BD local.
 
-**Architecture:** El pipeline local queda intacto; `scripts/sync_nube.py` replica 5 tablas por truncate+copy transaccional y registra metadatos en `sync_meta`. Las reglas de negocio viven UNA vez en views SQL (`migrate_nube_views.sql`). Las edge functions (Deno/TS) solo leen views y verifican JWT de InsForge Auth.
+**Architecture:** El pipeline local queda intacto; `scripts/sync_nube.py` replica 6 tablas por truncate+copy transaccional y registra metadatos en `sync_meta`. Las reglas de negocio viven UNA vez en views SQL (`migrate_nube_views.sql`). Las edge functions (Deno/TS) solo leen views y verifican JWT de InsForge Auth.
 
 **Tech Stack:** Python 3 + psycopg2 (sync), SQL (views), Deno/TypeScript (edge functions, `npm:postgres`, `npm:jose`), InsForge CLI/MCP.
 
@@ -339,7 +339,7 @@ sync_nube.py - Zigurat ERP
 Replica de SOLO LECTURA del Postgres local hacia el proyecto InsForge
 (zigurat-movil). La BD local sigue siendo la fuente de verdad.
 
-Flujo: leer 5 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
+Flujo: leer 6 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
 de UNA transaccion -> registrar metadatos (ultimo_sync, saldo_banco) en
 sync_meta. Con --init ademas aplica scripts/migrate_nube_views.sql y crea
 las tablas (esquema copiado de la BD local con pg_dump --schema-only).
@@ -369,8 +369,8 @@ SQL_VIEWS = PROJECT_ROOT / "scripts" / "migrate_nube_views.sql"
 
 # Orden de carga: padres antes que hijos (FKs). El TRUNCATE va en una sola
 # sentencia con todas, asi Postgres resuelve las dependencias entre ellas.
-TABLAS_ORDEN = ["clientes", "ventas", "productos", "conciliaciones",
-                "cuentas_por_pagar"]
+TABLAS_ORDEN = ["clientes", "ventas", "productos", "movimientos_banco",
+                "conciliaciones", "cuentas_por_pagar"]
 LOTE = 1000
 TIMEOUT_PG_DUMP = 120
 
@@ -478,7 +478,7 @@ def sync(conn_local, conn_nube, ahora=None):
 
 
 def aplicar_esquema(conn_nube):
-    """--init: copia el esquema de las 5 tablas desde la BD local (pg_dump
+    """--init: copia el esquema de las 6 tablas desde la BD local (pg_dump
     --schema-only) y aplica las views. Idempotente en las views; si una tabla
     ya existe en la nube, pg_dump/psql reportara el error y seguimos."""
     from backup_db import localizar_pg_dump  # reutiliza la autodeteccion
