@@ -92,3 +92,12 @@ def test_main_es_no_fatal(monkeypatch):
     monkeypatch.setattr(sync_nube, "conectar_nube", explota)
     monkeypatch.setattr(sync_nube, "conectar_local", explota)
     assert sync_nube.main([]) == 1                  # informa error, no lanza
+
+
+def test_limpiar_meta_comandos_quita_lineas_backslash():
+    crudo = "\\restrict abc123\nCREATE TABLE x (id int);\n  \\unrestrict abc123\nSELECT 1;"
+    limpio = sync_nube.limpiar_meta_comandos(crudo)
+    assert "\\restrict" not in limpio
+    assert "\\unrestrict" not in limpio
+    assert "CREATE TABLE x (id int);" in limpio
+    assert "SELECT 1;" in limpio

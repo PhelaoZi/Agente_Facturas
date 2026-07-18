@@ -143,10 +143,21 @@ def sync(conn_local, conn_nube, ahora=None):
     return total
 
 
+def limpiar_meta_comandos(sql):
+    """Quita los meta-comandos de psql (lineas que parten con '\\', como
+    \\restrict/\\unrestrict que emite pg_dump moderno): son instrucciones
+    para psql, no SQL, y psycopg2 no los entiende."""
+    return "\n".join(
+        linea for linea in sql.splitlines()
+        if not linea.lstrip().startswith("\\")
+    )
+
+
 def aplicar_esquema(conn_nube):
     """--init: copia el esquema de las 5 tablas desde la BD local (pg_dump
-    --schema-only) y aplica las views. Idempotente en las views; si una tabla
-    ya existe en la nube, pg_dump/psql reportara el error y seguimos."""
+    --schema-only, limpiado de meta-comandos de psql) y aplica las views.
+    Bootstrap de UNA sola vez: si las tablas ya existen en la nube, falla y
+    hace rollback -- borrar las tablas remotas antes de reintentar."""
     from backup_db import localizar_pg_dump  # reutiliza la autodeteccion
     pg_dump = localizar_pg_dump()
     env = {**os.environ, "PGPASSWORD": os.environ.get("DB_PASSWORD", "")}
@@ -163,7 +174,7 @@ def aplicar_esquema(conn_nube):
         raise RuntimeError(f"pg_dump --schema-only fallo: {r.stderr[:300]}")
     with conn_nube:
         with conn_nube.cursor() as cur:
-            cur.execute(r.stdout)
+            cur.execute(limpiar_meta_comandos(r.stdout))
             cur.execute(SQL_VIEWS.read_text(encoding="utf-8"))
     log("Esquema y views aplicados en la nube (--init)")
 
