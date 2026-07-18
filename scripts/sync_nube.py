@@ -40,6 +40,23 @@ TABLAS_ORDEN = ["clientes", "ventas", "productos", "conciliaciones",
 LOTE = 1000
 TIMEOUT_PG_DUMP = 120
 
+# Prerequisitos del esquema que pg_dump -t NO incluye (viven fuera de las
+# tablas): la extension de indices trigram y la funcion de los triggers
+# updated_at. Definicion copiada literal de la BD local (pg_get_functiondef).
+SQL_PREREQUISITOS = """
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$function$;
+"""
+
 
 def _load_env():
     env_file = PROJECT_ROOT / ".env"
@@ -154,8 +171,9 @@ def limpiar_meta_comandos(sql):
 
 
 def aplicar_esquema(conn_nube):
-    """--init: copia el esquema de las 5 tablas desde la BD local (pg_dump
-    --schema-only, limpiado de meta-comandos de psql) y aplica las views.
+    """--init: aplica prerequisitos (extension pg_trgm y funcion de triggers),
+    copia el esquema de las 5 tablas desde la BD local (pg_dump --schema-only,
+    limpiado de meta-comandos de psql) y aplica las views.
     Bootstrap de UNA sola vez: si las tablas ya existen en la nube, falla y
     hace rollback -- borrar las tablas remotas antes de reintentar."""
     from backup_db import localizar_pg_dump  # reutiliza la autodeteccion
@@ -174,6 +192,7 @@ def aplicar_esquema(conn_nube):
         raise RuntimeError(f"pg_dump --schema-only fallo: {r.stderr[:300]}")
     with conn_nube:
         with conn_nube.cursor() as cur:
+            cur.execute(SQL_PREREQUISITOS)
             cur.execute(limpiar_meta_comandos(r.stdout))
             cur.execute(SQL_VIEWS.read_text(encoding="utf-8"))
     log("Esquema y views aplicados en la nube (--init)")
