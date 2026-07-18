@@ -5,7 +5,7 @@ sync_nube.py - Zigurat ERP
 Replica de SOLO LECTURA del Postgres local hacia el proyecto InsForge
 (zigurat-movil). La BD local sigue siendo la fuente de verdad.
 
-Flujo: leer 5 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
+Flujo: leer 6 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
 de UNA transaccion -> registrar metadatos (ultimo_sync, saldo_banco) en
 sync_meta. Con --init ademas aplica scripts/migrate_nube_views.sql y crea
 las tablas (esquema copiado de la BD local con pg_dump --schema-only).
@@ -35,8 +35,9 @@ SQL_VIEWS = PROJECT_ROOT / "scripts" / "migrate_nube_views.sql"
 
 # Orden de carga: padres antes que hijos (FKs). El TRUNCATE va en una sola
 # sentencia con todas, asi Postgres resuelve las dependencias entre ellas.
-TABLAS_ORDEN = ["clientes", "ventas", "productos", "conciliaciones",
-                "cuentas_por_pagar"]
+# movimientos_banco entra por la FK de conciliaciones (y aporta el saldo diario).
+TABLAS_ORDEN = ["clientes", "ventas", "productos", "movimientos_banco",
+                "conciliaciones", "cuentas_por_pagar"]
 LOTE = 1000
 TIMEOUT_PG_DUMP = 120
 
@@ -172,7 +173,7 @@ def limpiar_meta_comandos(sql):
 
 def aplicar_esquema(conn_nube):
     """--init: aplica prerequisitos (extension pg_trgm y funcion de triggers),
-    copia el esquema de las 5 tablas desde la BD local (pg_dump --schema-only,
+    copia el esquema de las 6 tablas desde la BD local (pg_dump --schema-only,
     limpiado de meta-comandos de psql) y aplica las views.
     Bootstrap de UNA sola vez: si las tablas ya existen en la nube, falla y
     hace rollback -- borrar las tablas remotas antes de reintentar."""

@@ -53,6 +53,7 @@ def test_orden_de_tablas_respeta_fks():
     assert orden.index("clientes") < orden.index("ventas")
     assert orden.index("ventas") < orden.index("productos")
     assert orden.index("ventas") < orden.index("conciliaciones")
+    assert orden.index("movimientos_banco") < orden.index("conciliaciones")
 
 
 def test_sql_insert_construye_columnas():
