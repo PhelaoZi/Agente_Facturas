@@ -78,3 +78,13 @@ python scripts/wiki_update.py --ruts RUT1,RUT2,RUT3 --origen "sync-facturas"
 
 Si falla: mostrar warning "⚠️ No se pudo actualizar la wiki" pero NO fallar el proceso.
 La sincronización de facturas ya se completó exitosamente.
+
+## Paso final: replicar a la nube (no fatal)
+
+Tras un sync/conciliación exitoso, ejecutar:
+
+    python scripts/sync_nube.py
+
+Si falla (sin internet, InsForge caído), mostrar el error como WARNING y
+terminar normalmente: la réplica es secundaria, el pipeline local es lo
+importante. NUNCA abortar ni reintentar por este paso.
