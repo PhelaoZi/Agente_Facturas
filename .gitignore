@@ -33,9 +33,6 @@ Pagos_Inv_Serv_Gas.xlsx
 # Artefactos de build de las cloud functions (deno bundle)
 nube/dist/
 
-# Repos de referencia clonados aparte (no son parte del proyecto)
-github-repository/
-
 # InsForge & AI agent skills (bloque agregado por el CLI de InsForge)
 # OJO: .claude NO va aquí — en este repo .claude/ (skills, rules) SE VERSIONA.
 .insforge

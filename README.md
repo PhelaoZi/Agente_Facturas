@@ -112,7 +112,6 @@ flowchart LR
 
 | Carpeta | Qué es |
 |---------|--------|
-| `github-repository/` | Dos repos ajenos clonados como material de consulta (`agency-agents`, `claude-howto`). Ignorada por git; nada del código la usa |
 | `.superpowers/` | Archivos de trabajo del framework de skills de desarrollo (briefs/reports de tareas). Ignorada por git |
 | `.insforge/` | Llaves del CLI de InsForge (ignorada por git) |
 | `__pycache__/`, `.pytest_cache/`, `*.pyc` | Caché regenerable de Python |
