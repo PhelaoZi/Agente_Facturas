@@ -5,10 +5,12 @@ sync_nube.py - Zigurat ERP
 Replica de SOLO LECTURA del Postgres local hacia el proyecto InsForge
 (zigurat-movil). La BD local sigue siendo la fuente de verdad.
 
-Flujo: leer 6 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
-de UNA transaccion -> registrar metadatos (ultimo_sync, saldo_banco) en
-sync_meta. Con --init ademas aplica scripts/migrate_nube_views.sql y crea
-las tablas (esquema copiado de la BD local con pg_dump --schema-only).
+Flujo: leer 6 tablas locales + la vista de costos -> TRUNCATE + INSERT
+masivo en la nube dentro de UNA transaccion -> registrar metadatos
+(ultimo_sync, saldo_banco) en sync_meta. Las migraciones idempotentes
+(views canonicas, tabla costo_sku, tablas de chat/tareas) se aplican en
+CADA corrida (autoreparables); --init ademas crea las tablas base
+(esquema copiado de la BD local con pg_dump --schema-only).
 
 NO FATAL: siempre termina con exit code (0 ok, 1 error) y loggea; quien lo
 invoque desde el pipeline debe tratar el 1 como warning, nunca abortar.
@@ -40,6 +42,15 @@ SQL_TAREAS = PROJECT_ROOT / "scripts" / "migrate_nube_tareas.sql"
 # movimientos_banco entra por la FK de conciliaciones (y aporta el saldo diario).
 TABLAS_ORDEN = ["clientes", "ventas", "productos", "movimientos_banco",
                 "conciliaciones", "cuentas_por_pagar"]
+# Vistas locales que se materializan como tablas en la nube:
+# destino -> (vista fuente, columnas explicitas). Columnas fijas: si la vista
+# local gana columnas, la replica no se rompe (el chat consulta solo estas).
+VISTAS_REPLICADAS = {
+    "costo_sku": ("vista_costo_sku",
+                  ["codigo", "nombre_cerveza", "formato",
+                   "costo_liquido_unitario", "costo_envasado_unitario",
+                   "costo_total_unitario"]),
+}
 LOTE = 1000
 TIMEOUT_PG_DUMP = 120
 
@@ -117,6 +128,13 @@ def replicar_tabla(cur_nube, tabla, columnas, filas):
     execute_values(cur_nube, sql_insert(tabla, columnas), filas, page_size=LOTE)
 
 
+def leer_vista(cur_local, vista, columnas):
+    """Lee una vista local con columnas EXPLICITAS (nunca SELECT *: la vista
+    puede tener columnas extra que la tabla replica no conoce)."""
+    cur_local.execute(f"SELECT {', '.join(columnas)} FROM {vista}")
+    return cur_local.fetchall()
+
+
 def obtener_saldo_banco(cur_local):
     """Ultimo saldo_diario de movimientos_banco (espejo de app/negocio/flujo.py).
     La tabla NO se replica; solo viaja este valor, que el flujo de la nube usa
@@ -148,12 +166,18 @@ def sync(conn_local, conn_nube, ahora=None):
     with conn_local.cursor() as cur_local:
         with conn_nube:  # commit al salir sin excepcion; rollback si falla
             with conn_nube.cursor() as cur_nube:
-                cur_nube.execute(f"TRUNCATE {', '.join(TABLAS_ORDEN)}")
+                todas = TABLAS_ORDEN + list(VISTAS_REPLICADAS)
+                cur_nube.execute(f"TRUNCATE {', '.join(todas)}")
                 for tabla in TABLAS_ORDEN:
                     columnas, filas = leer_tabla(cur_local, tabla)
                     if filas:
                         replicar_tabla(cur_nube, tabla, columnas, filas)
                     total[tabla] = len(filas)
+                for destino, (fuente, columnas) in VISTAS_REPLICADAS.items():
+                    filas = leer_vista(cur_local, fuente, columnas)
+                    if filas:
+                        replicar_tabla(cur_nube, destino, columnas, filas)
+                    total[destino] = len(filas)
                 saldo, fecha_saldo = obtener_saldo_banco(cur_local)
                 guardar_meta(cur_nube, "saldo_banco",
                              {"saldo": saldo, "fecha": fecha_saldo})
@@ -205,11 +229,13 @@ def aplicar_esquema(conn_nube):
 
 
 def aplicar_migraciones_chat(conn_nube):
-    """Tablas propias de la nube (chat y tareas). Idempotente (IF NOT EXISTS): se aplica
-    en CADA corrida para que la replica se autorepare si se recrea. Estas
-    tablas nunca van en TABLAS_ORDEN (el sync las truncaria)."""
+    """Migraciones idempotentes aplicadas en CADA corrida (autoreparables):
+    views canonicas + tabla costo_sku (SQL_VIEWS) y tablas propias de la nube
+    (chat y tareas). chat_* nunca va en TABLAS_ORDEN (el sync la truncaria);
+    costo_sku SI se trunca (es replica de la vista local, no estado nube)."""
     with conn_nube:
         with conn_nube.cursor() as cur:
+            cur.execute(SQL_VIEWS.read_text(encoding="utf-8"))
             cur.execute(SQL_CHAT.read_text(encoding="utf-8"))
             cur.execute(SQL_TAREAS.read_text(encoding="utf-8"))
 

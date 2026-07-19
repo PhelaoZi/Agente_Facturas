@@ -64,3 +64,39 @@ JOIN ventas v ON v.folio = p.folio AND v.tipo_documento = p.tipo_documento
 WHERE v.tipo_documento != '61'
   AND p.nombre_producto NOT ILIKE '%logist%'
   AND p.nombre_producto !~* '^(barril(es)?\s+)?pet\y';
+
+-- Replica materializada de la vista local vista_costo_sku (la llena
+-- sync_nube.py en cada corrida; columnas fijas = las que consulta el chat).
+CREATE TABLE IF NOT EXISTS costo_sku (
+    codigo                   TEXT,
+    nombre_cerveza           TEXT,
+    formato                  TEXT,
+    costo_liquido_unitario   NUMERIC,
+    costo_envasado_unitario  NUMERIC,
+    costo_total_unitario     NUMERIC
+);
+
+-- Cabecera de CUALQUIER documento por folio (incluye NC tipo 61: la tool
+-- del chat avisa si el folio es una nota de credito, no una factura).
+CREATE OR REPLACE VIEW v_factura_cabecera AS
+SELECT v.folio, v.tipo_documento, v.fecha, v.rut_cliente,
+       v.razon_social_receptor,
+       COALESCE(v.monto_neto_ajustado,  v.monto_neto)  AS neto_real,
+       COALESCE(v.monto_total_ajustado, v.monto_total) AS total_real,
+       v.monto_total                                   AS total_original,
+       (v.monto_total_ajustado IS NOT NULL)            AS tiene_nc,
+       v.fecha_pago, v.dias_pago
+FROM ventas v;
+
+-- Lineas de detalle etiquetadas (regla canonica Logistica/PET del CLAUDE.md).
+-- Aqui NO se filtra: el detalle de una factura muestra TODAS sus lineas.
+CREATE OR REPLACE VIEW v_lineas_factura AS
+SELECT p.folio, p.tipo_documento, p.nombre_producto, p.cantidad,
+       p.precio_unitario,
+       (p.cantidad * p.precio_unitario) AS subtotal,
+       CASE
+         WHEN p.nombre_producto ILIKE '%logist%'             THEN 'logistica'
+         WHEN p.nombre_producto ~* '^(barril(es)?\s+)?pet\y' THEN 'envase_pet'
+         ELSE 'producto'
+       END AS tipo_linea
+FROM productos p;

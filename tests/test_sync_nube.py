@@ -68,6 +68,8 @@ def test_sync_trunca_todo_en_una_sentencia_y_replica(monkeypatch):
 
     monkeypatch.setattr(sync_nube, "leer_tabla",
                         lambda cur, t: (["a"], [(1,)]))
+    monkeypatch.setattr(sync_nube, "leer_vista",
+                        lambda cur, vista, cols: [(1,)])
     llamadas = []
     monkeypatch.setattr(sync_nube, "replicar_tabla",
                         lambda cur, t, cols, filas: llamadas.append(t))
@@ -76,13 +78,14 @@ def test_sync_trunca_todo_en_una_sentencia_y_replica(monkeypatch):
 
     total = sync_nube.sync(conn_local, conn_nube)
 
+    esperadas = sync_nube.TABLAS_ORDEN + list(sync_nube.VISTAS_REPLICADAS)
     truncates = [s for s in cur_nube.ejecutado if s.startswith("TRUNCATE")]
     assert len(truncates) == 1                      # una sola sentencia
-    for tabla in sync_nube.TABLAS_ORDEN:            # todas las tablas en ella
+    for tabla in esperadas:                         # tablas + vistas replicadas
         assert tabla in truncates[0]
-    assert llamadas == sync_nube.TABLAS_ORDEN       # replica en orden de FKs
+    assert llamadas == esperadas                    # replica en orden de FKs
     assert conn_nube.commits == 1                   # una sola transaccion
-    assert total == {t: 1 for t in sync_nube.TABLAS_ORDEN}
+    assert total == {t: 1 for t in esperadas}
     metas = [s for s in cur_nube.ejecutado if "sync_meta" in s]
     assert metas, "debe registrar metadatos del sync"
 
@@ -154,3 +157,38 @@ def test_aplicar_migraciones_chat_ejecuta_el_sql():
     conn = _FakeConnChat()
     sync_nube.aplicar_migraciones_chat(conn)
     assert any("chat_sesiones" in s for s in conn.ejecutado)
+
+
+# --- Paridad de consultas del chat movil (2026-07-19) ---
+
+def test_vistas_replicadas_costo_sku():
+    fuente, columnas = sync_nube.VISTAS_REPLICADAS["costo_sku"]
+    assert fuente == "vista_costo_sku"
+    assert columnas == ["codigo", "nombre_cerveza", "formato",
+                        "costo_liquido_unitario", "costo_envasado_unitario",
+                        "costo_total_unitario"]
+    assert "costo_sku" not in sync_nube.TABLAS_ORDEN
+
+
+def test_leer_vista_selecciona_columnas_explicitas():
+    cur = CursorFalso(respuestas=[[(1,)]])
+    filas = sync_nube.leer_vista(cur, "vista_costo_sku", ["a", "b"])
+    assert filas == [(1,)]
+    assert cur.ejecutado == ["SELECT a, b FROM vista_costo_sku"]
+
+
+def test_migraciones_de_cada_corrida_incluyen_views():
+    # Las views y la tabla costo_sku se autoreparan en CADA sync, no solo --init.
+    conn = _FakeConnChat()
+    sync_nube.aplicar_migraciones_chat(conn)
+    assert any("v_factura_cabecera" in s for s in conn.ejecutado)
+    assert any("costo_sku" in s for s in conn.ejecutado)
+
+
+def test_sql_views_define_lo_nuevo_idempotente():
+    sql = (_RAIZ / "scripts" / "migrate_nube_views.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS costo_sku" in sql
+    assert "CREATE OR REPLACE VIEW v_factura_cabecera" in sql
+    assert "CREATE OR REPLACE VIEW v_lineas_factura" in sql
+    assert "tipo_linea" in sql
+    assert "tiene_nc" in sql
