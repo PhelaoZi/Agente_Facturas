@@ -73,38 +73,42 @@ export interface FlujoResult {
   fuera_horizonte: number;
 }
 
-// Helper interno para hacer fetch directo al subdominio de funciones de InsForge
-async function invocarEdgeFunction(slug: string): Promise<any> {
+// Helper interno para llamar las edge functions de InsForge (GET o POST)
+async function invocarEdgeFunction(
+  slug: string,
+  opciones?: { method?: 'GET' | 'POST'; body?: unknown },
+): Promise<any> {
   const httpClient = insforge.getHttpClient();
   const token = await httpClient.getValidAccessToken();
-  
+
   // URL directa de funciones
   const functionsUrl = 'https://z86cmn8g.function2.insforge.app';
   const url = `${functionsUrl}/${slug}`;
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const res = await fetch(url, {
-    method: 'GET',
+    method: opciones?.method ?? 'GET',
     headers,
+    body: opciones?.body !== undefined ? JSON.stringify(opciones.body) : undefined,
   });
 
-  
   if (!res.ok) {
     let errorDetail = '';
     try {
-      errorDetail = await res.text();
+      const data = await res.json();
+      errorDetail = data.detalle || data.error || '';
     } catch {
       errorDetail = res.statusText;
     }
     throw new Error(`Error en API (${res.status}): ${errorDetail || 'Petición fallida'}`);
   }
-  
+
   return await res.json();
 }
 
@@ -123,5 +127,28 @@ export async function getVentas(meses: number = 6): Promise<VentasResult> {
 
 export async function getFlujo(): Promise<FlujoResult> {
   return await invocarEdgeFunction('flujo');
+}
+
+export interface ChatUso {
+  input_tokens: number;
+  output_tokens: number;
+  n_llamadas_tools: number;
+  costo_usd: number;
+}
+
+export interface ChatRespuesta {
+  respuesta: string;
+  sesion_id: number;
+  uso: ChatUso;
+}
+
+export async function enviarMensajeChat(
+  mensaje: string,
+  sesionId: number | null,
+): Promise<ChatRespuesta> {
+  return await invocarEdgeFunction('chat', {
+    method: 'POST',
+    body: { mensaje, ...(sesionId ? { sesion_id: sesionId } : {}) },
+  });
 }
 

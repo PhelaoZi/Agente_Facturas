@@ -9,8 +9,10 @@ import {
   AlertTriangle,
   Clock,
   Calendar,
-  Layers
+  Layers,
+  MessageCircle
 } from 'lucide-react';
+import Chat from './Chat';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -62,7 +64,7 @@ const formatDateTime = (dateStr: string) => {
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inicio' | 'cobros' | 'ventas' | 'flujo'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'cobros' | 'ventas' | 'flujo' | 'chat'>('inicio');
   
   // Estados para Login
   const [email, setEmail] = useState('');
@@ -544,6 +546,8 @@ export default function App() {
                 )}
               </section>
             )}
+            {/* VISTA 5: CHAT */}
+            {activeTab === 'chat' && <Chat />}
           </>
         )}
       </main>
@@ -584,6 +588,15 @@ export default function App() {
         >
           <DollarSign size={20} />
           <span>Flujo</span>
+        </button>
+
+        <button 
+          id="tab-btn-chat"
+          onClick={() => setActiveTab('chat')} 
+          className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
+        >
+          <MessageCircle size={20} />
+          <span>Chat</span>
         </button>
       </nav>
     </>
