@@ -147,7 +147,12 @@ reglas.
 - RLS: denegar todo al rol anónimo; las edge functions acceden con service
   role tras verificar el JWT.
 - La BD réplica solo recibe escrituras desde `sync_nube.py` (credencial
-  directa de Postgres) y la tabla `chat_sesiones` desde `/api/chat`.
+  directa de Postgres) y, desde `/api/chat`, únicamente las tablas propias
+  del chat: `chat_sesiones`, `chat_uso` y `chat_tareas` (ajuste 2026-07-19).
+  Los datos del negocio son de solo lectura para el chat: no existe tool de
+  SQL libre y las 3 tools de escritura (agenda) tocan solo `chat_tareas` con
+  parámetros ligados — un prompt malicioso puede a lo más ensuciar la agenda
+  personal, nunca los datos del negocio.
 - `ANTHROPIC_API_KEY` e `INSFORGE_DB_URL` como secrets (edge functions y
   `.env` local respectivamente). Nada de claves en el frontend ni en git.
 - Datos tributarios en nube de startup joven: mitigado por backups locales

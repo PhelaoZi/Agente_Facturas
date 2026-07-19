@@ -51,6 +51,9 @@ export default async function handler(req: Request): Promise<Response> {
   const sql = db();
 
   // Tope de gasto diario: red de seguridad ante loops o uso descontrolado.
+  // Best-effort (chequear-y-luego-insertar, sin lock): requests concurrentes
+  // pueden sobrepasarlo por lo que este en vuelo — aceptado con un solo
+  // usuario; el tope duro real es el limite mensual del proveedor.
   const limiteDiario = Number(Deno.env.get("CHAT_LIMITE_DIARIO_USD") ?? "1.0");
   const [gasto] = await sql`
     SELECT COALESCE(SUM(costo_usd), 0) AS hoy

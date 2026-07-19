@@ -1203,9 +1203,21 @@ Expected: `Sync OK ...` (la corrida aplica `migrate_nube_chat.sql`; verificar si
 
 - [ ] **Step 2: 🔑 Configurar secrets de la function en InsForge**
 
+> **Ajuste 2026-07-19 — proveedor cambiado al AI Gateway de InsForge.** El
+> chat ya NO usa `ANTHROPIC_API_KEY` ni `OPENROUTER_API_KEY`. El deploy que
+> corre hoy en producción es el build viejo (OpenRouter): al redeployar hay
+> que (1) regenerar el bundle (`deno bundle -o nube/dist/chat.bundle.js
+> functions/chat.ts` — verificar que el bundle nuevo contenga
+> `api/ai/chat/completion` y NO `openrouter.ai`), y (2) tener configurado el
+> secret nuevo ANTES del cutover, o toda consulta responderá
+> `500 "falta INSFORGE_AI_KEY"`. Después del cutover, borrar el secret
+> `OPENROUTER_API_KEY` de la function, quitar la línea de `.env` local y
+> cerrar/vaciar la cuenta de openrouter.ai.
+
 En el dashboard de InsForge (proyecto `zigurat-movil`) → Functions → variables/secrets, agregar:
-- `ANTHROPIC_API_KEY` = la key de console.anthropic.com (con saldo cargado y límite de gasto mensual configurado allá).
-- (opcionales, solo si se quiere cambiar el default) `CHAT_MODELO`, `CHAT_LIMITE_DIARIO_USD`, `CHAT_PRECIO_IN_USD_MTOK`, `CHAT_PRECIO_OUT_USD_MTOK`.
+- `INSFORGE_AI_KEY` = la API key del proyecto InsForge (la misma `ik_...` de `.insforge/project.json`).
+- (opcional) `INSFORGE_AI_URL` = host del proyecto; default `https://z86cmn8g.us-west.insforge.app`.
+- (opcionales, solo si se quiere cambiar el default) `CHAT_MODELO` (default `google/gemini-2.5-flash`), `CHAT_LIMITE_DIARIO_USD`, `CHAT_PRECIO_IN_USD_MTOK` (default 0.30), `CHAT_PRECIO_OUT_USD_MTOK` (default 2.50).
 
 Ya deben existir de fases anteriores: `INSFORGE_DB_URL`, `INSFORGE_JWT_SECRET`, `JWT_PUBLIC_KEY`.
 

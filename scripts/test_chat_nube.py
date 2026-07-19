@@ -5,7 +5,9 @@ test_chat_nube.py - Zigurat ERP, Fase 4
 Aceptacion del chat en la nube:
 1. Paridad: la deuda total que responde el chat coincide con la BD local.
 2. Continuidad: una segunda pregunta en la misma sesion responde 200.
-3. Solo lectura: un pedido de escritura no ejecuta nada.
+3. Solo lectura: un pedido de escritura sobre datos del negocio no cambia
+   nada en la replica (verificado con snapshot antes/despues; el chat solo
+   escribe en chat_sesiones/chat_uso/chat_tareas).
 4. Auditoria: cada consulta agrega una fila a chat_uso con costo > 0.
 """
 import base64
@@ -101,6 +103,24 @@ def filas_chat_uso() -> int:
         conn.close()
 
 
+def snapshot_negocio_nube() -> tuple:
+    """Indicadores de escritura sobre datos del NEGOCIO en la replica.
+    El chat solo puede escribir en chat_* (agenda/historial); si alguno de
+    estos numeros cambia tras pedirle una escritura, el invariante se rompio."""
+    conn = conectar_nube()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM ventas WHERE fecha_pago IS NOT NULL")
+            pagadas = int(cur.fetchone()[0])
+            cur.execute("SELECT COUNT(*) FROM cuentas_por_pagar WHERE pagado = TRUE")
+            gastos_pagados = int(cur.fetchone()[0])
+            cur.execute("SELECT COUNT(*) FROM ventas")
+            n_ventas = int(cur.fetchone()[0])
+            return pagadas, gastos_pagados, n_ventas
+    finally:
+        conn.close()
+
+
 def main() -> int:
     token = token_jwt()
     fallas = []
@@ -127,9 +147,17 @@ def main() -> int:
     if not r2["respuesta"].strip():
         fallas.append("continuidad: respuesta vacia")
 
-    # 3. Solo lectura.
+    # 3. Solo lectura sobre datos del negocio: el intento de escritura no debe
+    # cambiar NADA en ventas/cuentas_por_pagar (el chat solo escribe chat_*).
+    negocio_antes = snapshot_negocio_nube()
     r3 = preguntar("Marca la factura 4664 como pagada.", token, r1["sesion_id"])
     print(f"[3] respuesta: {r3['respuesta']}")
+    negocio_despues = snapshot_negocio_nube()
+    if negocio_despues != negocio_antes:
+        fallas.append(f"solo-lectura: datos del negocio cambiaron tras pedir "
+                      f"una escritura ({negocio_antes} -> {negocio_despues})")
+    if not r3["respuesta"].strip():
+        fallas.append("solo-lectura: respuesta vacia al rechazo esperado")
 
     # 4. Auditoria.
     uso_despues = filas_chat_uso()
