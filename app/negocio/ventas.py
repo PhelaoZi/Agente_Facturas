@@ -74,17 +74,17 @@ def por_cliente(cur, nombre):
 def por_producto(cur, nombre):
     """Líneas de detalle que coinciden con un producto (excluye NC)."""
     cur.execute("""
-        SELECT p.folio, v.fecha, c.razon_social, p.descripcion,
+        SELECT p.folio, v.fecha, c.razon_social, p.nombre_producto,
                p.cantidad, p.precio_unitario
         FROM productos p
         JOIN ventas v ON v.folio = p.folio
         JOIN clientes c ON c.rut_cliente = v.rut_cliente
-        WHERE p.descripcion ILIKE %s AND v.tipo_documento != 61
+        WHERE p.nombre_producto ILIKE %s AND v.tipo_documento != 61
         ORDER BY v.fecha DESC
     """, (f"%{nombre}%",))
     return [
         {"folio": r["folio"], "fecha": r["fecha"], "cliente": r["razon_social"],
-         "producto": r["descripcion"], "cantidad": r["cantidad"],
+         "producto": r["nombre_producto"], "cantidad": r["cantidad"],
          "precio_unitario": (float(r["precio_unitario"])
                              if r["precio_unitario"] is not None else None)}
         for r in cur.fetchall()
