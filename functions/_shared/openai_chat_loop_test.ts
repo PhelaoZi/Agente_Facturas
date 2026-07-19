@@ -1,7 +1,12 @@
 // functions/_shared/openai_chat_loop_test.ts
 // Tests unitarios para el loop de chat de OpenAI / OpenRouter.
 import { assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
-import { correrChatOpenAi, MAX_ITERACIONES, type OpenAiRespuesta } from "./openai_chat_loop.ts";
+import {
+  correrChatOpenAi,
+  MAX_ITERACIONES,
+  normalizarRespuestaGateway,
+  type OpenAiRespuesta,
+} from "./openai_chat_loop.ts";
 
 function modeloFalso(respuestas: OpenAiRespuesta[]) {
   const cola = [...respuestas];
@@ -75,6 +80,38 @@ Deno.test("OpenAI loop: una tool, ejecuta, enhebra tool_result y suma uso", asyn
   assertEquals(mensajes2[3].role, "tool");
   assertEquals(mensajes2[3].tool_call_id, "call_1");
   assertEquals(mensajes2[3].content, "Ventas: $350.000");
+});
+
+Deno.test("Gateway: normaliza respuesta de solo texto a formato OpenAI", () => {
+  const r = normalizarRespuestaGateway({
+    text: "El total es $4.267.294.",
+    metadata: { model: "google/gemini-2.5-flash",
+                usage: { promptTokens: 62, completionTokens: 27, totalTokens: 89 } },
+  });
+  assertEquals(r.choices[0].message.content, "El total es $4.267.294.");
+  assertEquals(r.choices[0].finish_reason, "stop");
+  assertEquals(r.choices[0].message.tool_calls, undefined);
+  assertEquals(r.usage.prompt_tokens, 62);
+  assertEquals(r.usage.completion_tokens, 27);
+});
+
+Deno.test("Gateway: normaliza tool_calls (texto vacio pasa a null)", () => {
+  const r = normalizarRespuestaGateway({
+    text: "",
+    tool_calls: [{ id: "tool_deuda_total_x", type: "function",
+                   function: { name: "deuda_total", arguments: "{}" } }],
+    metadata: { usage: { promptTokens: 34, completionTokens: 4 } },
+  });
+  assertEquals(r.choices[0].finish_reason, "tool_calls");
+  assertEquals(r.choices[0].message.content, null);
+  assertEquals(r.choices[0].message.tool_calls?.[0].function.name, "deuda_total");
+  assertEquals(r.usage.prompt_tokens, 34);
+});
+
+Deno.test("Gateway: usage ausente normaliza a ceros", () => {
+  const r = normalizarRespuestaGateway({ text: "hola" });
+  assertEquals(r.usage.prompt_tokens, 0);
+  assertEquals(r.usage.completion_tokens, 0);
 });
 
 Deno.test("OpenAI loop: tope de iteraciones corta el loop", async () => {

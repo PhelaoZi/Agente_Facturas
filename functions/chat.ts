@@ -6,13 +6,15 @@
 import { corsHeaders } from "./_shared/cors.ts";
 import { db } from "./_shared/db.ts";
 import { requireUser } from "./_shared/auth.ts";
-import { TOOLS, ejecutarTool } from "./_shared/chat_tools.ts";
-import { correrChatOpenAi, llamarModeloOpenRouter, type OpenAiMessage } from "./_shared/openai_chat_loop.ts";
+import { TOOLS, ejecutarTool, type SqlCliente } from "./_shared/chat_tools.ts";
+import { correrChatOpenAi, llamarModeloGatewayInsforge, type OpenAiMessage } from "./_shared/openai_chat_loop.ts";
 import { promptChat } from "./_shared/chat_prompt.ts";
 
 const MAX_LARGO_MENSAJE = 2000;
 const MAX_HISTORIAL_API = 20;   // mensajes enviados a la API (el historial completo queda en BD)
 const MODELO_DEFAULT = "google/gemini-2.5-flash";
+// Host del proyecto InsForge (mismo default hardcodeado que usa la PWA en api.ts).
+const AI_URL_DEFAULT = "https://z86cmn8g.us-west.insforge.app";
 
 interface MensajeGuardado { role: "user" | "assistant"; content: string }
 
@@ -30,8 +32,11 @@ export default async function handler(req: Request): Promise<Response> {
   const rechazo = await requireUser(req);
   if (rechazo) return rechazo;
 
-  const apiKey = Deno.env.get("OPENROUTER_API_KEY");
-  if (!apiKey) return json({ error: "falta OPENROUTER_API_KEY en el servidor" }, 500);
+  // AI Gateway de InsForge: la clave del proyecto (una sola cuenta, creditos
+  // incluidos en el plan). Ver openai_chat_loop.ts para el adaptador.
+  const apiKey = Deno.env.get("INSFORGE_AI_KEY");
+  if (!apiKey) return json({ error: "falta INSFORGE_AI_KEY en el servidor" }, 500);
+  const aiUrl = Deno.env.get("INSFORGE_AI_URL") ?? AI_URL_DEFAULT;
 
   let cuerpo: { mensaje?: string; sesion_id?: number };
   try {
@@ -103,8 +108,10 @@ export default async function handler(req: Request): Promise<Response> {
       system: promptChat(hoy, ultimoSync),
       mensajes: mensajesAPI,
       tools: TOOLS,
-      llamarModelo: llamarModeloOpenRouter(apiKey, modelo),
-      ejecutarTool: (nombre, input) => ejecutarTool(sql as any, nombre, input, new Date()),
+      llamarModelo: llamarModeloGatewayInsforge(aiUrl, apiKey, modelo),
+      // El tipo Sql del driver postgres es estructuralmente mas rico que el
+      // SqlCliente minimo que declaran las tools; el cast queda acotado aqui.
+      ejecutarTool: (nombre, input) => ejecutarTool(sql as unknown as SqlCliente, nombre, input, new Date()),
     }));
   } catch (e) {
     console.error("chat: fallo el loop:", (e as Error).message);
@@ -112,9 +119,10 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   // Costo estimado (para el tope diario; precios por MTok configurables).
-  // Los defaults son para Gemini 2.5 Flash: ~US$0.075 por Millón de tokens (usamos US$0.15 y US$0.60 como margen de seguridad)
-  const precioIn = Number(Deno.env.get("CHAT_PRECIO_IN_USD_MTOK") ?? "0.15");
-  const precioOut = Number(Deno.env.get("CHAT_PRECIO_OUT_USD_MTOK") ?? "0.60");
+  // Defaults = precio de gemini-2.5-flash en el catalogo del gateway InsForge
+  // (GET /api/ai/models): input US$0.30/MTok, output US$2.50/MTok.
+  const precioIn = Number(Deno.env.get("CHAT_PRECIO_IN_USD_MTOK") ?? "0.30");
+  const precioOut = Number(Deno.env.get("CHAT_PRECIO_OUT_USD_MTOK") ?? "2.50");
   const costo = (uso.input_tokens * precioIn + uso.output_tokens * precioOut) / 1_000_000;
 
   // Persistir: historial completo en la sesion + fila de uso.

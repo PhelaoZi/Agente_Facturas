@@ -132,7 +132,61 @@ export async function correrChatOpenAi(opts: {
   };
 }
 
-/** Cliente real de la API de OpenRouter / OpenAI. Reintenta 429/5xx (esperas 1s y 3s). */
+// --- AI Gateway de InsForge (proveedor elegido, 2026-07-19) ---
+// El gateway del proyecto expone POST {base}/api/ai/chat/completion: acepta el
+// body estilo OpenAI (messages con roles assistant/tool, tools) pero responde
+// un formato propio plano: {text, tool_calls?, metadata.usage.promptTokens...}.
+// Este adaptador lo normaliza a OpenAiRespuesta para reutilizar el mismo loop.
+
+export interface GatewayRespuesta {
+  text: string | null;
+  tool_calls?: OpenAiMessage["tool_calls"];
+  metadata?: {
+    model?: string;
+    usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+  };
+}
+
+export function normalizarRespuestaGateway(g: GatewayRespuesta): OpenAiRespuesta {
+  const toolCalls = g.tool_calls && g.tool_calls.length > 0 ? g.tool_calls : undefined;
+  return {
+    choices: [{
+      message: { role: "assistant", content: g.text || null, tool_calls: toolCalls },
+      finish_reason: toolCalls ? "tool_calls" : "stop",
+    }],
+    usage: {
+      prompt_tokens: g.metadata?.usage?.promptTokens ?? 0,
+      completion_tokens: g.metadata?.usage?.completionTokens ?? 0,
+    },
+  };
+}
+
+/** Cliente del AI Gateway de InsForge. Reintenta 429/5xx (esperas 1s y 3s). */
+export function llamarModeloGatewayInsforge(baseUrl: string, apiKey: string, modelo: string) {
+  const url = `${baseUrl.replace(/\/$/, "")}/api/ai/chat/completion`;
+  return async (body: Record<string, unknown>): Promise<OpenAiRespuesta> => {
+    const esperas = [0, 1000, 3000];
+    let ultimo = "";
+    for (const espera of esperas) {
+      if (espera) await new Promise((r) => setTimeout(r, espera));
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model: modelo, ...body }),
+      });
+      if (res.ok) return normalizarRespuestaGateway(await res.json() as GatewayRespuesta);
+      ultimo = `${res.status}: ${(await res.text()).slice(0, 300)}`;
+      // 4xx distinto de 429 no se reintenta
+      if (res.status !== 429 && res.status < 500) break;
+    }
+    throw new Error(`AI Gateway de InsForge falló (${ultimo})`);
+  };
+}
+
+/** Cliente de OpenRouter directo (alternativa; el gateway es el camino por defecto). */
 export function llamarModeloOpenRouter(apiKey: string, modelo: string) {
   return async (body: Record<string, unknown>): Promise<OpenAiRespuesta> => {
     const esperas = [0, 1000, 3000];
