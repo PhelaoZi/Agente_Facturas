@@ -62,6 +62,34 @@ export const TOOLS = [
     description: "Gastos pendientes de pago (cuentas por pagar) con monto y vencimiento. Opcional: filtro de texto sobre la descripcion.",
     input_schema: { type: "object", properties: {
       filtro: { type: "string" } } } },
+  { name: "crear_tarea",
+    description: "Crea una nueva tarea o compromiso en la agenda.",
+    input_schema: {
+      type: "object",
+      properties: {
+        descripcion: { type: "string", description: "Descripción detallada del compromiso o tarea" },
+        fecha: { type: "string", description: "Fecha del compromiso en formato YYYY-MM-DD" }
+      },
+      required: ["descripcion", "fecha"]
+    } },
+  { name: "listar_tareas",
+    description: "Lista las tareas y compromisos de la agenda. Opcionalmente filtra por fecha (YYYY-MM-DD) o estado (completada true/false).",
+    input_schema: {
+      type: "object",
+      properties: {
+        fecha: { type: "string", description: "Filtrar por fecha en formato YYYY-MM-DD (opcional)" },
+        completada: { type: "boolean", description: "Filtrar por completadas (true) o pendientes (false) (opcional)" }
+      }
+    } },
+  { name: "marcar_tarea_completada",
+    description: "Marca una tarea específica de la agenda como completada usando su ID.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "integer", description: "ID único de la tarea a marcar como completada" }
+      },
+      required: ["id"]
+    } },
 ];
 
 interface FilaPendiente { total: unknown; dias_desde_emision: unknown }
@@ -238,6 +266,63 @@ export async function ejecutarTool(
       return filas.map((g) =>
         `- ${g.descripcion}: ${formatearPesos(num(g.monto))}, vence ${String(g.fecha_vencimiento).slice(0, 10)}` +
         (g.proveedor ? ` (${g.proveedor})` : "")).join("\n");
+    }
+    case "crear_tarea": {
+      const desc = String(input.descripcion ?? "").trim();
+      const fecha = String(input.fecha ?? "").trim();
+      if (!desc || !fecha) return "Error: descripción y fecha son requeridas.";
+      const [nueva] = await sql`
+        INSERT INTO chat_tareas (descripcion, fecha)
+        VALUES (${desc}, ${fecha})
+        RETURNING id, descripcion, fecha`;
+      return `Tarea creada con éxito. ID: ${nueva.id}. Compromiso: "${nueva.descripcion}" para el ${String(nueva.fecha).slice(0, 10)}.`;
+    }
+    case "listar_tareas": {
+      const fecha = input.fecha ? String(input.fecha).trim() : null;
+      const completada = input.completada !== undefined ? Boolean(input.completada) : null;
+      
+      let filas;
+      if (fecha !== null && completada !== null) {
+        filas = await sql`
+          SELECT id, descripcion, fecha, completada
+          FROM chat_tareas
+          WHERE fecha = ${fecha} AND completada = ${completada}
+          ORDER BY fecha, id`;
+      } else if (fecha !== null) {
+        filas = await sql`
+          SELECT id, descripcion, fecha, completada
+          FROM chat_tareas
+          WHERE fecha = ${fecha}
+          ORDER BY fecha, id`;
+      } else if (completada !== null) {
+        filas = await sql`
+          SELECT id, descripcion, fecha, completada
+          FROM chat_tareas
+          WHERE completada = ${completada}
+          ORDER BY fecha, id`;
+      } else {
+        filas = await sql`
+          SELECT id, descripcion, fecha, completada
+          FROM chat_tareas
+          ORDER BY fecha, id`;
+      }
+
+      if (!filas.length) return "No hay tareas registradas que coincidan con los filtros.";
+      const lineas = filas.map((t) =>
+        `- [ID: ${t.id}] ${String(t.fecha).slice(0, 10)}: "${t.descripcion}" [${t.completada ? "COMPLETADA" : "PENDIENTE"}]`
+      );
+      return `Tareas agendadas:\n${lineas.join("\n")}`;
+    }
+    case "marcar_tarea_completada": {
+      const id = Number(input.id);
+      if (isNaN(id)) return "Error: ID de tarea no válido.";
+      const [res] = await sql`
+        UPDATE chat_tareas
+        SET completada = TRUE, actualizado = now()
+        WHERE id = ${id}
+        RETURNING id, descripcion, completada`;
+      if (!res) return `No se encontró ninguna tarea con el ID ${id}.`;
+      return `Tarea ID ${res.id} ("${res.descripcion}") marcada como COMPLETADA con éxito.`;
     }
     default:
       return `Herramienta desconocida: ${nombre}.`;

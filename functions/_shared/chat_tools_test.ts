@@ -18,10 +18,10 @@ Deno.test("formatearPesos usa puntos de miles chilenos", () => {
   assertEquals(formatearPesos("55370.00"), "$55.370");
 });
 
-Deno.test("TOOLS: 10 tools con nombres unicos y schema de objeto", () => {
-  assertEquals(TOOLS.length, 10);
+Deno.test("TOOLS: 13 tools con nombres unicos y schema de objeto", () => {
+  assertEquals(TOOLS.length, 13);
   const nombres = TOOLS.map((t) => (t as { name: string }).name);
-  assertEquals(new Set(nombres).size, 10);
+  assertEquals(new Set(nombres).size, 13);
   for (const t of TOOLS) {
     assertEquals((t as { input_schema: { type: string } }).input_schema.type, "object");
   }
@@ -64,6 +64,33 @@ Deno.test("flujo_caja proyecta con las 4 queries", async () => {
   const r = await ejecutarTool(sql, "flujo_caja", {}, HOY);
   assertStringIncludes(r, "Semana 1");
   assertStringIncludes(r, "$100.000");
+});
+
+Deno.test("crear_tarea ejecuta la insercion", async () => {
+  const sql = fakeSql([{ id: 42, descripcion: "Reunion", fecha: "2026-07-25" }]);
+  const r = await ejecutarTool(sql, "crear_tarea", { descripcion: "Reunion", fecha: "2026-07-25" }, HOY);
+  assertStringIncludes(r, "Tarea creada con éxito");
+  assertStringIncludes(r, "ID: 42");
+  assertStringIncludes(r, "Reunion");
+});
+
+Deno.test("listar_tareas devuelve listado", async () => {
+  const sql = fakeSql([
+    { id: 1, descripcion: "Llamar distribuidor", fecha: "2026-07-22", completada: false },
+    { id: 2, descripcion: "Pagar internet", fecha: "2026-07-23", completada: true }
+  ]);
+  const r = await ejecutarTool(sql, "listar_tareas", {}, HOY);
+  assertStringIncludes(r, "Tareas agendadas");
+  assertStringIncludes(r, "[ID: 1] 2026-07-22: \"Llamar distribuidor\" [PENDIENTE]");
+  assertStringIncludes(r, "[ID: 2] 2026-07-23: \"Pagar internet\" [COMPLETADA]");
+});
+
+Deno.test("marcar_tarea_completada ejecuta el update", async () => {
+  const sql = fakeSql([{ id: 7, descripcion: "Pagar agua", completada: true }]);
+  const r = await ejecutarTool(sql, "marcar_tarea_completada", { id: 7 }, HOY);
+  assertStringIncludes(r, "marcada como COMPLETADA con éxito");
+  assertStringIncludes(r, "ID 7");
+  assertStringIncludes(r, "Pagar agua");
 });
 
 Deno.test("tool desconocida devuelve error legible", async () => {
