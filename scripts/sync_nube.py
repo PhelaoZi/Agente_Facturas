@@ -32,6 +32,7 @@ from psycopg2.extras import execute_values
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 LOG_FILE = PROJECT_ROOT / "logs" / "sync_nube.log"
 SQL_VIEWS = PROJECT_ROOT / "scripts" / "migrate_nube_views.sql"
+SQL_CHAT = PROJECT_ROOT / "scripts" / "migrate_nube_chat.sql"
 
 # Orden de carga: padres antes que hijos (FKs). El TRUNCATE va en una sola
 # sentencia con todas, asi Postgres resuelve las dependencias entre ellas.
@@ -202,6 +203,15 @@ def aplicar_esquema(conn_nube):
     log("Esquema y views aplicados en la nube (--init)")
 
 
+def aplicar_migraciones_chat(conn_nube):
+    """Tablas propias de la nube (chat). Idempotente (IF NOT EXISTS): se aplica
+    en CADA corrida para que la replica se autorepare si se recrea. Estas
+    tablas nunca van en TABLAS_ORDEN (el sync las truncaria)."""
+    with conn_nube:
+        with conn_nube.cursor() as cur:
+            cur.execute(SQL_CHAT.read_text(encoding="utf-8"))
+
+
 def main(argv=None):
     """argv inyectable para los tests (pytest contamina sys.argv)."""
     inicio = time.monotonic()
@@ -215,6 +225,7 @@ def main(argv=None):
         try:
             if args.init:
                 aplicar_esquema(conn_nube)
+            aplicar_migraciones_chat(conn_nube)
             total = sync(conn_local, conn_nube)
         finally:
             conn_local.close()

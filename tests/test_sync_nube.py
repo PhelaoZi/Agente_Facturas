@@ -102,3 +102,55 @@ def test_limpiar_meta_comandos_quita_lineas_backslash():
     assert "\\unrestrict" not in limpio
     assert "CREATE TABLE x (id int);" in limpio
     assert "SELECT 1;" in limpio
+
+
+# --- Fase 4: migracion de las tablas del chat ---
+from pathlib import Path
+
+_RAIZ = Path(__file__).resolve().parent.parent
+
+
+class _FakeCursorChat:
+    def __init__(self, registro):
+        self.registro = registro
+
+    def execute(self, sql, params=None):
+        self.registro.append(sql)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+class _FakeConnChat:
+    def __init__(self):
+        self.ejecutado = []
+
+    def cursor(self):
+        return _FakeCursorChat(self.ejecutado)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_migracion_chat_es_idempotente():
+    sql = (_RAIZ / "scripts" / "migrate_nube_chat.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS chat_sesiones" in sql
+    assert "CREATE TABLE IF NOT EXISTS chat_uso" in sql
+
+
+def test_tablas_chat_fuera_del_sync():
+    # Si entraran a TABLAS_ORDEN, el sync las truncaria y borraria el historial.
+    for tabla in ("chat_sesiones", "chat_uso"):
+        assert tabla not in sync_nube.TABLAS_ORDEN
+
+
+def test_aplicar_migraciones_chat_ejecuta_el_sql():
+    conn = _FakeConnChat()
+    sync_nube.aplicar_migraciones_chat(conn)
+    assert any("chat_sesiones" in s for s in conn.ejecutado)
