@@ -1,7 +1,7 @@
 // functions/flujo.ts
 // GET -> resultado de proyectarFlujo con datos de las views + sync_meta.
 import postgres from "npm:postgres@3.4.5";
-import { jwtVerify } from "npm:jose@5";
+import { jwtVerify, importSPKI } from "npm:jose@5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,12 +35,29 @@ async function requireUser(req: Request): Promise<Response | null> {
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) return sin401("falta token");
   try {
-    const secreto = new TextEncoder().encode(
-      Deno.env.get("INSFORGE_JWT_SECRET") ?? "",
-    );
-    await jwtVerify(token, secreto);
+    const parts = token.split('.');
+    if (parts.length !== 3) return sin401("token malformado");
+    const headerObj = JSON.parse(atob(parts[0]));
+    const alg = headerObj.alg;
+
+    if (alg === "RS256") {
+      const publicKeyPEM = Deno.env.get("JWT_PUBLIC_KEY");
+      if (!publicKeyPEM) {
+        console.error("RequireUser: JWT_PUBLIC_KEY not set in environment");
+        return sin401("error de configuracion en servidor");
+      }
+      const publicKey = await importSPKI(publicKeyPEM, "RS256");
+      await jwtVerify(token, publicKey);
+    } else if (alg === "HS256") {
+      const secretStr = Deno.env.get("INSFORGE_JWT_SECRET") ?? Deno.env.get("JWT_SECRET") ?? "";
+      const secreto = new TextEncoder().encode(secretStr);
+      await jwtVerify(token, secreto);
+    } else {
+      return sin401("algoritmo no soportado");
+    }
     return null;
-  } catch {
+  } catch (err: any) {
+    console.error("RequireUser: JWT verification failed:", err?.message || err);
     return sin401("token invalido");
   }
 }
