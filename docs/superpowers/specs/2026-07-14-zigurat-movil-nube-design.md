@@ -99,6 +99,20 @@ reglas.
 
 ### 4.4 Chat — Opción A: tool-use loop con la Messages API
 
+> **Ajuste 2026-07-19 (implementación real):** el proveedor del chat es el
+> **AI Gateway de InsForge** (`POST {proyecto}/api/ai/chat/completion`, formato
+> OpenAI adaptado, modelo `google/gemini-2.5-flash`, clave `INSFORGE_AI_KEY`)
+> en vez de la API de Anthropic — una sola cuenta, US$1/mes de créditos
+> incluidos, ~10x más barato que Sonnet. Decidido tras comparar con la
+> implementación que Christian generó con Antigravity (OpenRouter directo).
+> En el repo quedan como alternativas probadas: `chat_loop.ts` (Anthropic
+> Messages API) y `llamarModeloOpenRouter` (OpenRouter directo).
+> Además el chat ganó una **excepción de escritura acotada**: la agenda
+> personal (`chat_tareas`, tools `crear_tarea`/`listar_tareas`/
+> `marcar_tarea_completada`) — tabla propia de la nube, fuera del sync; los
+> datos del negocio siguen siendo de solo lectura. La PWA suma dictado por
+> voz (Web Speech API; Chrome/Android).
+
 - Edge function `POST /api/chat` que corre un loop de tool-use con la API de
   Anthropic (modelo Sonnet por defecto, configurable vía secret).
 - **Herramientas (espejo de las tools canónicas del dashboard local, solo
@@ -133,7 +147,12 @@ reglas.
 - RLS: denegar todo al rol anónimo; las edge functions acceden con service
   role tras verificar el JWT.
 - La BD réplica solo recibe escrituras desde `sync_nube.py` (credencial
-  directa de Postgres) y la tabla `chat_sesiones` desde `/api/chat`.
+  directa de Postgres) y, desde `/api/chat`, únicamente las tablas propias
+  del chat: `chat_sesiones`, `chat_uso` y `chat_tareas` (ajuste 2026-07-19).
+  Los datos del negocio son de solo lectura para el chat: no existe tool de
+  SQL libre y las 3 tools de escritura (agenda) tocan solo `chat_tareas` con
+  parámetros ligados — un prompt malicioso puede a lo más ensuciar la agenda
+  personal, nunca los datos del negocio.
 - `ANTHROPIC_API_KEY` e `INSFORGE_DB_URL` como secrets (edge functions y
   `.env` local respectivamente). Nada de claves en el frontend ni en git.
 - Datos tributarios en nube de startup joven: mitigado por backups locales
@@ -143,9 +162,10 @@ reglas.
 ## 6. Costos
 
 - InsForge plan gratis (500 MB BD ≫ tamaño real).
-- API de Anthropic para el chat: requiere key de console.anthropic.com con
-  facturación por uso (el agente local usa la suscripción; esto no).
-  Estimación: $0,01–0,05 USD por consulta con Sonnet.
+- ~~API de Anthropic para el chat~~ **Ajuste 2026-07-19:** el chat usa el AI
+  Gateway de InsForge (Gemini 2.5 Flash a US$0,30/2,50 por MTok según su
+  catálogo): ~$0,001–0,005 por consulta, cubierto en gran parte por el US$1/mes
+  de créditos IA del plan gratis. Sin cuenta Anthropic ni OpenRouter aparte.
 
 ## 7. Fases de entrega
 
