@@ -56,9 +56,10 @@ def test_por_cliente_separa_facturas_y_nc():
 
 
 def test_por_producto_mapea():
+    # La columna real de la tabla productos es `nombre_producto` (no `descripcion`).
     rows = [
         {"folio": 10, "fecha": "2026-06-01", "razon_social": "Bar Uno",
-         "descripcion": "Barril 30L Cream Ale", "cantidad": 2, "precio_unitario": 20000},
+         "nombre_producto": "Barril 30L Cream Ale", "cantidad": 2, "precio_unitario": 20000},
     ]
     r = ventas.por_producto(FakeCursor(rows), "Cream")
     assert r[0]["producto"] == "Barril 30L Cream Ale"
