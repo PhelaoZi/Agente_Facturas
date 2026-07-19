@@ -4,7 +4,7 @@
 
 **Goal:** Réplica de solo lectura del Postgres local en InsForge, con views canónicas y edge functions de consulta (`/api/kpis`, `/api/pendientes`, `/api/ventas`, `/api/flujo`) verificadas por paridad de cifras contra la BD local.
 
-**Architecture:** El pipeline local queda intacto; `scripts/sync_nube.py` replica 5 tablas por truncate+copy transaccional y registra metadatos en `sync_meta`. Las reglas de negocio viven UNA vez en views SQL (`migrate_nube_views.sql`). Las edge functions (Deno/TS) solo leen views y verifican JWT de InsForge Auth.
+**Architecture:** El pipeline local queda intacto; `scripts/sync_nube.py` replica 6 tablas por truncate+copy transaccional y registra metadatos en `sync_meta`. Las reglas de negocio viven UNA vez en views SQL (`migrate_nube_views.sql`). Las edge functions (Deno/TS) solo leen views y verifican JWT de InsForge Auth.
 
 **Tech Stack:** Python 3 + psycopg2 (sync), SQL (views), Deno/TypeScript (edge functions, `npm:postgres`, `npm:jose`), InsForge CLI/MCP.
 
@@ -20,7 +20,7 @@
 - Credenciales solo en `.env` (local) y secrets de InsForge (nube). Nada en git.
 - `.env` nuevo: `INSFORGE_DB_URL` (connection string Postgres del proyecto InsForge).
 - Al terminar cada tarea: `python -m pytest -q` debe estar verde.
-- La columna de nombre de producto es `productos.descripcion` (verificado en `app/negocio/ventas.py:77`); el estado incobrable es `clientes.estado = 'incobrable'` (verificado en `app/briefing/data.py:22`).
+- La columna de nombre de producto es `productos.nombre_producto` (verificado contra information_schema en Task 2; la referencia `p.descripcion` de `app/negocio/ventas.py:77` es un bug preexistente de ese módulo); el estado incobrable es `clientes.estado = 'incobrable'` (verificado en `app/briefing/data.py:22`).
 - Patrón `_load_env()` y `log()` copiados de `scripts/backup_db.py:49-57,187-193`.
 
 ---
@@ -104,7 +104,7 @@ $env:PGPASSWORD = "<DB_PASSWORD del .env>"
 & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -h localhost -U postgres -d dte_facturas_chile -c "\d productos" -c "\d ventas" -c "\d clientes"
 ```
 
-Confirmar que existen: `productos.descripcion`, `productos.tipo_documento`, `ventas.razon_social_receptor`, `ventas.dias_pago`, `clientes.estado`. Si algún nombre difiere, ajustar el SQL del paso 2 y **reportarlo en el resumen de la tarea**.
+Confirmar que existen: `productos.nombre_producto`, `productos.tipo_documento`, `ventas.razon_social_receptor`, `ventas.dias_pago`, `clientes.estado`. Si algún nombre difiere, ajustar el SQL del paso 2 y **reportarlo en el resumen de la tarea**.
 
 - [ ] **Step 2: escribir el SQL (idempotente)**
 
@@ -166,15 +166,15 @@ GROUP BY rut_cliente
 HAVING COUNT(*) >= 3;
 
 -- Lineas de producto SIN Logistica ni envases PET (filtro canonico del
--- CLAUDE.md raiz, adaptado a la columna real `descripcion`).
+-- CLAUDE.md raiz, con la columna real `nombre_producto`).
 CREATE OR REPLACE VIEW v_ventas_producto AS
-SELECT p.folio, v.fecha, v.rut_cliente, p.descripcion,
+SELECT p.folio, v.fecha, v.rut_cliente, p.nombre_producto,
        p.cantidad, p.precio_unitario
 FROM productos p
 JOIN ventas v ON v.folio = p.folio AND v.tipo_documento = p.tipo_documento
 WHERE v.tipo_documento != '61'
-  AND p.descripcion NOT ILIKE '%logist%'
-  AND p.descripcion !~* '^(barril(es)?\s+)?pet\y';
+  AND p.nombre_producto NOT ILIKE '%logist%'
+  AND p.nombre_producto !~* '^(barril(es)?\s+)?pet\y';
 ```
 
 - [ ] **Step 3: probar el SQL contra la BD LOCAL** (las views son válidas en ambos lados; probar local no toca la nube)
@@ -339,7 +339,7 @@ sync_nube.py - Zigurat ERP
 Replica de SOLO LECTURA del Postgres local hacia el proyecto InsForge
 (zigurat-movil). La BD local sigue siendo la fuente de verdad.
 
-Flujo: leer 5 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
+Flujo: leer 6 tablas locales -> TRUNCATE + INSERT masivo en la nube dentro
 de UNA transaccion -> registrar metadatos (ultimo_sync, saldo_banco) en
 sync_meta. Con --init ademas aplica scripts/migrate_nube_views.sql y crea
 las tablas (esquema copiado de la BD local con pg_dump --schema-only).
@@ -369,8 +369,8 @@ SQL_VIEWS = PROJECT_ROOT / "scripts" / "migrate_nube_views.sql"
 
 # Orden de carga: padres antes que hijos (FKs). El TRUNCATE va en una sola
 # sentencia con todas, asi Postgres resuelve las dependencias entre ellas.
-TABLAS_ORDEN = ["clientes", "ventas", "productos", "conciliaciones",
-                "cuentas_por_pagar"]
+TABLAS_ORDEN = ["clientes", "ventas", "productos", "movimientos_banco",
+                "conciliaciones", "cuentas_por_pagar"]
 LOTE = 1000
 TIMEOUT_PG_DUMP = 120
 
@@ -478,7 +478,7 @@ def sync(conn_local, conn_nube, ahora=None):
 
 
 def aplicar_esquema(conn_nube):
-    """--init: copia el esquema de las 5 tablas desde la BD local (pg_dump
+    """--init: copia el esquema de las 6 tablas desde la BD local (pg_dump
     --schema-only) y aplica las views. Idempotente en las views; si una tabla
     ya existe en la nube, pg_dump/psql reportara el error y seguimos."""
     from backup_db import localizar_pg_dump  # reutiliza la autodeteccion
@@ -967,7 +967,7 @@ export default async function handler(req: Request): Promise<Response> {
     WHERE fecha >= CURRENT_DATE - make_interval(months => ${meses})
     GROUP BY 1, 2 ORDER BY total DESC LIMIT 10`;
   const productos = await sql`
-    SELECT descripcion, SUM(cantidad) AS unidades
+    SELECT nombre_producto, SUM(cantidad) AS unidades
     FROM v_ventas_producto
     WHERE fecha >= CURRENT_DATE - make_interval(months => ${meses})
     GROUP BY 1 ORDER BY unidades DESC LIMIT 10`;

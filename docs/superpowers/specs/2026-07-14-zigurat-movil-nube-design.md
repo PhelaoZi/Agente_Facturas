@@ -49,8 +49,11 @@ como constructor.
 ### 4.1 Réplica de datos — `scripts/sync_nube.py` (Python, corre local)
 
 - **Tablas replicadas (v1):** `ventas`, `clientes`, `productos`,
-  `conciliaciones`, `cuentas_por_pagar`. (`movimientos_banco` y las tablas de
+  `movimientos_banco`, `conciliaciones`, `cuentas_por_pagar`. (Las tablas de
   costos quedan fuera — las vistas v1 no las necesitan.)
+  > Ajuste 2026-07-18: `movimientos_banco` originalmente quedaba fuera, pero
+  > la FK `conciliaciones.movimiento_banco_id → movimientos_banco(id)` obliga
+  > a replicarla (descubierto en la primera réplica real).
 - **Método:** por cada tabla, `TRUNCATE` + `COPY`/insert masivo dentro de **una
   transacción** (la BD es chica; el refresh completo toma segundos y evita
   lógica de diffs). Orden de carga respetando FKs.

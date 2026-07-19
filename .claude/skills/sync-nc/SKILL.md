@@ -100,3 +100,13 @@ Reportar:
 - NCs insertadas / duplicados omitidos
 - Facturas referenciadas ajustadas
 - Tiempo total
+
+## Paso final: replicar a la nube (no fatal)
+
+Tras un sync/conciliación exitoso, ejecutar:
+
+    python scripts/sync_nube.py
+
+Si falla (sin internet, InsForge caído), mostrar el error como WARNING y
+terminar normalmente: la réplica es secundaria, el pipeline local es lo
+importante. NUNCA abortar ni reintentar por este paso.
