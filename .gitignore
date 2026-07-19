@@ -30,6 +30,9 @@ Pagos_Inv_Serv_Gas.xlsx
 # Scratch del framework de skills (superpowers)
 .superpowers/
 
+# Artefactos de build de las cloud functions (deno bundle)
+nube/dist/
+
 # Repos de referencia clonados aparte (no son parte del proyecto)
 github-repository/
 
