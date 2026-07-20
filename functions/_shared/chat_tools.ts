@@ -8,10 +8,23 @@ import {
   type Gasto,
 } from "./flujo.ts";
 
-export type SqlCliente = (
+// Subconjunto del cliente postgres.js que usan las tools: tagged template
+// para las queries fijas y begin() para la transaccion READ ONLY que blinda
+// consulta_sql (begin es opcional para que los fakes de test sigan simples).
+export interface SqlTransaccion {
+  (strings: TemplateStringsArray, ...vals: unknown[]): Promise<Record<string, unknown>[]>;
+  unsafe(consulta: string): Promise<Record<string, unknown>[]>;
+}
+
+export type SqlCliente = ((
   strings: TemplateStringsArray,
   ...vals: unknown[]
-) => Promise<Record<string, unknown>[]>;
+) => Promise<Record<string, unknown>[]>) & {
+  begin?: (
+    opciones: string,
+    fn: (t: SqlTransaccion) => Promise<unknown>,
+  ) => Promise<unknown>;
+};
 
 export function formatearPesos(n: number | string | null | undefined): string {
   const v = Math.round(Number(n ?? 0));
@@ -21,6 +34,23 @@ export function formatearPesos(n: number | string | null | undefined): string {
 }
 
 const num = (x: unknown) => Number(x ?? 0);
+
+// Precios de venta netos confirmados por barril 30L (espejo de
+// app/negocio/costos.py: si cambian alla, cambiarlos aqui tambien).
+const PRECIOS_VENTA_NETO: Record<string, number> = {
+  "cream ale": 55370,
+  "scotch ale": 55370,
+  "stout cafe": 75000,
+  "stout cacao": 75000,
+  "paint it black": 98000,
+};
+
+// Espejo de _norm de app/negocio/costos.py: minusculas, sin tildes,
+// espacios simples (para casar nombres de cerveza con los precios).
+export function normalizar(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+}
 
 export const TOOLS = [
   { name: "deuda_total",
@@ -90,6 +120,29 @@ export const TOOLS = [
       },
       required: ["id"]
     } },
+  { name: "ultimas_facturas",
+    description: "Las N facturas mas recientes registradas, con folio, fecha, cliente, total y estado de pago. Default 5, maximo 20.",
+    input_schema: { type: "object", properties: {
+      limite: { type: "integer", description: "Cuantas facturas mostrar (default 5, max 20)" } } } },
+  { name: "detalle_factura",
+    description: "Detalle completo de una factura por su folio: cabecera, estado de pago, nota de credito aplicada si la hay, y todas sus lineas (producto, Logistica y envase PET etiquetados).",
+    input_schema: { type: "object", properties: {
+      folio: { type: "integer", description: "Folio de la factura" } },
+      required: ["folio"] } },
+  { name: "costos_sku",
+    description: "Costo unitario de produccion por SKU (cerveza x formato): liquido, envasado y total. Filtros opcionales por nombre de cerveza o codigo de SKU.",
+    input_schema: { type: "object", properties: {
+      receta: { type: "string", description: "Nombre parcial de la cerveza" },
+      sku: { type: "string", description: "Codigo exacto del SKU" } } } },
+  { name: "margenes",
+    description: "Margen por SKU de barril 30L: precio de venta neto confirmado menos costo total. Formatos sin precio confirmado (botellas) quedan sin margen. Filtro opcional por cerveza.",
+    input_schema: { type: "object", properties: {
+      receta: { type: "string", description: "Nombre parcial de la cerveza" } } } },
+  { name: "consulta_sql",
+    description: "ULTIMO RECURSO: una consulta SQL de SOLO LECTURA (una sola sentencia SELECT o WITH) sobre la replica, para preguntas que ninguna herramienta fija cubre. Sigue las REGLAS SQL del prompt.",
+    input_schema: { type: "object", properties: {
+      consulta: { type: "string", description: "Una sentencia SELECT o WITH" } },
+      required: ["consulta"] } },
 ];
 
 interface FilaPendiente { total: unknown; dias_desde_emision: unknown }
@@ -323,6 +376,152 @@ export async function ejecutarTool(
         RETURNING id, descripcion, completada`;
       if (!res) return `No se encontró ninguna tarea con el ID ${id}.`;
       return `Tarea ID ${res.id} ("${res.descripcion}") marcada como COMPLETADA con éxito.`;
+    }
+    case "ultimas_facturas": {
+      const limite = Math.min(num(input.limite) || 5, 20);
+      const filas = await sql`
+        SELECT folio, fecha, razon_social_receptor, total_real, fecha_pago
+        FROM v_ventas_reales
+        ORDER BY fecha DESC, folio DESC LIMIT ${limite}`;
+      if (!filas.length) return "No hay facturas registradas.";
+      return `Ultimas ${filas.length} facturas:\n` + filas.map((f) =>
+        `- Folio ${f.folio} (${String(f.fecha).slice(0, 10)}) ${f.razon_social_receptor}: ` +
+        `${formatearPesos(num(f.total_real))} — ` +
+        (f.fecha_pago ? `pagada el ${String(f.fecha_pago).slice(0, 10)}` : "PENDIENTE")).join("\n");
+    }
+    case "detalle_factura": {
+      const folio = num(input.folio);
+      if (!folio) return "Error: indica el folio de la factura.";
+      const cabeceras = await sql`
+        SELECT folio, tipo_documento, fecha, rut_cliente, razon_social_receptor,
+               neto_real, total_real, total_original, tiene_nc, fecha_pago
+        FROM v_factura_cabecera WHERE folio = ${folio}
+        ORDER BY tipo_documento`;
+      if (!cabeceras.length) return `No existe ningun documento con folio ${folio}.`;
+      // Si el folio existe como factura (33) y como NC (61), preferir la factura.
+      const c = cabeceras.find((x) => num(x.tipo_documento) === 33) ?? cabeceras[0];
+      const esNC = num(c.tipo_documento) === 61;
+      const lineas = await sql`
+        SELECT nombre_producto, cantidad, precio_unitario, subtotal, tipo_linea
+        FROM v_lineas_factura
+        WHERE folio = ${folio} AND tipo_documento = ${c.tipo_documento}`;
+      const etiqueta: Record<string, string> = {
+        logistica: " [Logistica: parte del precio de la cerveza]",
+        envase_pet: " [Envase PET: costo del envase traspasado, no es cerveza]",
+        producto: "",
+      };
+      const det = lineas.map((l) =>
+        `- ${l.nombre_producto}: ${num(l.cantidad)} x ${formatearPesos(num(l.precio_unitario))} = ` +
+        `${formatearPesos(num(l.subtotal))}${etiqueta[String(l.tipo_linea)] ?? ""}`);
+      const estado = c.fecha_pago
+        ? `pagada el ${String(c.fecha_pago).slice(0, 10)}`
+        : "PENDIENTE de pago";
+      const nc = c.tiene_nc
+        ? `\nOJO: tiene nota de credito aplicada (total original ` +
+          `${formatearPesos(num(c.total_original))} -> ${formatearPesos(num(c.total_real))}).`
+        : "";
+      return `${esNC ? "NOTA DE CREDITO (tipo 61)" : "Factura"} folio ${c.folio} — ` +
+        `${c.razon_social_receptor} (${c.rut_cliente})\n` +
+        `Fecha: ${String(c.fecha).slice(0, 10)} · Neto ${formatearPesos(num(c.neto_real))} · ` +
+        `Total ${formatearPesos(num(c.total_real))} · ${estado}${nc}\n` +
+        (det.length ? `Lineas:\n${det.join("\n")}` : "Sin lineas de detalle registradas.");
+    }
+    case "costos_sku": {
+      const receta = input.receta ? `%${String(input.receta)}%` : null;
+      const codigo = input.sku ? String(input.sku) : null;
+      let filas;
+      if (codigo && receta) {
+        filas = await sql`
+          SELECT codigo, nombre_cerveza, formato, costo_liquido_unitario,
+                 costo_envasado_unitario, costo_total_unitario
+          FROM costo_sku WHERE codigo = ${codigo} AND nombre_cerveza ILIKE ${receta}
+          ORDER BY nombre_cerveza, formato, codigo`;
+      } else if (codigo) {
+        filas = await sql`
+          SELECT codigo, nombre_cerveza, formato, costo_liquido_unitario,
+                 costo_envasado_unitario, costo_total_unitario
+          FROM costo_sku WHERE codigo = ${codigo}
+          ORDER BY nombre_cerveza, formato, codigo`;
+      } else if (receta) {
+        filas = await sql`
+          SELECT codigo, nombre_cerveza, formato, costo_liquido_unitario,
+                 costo_envasado_unitario, costo_total_unitario
+          FROM costo_sku WHERE nombre_cerveza ILIKE ${receta}
+          ORDER BY nombre_cerveza, formato, codigo`;
+      } else {
+        filas = await sql`
+          SELECT codigo, nombre_cerveza, formato, costo_liquido_unitario,
+                 costo_envasado_unitario, costo_total_unitario
+          FROM costo_sku
+          ORDER BY nombre_cerveza, formato, codigo`;
+      }
+      if (!filas.length) return "No hay SKUs de costos que coincidan (revisa que la receta este cargada).";
+      return filas.map((r) =>
+        `- ${r.nombre_cerveza} · ${r.formato} (${r.codigo}): liquido ` +
+        `${formatearPesos(num(r.costo_liquido_unitario))} + envasado ` +
+        `${formatearPesos(num(r.costo_envasado_unitario))} = ` +
+        `${formatearPesos(num(r.costo_total_unitario))} por unidad`).join("\n");
+    }
+    case "margenes": {
+      const receta = input.receta ? `%${String(input.receta)}%` : null;
+      const filas = receta
+        ? await sql`
+            SELECT codigo, nombre_cerveza, formato, costo_total_unitario
+            FROM costo_sku WHERE nombre_cerveza ILIKE ${receta}
+            ORDER BY nombre_cerveza, formato, codigo`
+        : await sql`
+            SELECT codigo, nombre_cerveza, formato, costo_total_unitario
+            FROM costo_sku
+            ORDER BY nombre_cerveza, formato, codigo`;
+      if (!filas.length) return "No hay SKUs de costos que coincidan.";
+      return filas.map((r) => {
+        const esBarril = normalizar(String(r.formato)).includes("barril");
+        const precio = esBarril
+          ? PRECIOS_VENTA_NETO[normalizar(String(r.nombre_cerveza))]
+          : undefined;
+        const costo = r.costo_total_unitario == null ? null : num(r.costo_total_unitario);
+        if (precio === undefined || costo === null) {
+          return `- ${r.nombre_cerveza} · ${r.formato}: costo ` +
+            `${costo === null ? "sin datos" : formatearPesos(costo)}, sin precio de venta confirmado`;
+        }
+        const margen = precio - costo;
+        const pct = Math.round((1000 * margen) / precio) / 10;
+        return `- ${r.nombre_cerveza} · ${r.formato}: precio ${formatearPesos(precio)} ` +
+          `- costo ${formatearPesos(costo)} = margen ${formatearPesos(margen)} (${pct}%)`;
+      }).join("\n");
+    }
+    case "consulta_sql": {
+      const cruda = String(input.consulta ?? "").trim().replace(/;\s*$/, "");
+      if (!cruda) return "Error: consulta vacia.";
+      if (!/^(select|with)\b/i.test(cruda)) {
+        return "Error: solo se aceptan consultas SELECT o WITH (solo lectura).";
+      }
+      if (cruda.includes(";")) {
+        return "Error: una sola sentencia por consulta (sin ';').";
+      }
+      if (!sql.begin) return "Error: este entorno no soporta consulta_sql.";
+      const MAX_FILAS = 100;
+      const MAX_CHARS = 4000;
+      try {
+        // Transaccion READ ONLY: la BD misma rechaza cualquier escritura
+        // (incluidas CTEs con INSERT/UPDATE/DELETE), pase lo que pase con
+        // la validacion de texto. Timeout local a la transaccion.
+        const filas = (await sql.begin("read only", async (t) => {
+          await t.unsafe("SET LOCAL statement_timeout = 8000");
+          return await t.unsafe(cruda);
+        })) as Record<string, unknown>[];
+        if (!filas.length) return "La consulta no devolvio filas.";
+        const visibles = filas.slice(0, MAX_FILAS);
+        const cols = Object.keys(visibles[0]);
+        let out = `${filas.length} fila(s). Columnas: ${cols.join(", ")}\n` +
+          visibles.map((f) =>
+            cols.map((c) => `${c}=${f[c] ?? "NULL"}`).join(" | ")).join("\n");
+        if (filas.length > MAX_FILAS) out += `\n(mostrando ${MAX_FILAS} de ${filas.length})`;
+        if (out.length > MAX_CHARS) out = out.slice(0, MAX_CHARS) + "\n(truncado)";
+        return out;
+      } catch (e) {
+        return `Error de SQL: ${(e as Error).message}. Corrige la consulta y reintenta.`;
+      }
     }
     default:
       return `Herramienta desconocida: ${nombre}.`;
