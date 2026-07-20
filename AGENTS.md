@@ -6,7 +6,12 @@ En este repo trabajan **dos agentes distintos**, alternándose según los crédi
 disponibles: **Claude Code** y **Antigravity**. Nunca asumas que el estado del
 repositorio es solo obra tuya: puede haber trabajo ajeno, incluso sin commitear.
 
-### Las tres reglas
+**No hay reparto de carpetas: los dos agentes pueden trabajar en cualquier
+parte del proyecto** (app de escritorio, app del teléfono, scripts, lo que sea).
+Christian decide quién hace qué según los créditos que tenga disponibles. Por eso
+la coordinación depende de git, no de territorios.
+
+### Las dos reglas
 
 **1. Antes de empezar, mira qué dejó el otro.**
 
@@ -15,9 +20,13 @@ git status        # ¿hay trabajo ajeno sin commitear?
 git log --oneline -5
 ```
 
-Si encuentras cambios que tú no hiciste: **no los toques, no los revierta, no
+Si encuentras cambios que tú no hiciste: **no los toques, no los reviertas, no
 los mezcles con los tuyos**. Son trabajo del otro agente. Commitea solo tus
 archivos (`git add <archivos>`, nunca `git add .` ni `git add -A`).
+
+Si necesitas modificar un archivo que el otro dejó a medias, primero commitea su
+versión tal cual (atribuida a él) y recién entonces haz tus cambios encima, en un
+commit aparte. Así queda claro qué hizo cada uno y se puede deshacer por separado.
 
 **2. Al terminar, commitea. Siempre.**
 
@@ -25,23 +34,13 @@ Un cambio sin commitear no tiene autor, ni fecha, ni forma de deshacerse, y el
 otro agente puede destruirlo sin saberlo. Terminar una tarea = guardarla en git.
 No lo dejes "para después".
 
-**3. Reparto de territorio.** Cada quien en lo suyo evita el 90% de los choques:
-
-| Área | Carpetas | Quién suele trabajar ahí |
-|------|----------|--------------------------|
-| App del teléfono (nube) | `functions/`, `nube/`, `scripts/sync_nube.py` | Claude Code |
-| App de escritorio (PC) | `app/` | Antigravity |
-| Compartido — avisar antes | `scripts/`, `tests/`, `docs/`, raíz | ambos |
-
-Esto es orientación, no una prohibición: si necesitas tocar el área del otro,
-hazlo, pero commitea aparte y déjalo claro en el mensaje del commit.
-
 ### Cuándo usar una rama
 
 Trabajar directo en `master` está bien para lo cotidiano. Usa una rama
 (`git checkout -b <nombre>`) cuando: el cambio sea **grande o riesgoso**
-(migraciones, cambiar el motor del chat, tocar el pipeline DTE), **toques el
-área del otro agente**, o Christian quiera revisarlo antes de que entre.
+(migraciones, cambiar el motor del chat, tocar el pipeline DTE), estés
+**retomando o corrigiendo trabajo del otro agente**, o Christian quiera
+revisarlo antes de que entre.
 
 Antes de mergear a `master`: `python -m pytest -q` en verde (y
 `deno test functions/ --allow-env --allow-net` si tocaste la nube).

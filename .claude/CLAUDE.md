@@ -15,11 +15,16 @@ Empresa: Elaboradora y Comercializadora Vintage SPA (Zigurat Brewery).
 ## Trabajo en paralelo con Antigravity
 
 En este repo trabajan dos agentes alternándose según los créditos disponibles:
-Claude Code y Antigravity. **Antes de empezar, correr `git status` y
-`git log --oneline -5`**: puede haber trabajo ajeno, incluso sin commitear. Si lo
-hay, no tocarlo ni mezclarlo — commitear solo los archivos propios (nunca
-`git add .`). Al terminar una tarea, commitear siempre. Reparto habitual: nube
-(`functions/`, `nube/`) = Claude Code; escritorio (`app/`) = Antigravity.
+Claude Code y Antigravity. **Ambos pueden tocar cualquier carpeta** (no hay
+reparto de áreas), así que la coordinación depende de git:
+
+- **Antes de empezar:** `git status` y `git log --oneline -5`. Puede haber
+  trabajo ajeno, incluso sin commitear. Si lo hay, no tocarlo ni mezclarlo —
+  commitear solo los archivos propios (nunca `git add .`).
+- **Al terminar:** commitear siempre.
+- Si hay que corregir trabajo del otro: commitear su versión tal cual primero
+  (atribuida a él), y los cambios propios en un commit aparte.
+
 Protocolo completo en `AGENTS.md` (raíz).
 
 ---
