@@ -418,11 +418,11 @@
     <div class="card hero">
       <h3><span class="ic">💬</span> Pregúntame lo que quieras
         <div style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
-          <select id="chat-model-select" style="background:#1c2230; color:var(--text); border:1px solid var(--border2); border-radius:9px; padding:5px 9px; font-size:12px; font-family:inherit; cursor:pointer; outline:none; font-weight:600;">
-            <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (Rápido/Económico)</option>
-            <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B (Equilibrado)</option>
-            <option value="google/gemini-2.5-pro">Gemini 2.5 Pro (Razonamiento Complejo)</option>
-            <option value="z-ai/glm-5.2">Z.ai: GLM 5.2 (Razonamiento Largo/Agentes)</option>
+          <select id="chat-model-select" title="Modelo que responde tus preguntas" style="background:#1c2230; color:var(--text); border:1px solid var(--border2); border-radius:9px; padding:5px 9px; font-size:12px; font-family:inherit; cursor:pointer; outline:none; font-weight:600;">
+            <option value="z-ai/glm-5.2">GLM 5.2 — recomendado (barato y bueno con herramientas)</option>
+            <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite — el más barato (preguntas simples)</option>
+            <option value="anthropic/claude-sonnet-5">Claude Sonnet 5 — el más confiable (análisis y acciones)</option>
+            <option value="openai/gpt-5.6-luna">GPT-5.6 Luna — alternativa equilibrada</option>
           </select>
           <button class="chat-clear" id="chat-clear" title="Borrar la conversación">🧹 Limpiar</button>
         </div>

@@ -893,6 +893,18 @@ def _log_agente_error(pregunta: str, detalle: str, trace: str) -> None:
 # la conversacion entre preguntas. El boton "Limpiar" la resetea via /api/chat-reset.
 CHAT_SESSION = {"id": None}
 
+# Modelos ofrecidos en el selector del chat (ids validados contra el catalogo
+# de OpenRouter el 2026-07-20; todos soportan tool calling, que el agente
+# necesita). Deben coincidir con las <option> de dashboard_ui.html.
+# GLM 5.2 es el default: ~5x mas barato que Sonnet y solido encadenando tools.
+MODELO_CHAT_DEFAULT = "z-ai/glm-5.2"
+MODELOS_CHAT_PERMITIDOS = {
+    "z-ai/glm-5.2",
+    "google/gemini-3.1-flash-lite",
+    "anthropic/claude-sonnet-5",
+    "openai/gpt-5.6-luna",
+}
+
 
 # ── Protección anti-CSRF de los endpoints POST ────────────────────────────────
 # El servidor escucha solo en 127.0.0.1, pero cualquier página abierta en el
@@ -914,8 +926,8 @@ def origen_permitido(host, origin):
     return origin in ORIGENES_PERMITIDOS
 
 
-def run_agent(pregunta: str, model: str = "google/gemini-2.5-flash") -> dict:
-    """Reutiliza el agente (Claude Agent SDK o OpenRouter local) del proyecto. Degrada con gracia."""
+def run_agent(pregunta: str, model: str = MODELO_CHAT_DEFAULT) -> dict:
+    """Reutiliza el agente (loop propio sobre OpenRouter). Degrada con gracia."""
     try:
         from app.agent import orchestrator
         from app.canvas.artifacts import Collector
@@ -1114,10 +1126,14 @@ class Handler(BaseHTTPRequestHandler):
                 body = self.rfile.read(length) if length else b"{}"
                 payload = json.loads(body or b"{}")
                 q = (payload.get("q") or "").strip()
-                model = (payload.get("model") or "google/gemini-2.5-flash").strip()
+                model = (payload.get("model") or MODELO_CHAT_DEFAULT).strip()
+                # Whitelist: el modelo viene del navegador; uno arbitrario
+                # gastaria creditos en un modelo no elegido o fallaria feo.
+                if model not in MODELOS_CHAT_PERMITIDOS:
+                    model = MODELO_CHAT_DEFAULT
             except Exception:
                 q = ""
-                model = "google/gemini-2.5-flash"
+                model = MODELO_CHAT_DEFAULT
             if not q:
                 self._send(400, json.dumps({"ok": False, "error": "pregunta_vacia"}))
                 return

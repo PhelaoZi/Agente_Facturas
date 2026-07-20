@@ -139,6 +139,23 @@ def test_ejecutar_sql_local_cierra_la_conexion_siempre(monkeypatch):
     assert conn.cerrada is True
 
 
+def test_selector_de_modelos_coincide_ui_y_servidor():
+    """La whitelist del servidor y las <option> de la UI deben ser el mismo
+    conjunto: un id en la UI que el servidor rechace degrada al default sin
+    avisar, y uno permitido pero no ofrecido es codigo muerto."""
+    import re as _re
+    from pathlib import Path
+    from app import dashboard
+
+    html = (Path(__file__).resolve().parent.parent /
+            "app" / "dashboard_ui.html").read_text(encoding="utf-8")
+    bloque = html.split('id="chat-model-select"', 1)[1].split("</select>", 1)[0]
+    en_ui = set(_re.findall(r'<option value="([^"]+)"', bloque))
+
+    assert en_ui == dashboard.MODELOS_CHAT_PERMITIDOS
+    assert dashboard.MODELO_CHAT_DEFAULT in dashboard.MODELOS_CHAT_PERMITIDOS
+
+
 def test_ejecutar_sql_local_recorta_resultados_enormes(monkeypatch):
     """Tope de filas: protege el contexto del modelo y el costo por tokens."""
     muchas = [{"id": i} for i in range(500)]

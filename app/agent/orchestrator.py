@@ -287,7 +287,7 @@ def run(
     pregunta: str,
     collector: Collector,
     session_id: str | None = None,
-    model: str = "google/gemini-2.5-flash"
+    model: str = "z-ai/glm-5.2"
 ) -> Tuple[str, str | None]:
     """Punto de entrada síncrono del dashboard. Ejecuta el loop de OpenRouter."""
     if not session_id:
