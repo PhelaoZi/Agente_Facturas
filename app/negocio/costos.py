@@ -8,19 +8,35 @@ para botellas no hay precio confirmado, así que el margen queda en None.
 import unicodedata
 
 # Precios de venta netos confirmados por barril 30L (desde CLAUDE.md).
-PRECIOS_VENTA_NETO = {
-    "cream ale": 55370,
-    "scotch ale": 55370,
-    "stout cafe": 75000,
-    "stout cacao": 75000,
-    "paint it black": 98000,
-}
+# Lista de (patrón, precio): el patrón se busca como SUBCADENA en el nombre
+# normalizado, así "Stout Café/Cacao" (norm: "stout cafe/cacao") casa con
+# "stout cafe". El primer patrón que calza gana (orden = prioridad).
+PRECIOS_VENTA_NETO = [
+    ("cream ale", 55370),
+    ("scotch ale", 55370),
+    ("stout cafe", 75000),
+    ("stout cacao", 75000),
+    ("stout", 75000),           # "Stout Café/Cacao" y variantes de escritura
+    ("paint it black", 98000),
+]
 
 
 def _norm(s):
     """Normaliza para comparar nombres: minúsculas, sin tildes, espacios simples."""
     s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
     return " ".join(s.lower().split())
+
+
+def _precio_venta(cerveza, formato):
+    """Precio de venta confirmado de un SKU: solo barriles 30L (acero y PET
+    comparten precio; difieren en costo). None si no aplica."""
+    if "barril" not in _norm(formato):
+        return None
+    nombre = _norm(cerveza)
+    for patron, precio in PRECIOS_VENTA_NETO:
+        if patron in nombre:
+            return precio
+    return None
 
 
 def costos_sku(cur, receta=None, sku=None):
@@ -60,9 +76,7 @@ def margenes(cur, receta=None):
     """
     salida = []
     for sku in costos_sku(cur, receta=receta):
-        precio = None
-        if "barril" in _norm(sku["formato"]):
-            precio = PRECIOS_VENTA_NETO.get(_norm(sku["cerveza"]))
+        precio = _precio_venta(sku["cerveza"], sku["formato"])
         margen = None
         margen_pct = None
         if precio is not None and sku["costo_total"] is not None:

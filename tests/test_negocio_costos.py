@@ -38,6 +38,19 @@ def test_margenes_calcula_para_barril_con_precio():
     assert r[0]["margen"] == 55370.0 - 18000.0
 
 
+def test_margenes_stout_cafe_cacao_casa_su_precio():
+    # Regresión: _norm("Stout Café/Cacao") = "stout cafe/cacao"; la clave
+    # exacta "stout cafe" no casaba (dict.get). Ahora busca por subcadena.
+    rows = [
+        {"codigo": "STOUT-B30", "nombre_cerveza": "Stout Café/Cacao",
+         "formato": "Barril 30L acero", "costo_liquido_unitario": 40000,
+         "costo_envasado_unitario": 5000, "costo_total_unitario": 45000},
+    ]
+    r = costos.margenes(FakeCursor(rows))
+    assert r[0]["precio_venta"] == 75000.0
+    assert r[0]["margen"] == 75000.0 - 45000.0
+
+
 def test_margenes_botella_sin_precio_queda_none():
     rows = [
         {"codigo": "CREAM-330", "nombre_cerveza": "Cream Ale", "formato": "Botella 330ml",

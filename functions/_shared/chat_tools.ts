@@ -37,19 +37,35 @@ const num = (x: unknown) => Number(x ?? 0);
 
 // Precios de venta netos confirmados por barril 30L (espejo de
 // app/negocio/costos.py: si cambian alla, cambiarlos aqui tambien).
-const PRECIOS_VENTA_NETO: Record<string, number> = {
-  "cream ale": 55370,
-  "scotch ale": 55370,
-  "stout cafe": 75000,
-  "stout cacao": 75000,
-  "paint it black": 98000,
-};
+// La clave es un patron: se busca como subcadena en el nombre normalizado
+// del SKU, asi "Stout Café/Cacao" (normaliza a "stout cafe/cacao") casa con
+// "stout cafe". El PRIMER patron que calza gana (orden = prioridad).
+const PRECIOS_VENTA_NETO: Array<[patron: string, precio: number]> = [
+  ["cream ale", 55370],
+  ["scotch ale", 55370],
+  ["stout cafe", 75000],
+  ["stout cacao", 75000],
+  ["stout", 75000],           // "Stout Café/Cacao" y variantes
+  ["paint it black", 98000],
+];
 
 // Espejo de _norm de app/negocio/costos.py: minusculas, sin tildes,
 // espacios simples (para casar nombres de cerveza con los precios).
 export function normalizar(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "")
     .toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+}
+
+// Precio de venta confirmado para un SKU: solo barriles 30L (acero o PET
+// comparten el mismo precio de venta; lo que cambia es el costo). null si
+// no es barril o la cerveza no tiene precio confirmado.
+export function precioVentaSku(nombreCerveza: string, formato: string): number | null {
+  if (!normalizar(formato).includes("barril")) return null;
+  const nombre = normalizar(nombreCerveza);
+  for (const [patron, precio] of PRECIOS_VENTA_NETO) {
+    if (nombre.includes(patron)) return precio;
+  }
+  return null;
 }
 
 export const TOOLS = [
@@ -475,12 +491,9 @@ export async function ejecutarTool(
             ORDER BY nombre_cerveza, formato, codigo`;
       if (!filas.length) return "No hay SKUs de costos que coincidan.";
       return filas.map((r) => {
-        const esBarril = normalizar(String(r.formato)).includes("barril");
-        const precio = esBarril
-          ? PRECIOS_VENTA_NETO[normalizar(String(r.nombre_cerveza))]
-          : undefined;
+        const precio = precioVentaSku(String(r.nombre_cerveza), String(r.formato));
         const costo = r.costo_total_unitario == null ? null : num(r.costo_total_unitario);
-        if (precio === undefined || costo === null) {
+        if (precio === null || costo === null) {
           return `- ${r.nombre_cerveza} · ${r.formato}: costo ` +
             `${costo === null ? "sin datos" : formatearPesos(costo)}, sin precio de venta confirmado`;
         }

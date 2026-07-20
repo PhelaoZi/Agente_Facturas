@@ -162,7 +162,7 @@ Deno.test("costos_sku formatea liquido + envasado = total", async () => {
 
 Deno.test("margenes calcula barril y deja botella sin precio", async () => {
   const sql = fakeSql([
-    { codigo: "CREAM-B30", nombre_cerveza: "Cream Ale", formato: "Barril 30L",
+    { codigo: "CREAM-B30", nombre_cerveza: "Cream Ale", formato: "Barril 30L acero",
       costo_total_unitario: 25370 },
     { codigo: "CREAM-330", nombre_cerveza: "Cream Ale", formato: "Botella 330ml",
       costo_total_unitario: 650 },
@@ -170,6 +170,21 @@ Deno.test("margenes calcula barril y deja botella sin precio", async () => {
   const r = await ejecutarTool(sql, "margenes", {}, HOY);
   assertStringIncludes(r, "precio $55.370 - costo $25.370 = margen $30.000 (54.2%)");
   assertStringIncludes(r, "Botella 330ml: costo $650, sin precio de venta confirmado");
+});
+
+Deno.test("margenes: Stout Café/Cacao casa su precio pese a la barra", async () => {
+  // Regresion: normalizar('Stout Café/Cacao') = 'stout cafe/cacao'; la clave
+  // exacta 'stout cafe' no casaba. precioVentaSku busca por subcadena.
+  const sql = fakeSql([
+    { codigo: "STOUT-B30", nombre_cerveza: "Stout Café/Cacao",
+      formato: "Barril 30L acero", costo_total_unitario: 45000 },
+    { codigo: "STOUT-PET", nombre_cerveza: "Stout Café/Cacao",
+      formato: "Barril 30L PET", costo_total_unitario: 60000 },
+  ]);
+  const r = await ejecutarTool(sql, "margenes", { receta: "stout" }, HOY);
+  // Acero y PET comparten precio de venta (75.000); difieren en costo.
+  assertStringIncludes(r, "Barril 30L acero: precio $75.000 - costo $45.000 = margen $30.000");
+  assertStringIncludes(r, "Barril 30L PET: precio $75.000 - costo $60.000 = margen $15.000");
 });
 
 interface RegistroTxn { opciones?: string; sqls: string[] }

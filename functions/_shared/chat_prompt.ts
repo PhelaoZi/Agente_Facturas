@@ -43,6 +43,11 @@ COALESCE(monto_neto_ajustado, monto_neto). Nunca el campo sin ajustar.
 v_factura_cabecera, v_lineas_factura, v_ventas_producto, v_flujo_pendientes, \
 v_dias_pago_cliente. Tablas: ventas, clientes, productos, movimientos_banco, \
 conciliaciones, cuentas_por_pagar, costo_sku, chat_tareas.
+- Columnas de ventas / v_ventas_reales: folio, tipo_documento, fecha (NO existe \
+"fecha_emision"), rut_cliente, razon_social_receptor, monto_neto, monto_total, \
+monto_neto_ajustado, monto_total_ajustado, fecha_pago, dias_pago. Para agrupar \
+por mes usa date_trunc('month', fecha). Si una consulta falla por una columna \
+inexistente, revisa este listado y reintenta una vez.
 
 ESTRUCTURA DE FACTURACION (contexto): cada barril se factura en dos lineas \
 (producto + "Logistica"); el precio real es la SUMA de ambas. Las lineas de \
