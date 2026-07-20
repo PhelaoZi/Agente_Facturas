@@ -1,12 +1,12 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-07-20",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 678971.0,
-  "direccion": "Manuel Montt 1201",
+  "deuda_pendiente": 748961.0,
+  "direccion": "ANTONIO VARAS 443",
   "estado": "activo",
-  "facturas_emitidas": 92,
-  "facturas_pendientes": 5,
+  "facturas_emitidas": 93,
+  "facturas_pendientes": 6,
   "promedio_dias_pago": 57,
   "razon_social": "VDT SPA",
   "rut": "77220069-2",
@@ -24,6 +24,6 @@
       "nombre": "Barril 30L Stout Cafe/Ca"
     }
   ],
-  "total_vendido": 10424437.0,
+  "total_vendido": 10494427.0,
   "ultimo_pago": "2026-06-30"
 }

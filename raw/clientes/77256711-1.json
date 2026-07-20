@@ -1,21 +1,25 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-07-20",
   "cliente_desde": "2024-02-10",
   "comuna": "PICHILEMU",
-  "deuda_pendiente": 0,
+  "deuda_pendiente": 188750.0,
   "direccion": "PUNTA DE LOBOS LOTE 33 PUNTA DE LOBOS",
   "estado": "activo",
-  "facturas_emitidas": 1,
-  "facturas_pendientes": 0,
+  "facturas_emitidas": 2,
+  "facturas_pendientes": 1,
   "promedio_dias_pago": 26,
   "razon_social": "OPERACIÓN PIURE SPA",
   "rut": "77256711-1",
   "top_productos": [
     {
+      "cantidad": 2.0,
+      "nombre": "Barril 30L Stout Cafe"
+    },
+    {
       "cantidad": 1.0,
       "nombre": "Barril 30L Sour Berries"
     }
   ],
-  "total_vendido": 105015.0,
+  "total_vendido": 293765.0,
   "ultimo_pago": "2024-03-07"
 }

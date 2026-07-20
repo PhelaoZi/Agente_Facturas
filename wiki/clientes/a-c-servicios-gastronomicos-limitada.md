@@ -2,7 +2,7 @@
 rut: 76364354-9
 razon_social: "A & C SERVICIOS GASTRONOMICOS LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-07-20
 ---
 
 # A & C SERVICIOS GASTRONOMICOS LIMITADA
@@ -11,16 +11,16 @@ ultima_actualizacion: 2026-07-07
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $16.704.002 |
-| Facturas emitidas | 83 |
-| Facturas pendientes | 9 ($2.008.427) |
+| Total vendido | $17.324.004 |
+| Facturas emitidas | 86 |
+| Facturas pendientes | 9 ($1.968.420) |
 | Promedio días de pago | 36 |
-| Último pago | 2026-06-04 |
+| Último pago | 2026-07-04 |
 
 ## Estado de cuenta
 
-- 9 factura(s) pendiente(s) por $2.008.427
-- Último pago registrado: 2026-06-04
+- 9 factura(s) pendiente(s) por $1.968.420
+- Último pago registrado: 2026-07-04
 
 ## Patrón de comportamiento
 
@@ -45,6 +45,8 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-20: ⚠️ 5 factura(s) vencida(s) (>30 días): #4704, #4700, #4708, #4538, #4691 por $1.100.416.
+- 2026-07-20: 📄 3 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-07: ⚠️ 6 factura(s) vencida(s) (>30 días): #4700, #4538, #4667, #4681, #4687, #4691 por $1.264.421.
 - 2026-06-25: ⚠️ 4 factura(s) vencida(s) (>30 días): #4538, #4667, #4681, #4687 por $660.009.
 - 2026-06-25: 📄 4 factura(s) nueva(s) desde 2026-06-03.

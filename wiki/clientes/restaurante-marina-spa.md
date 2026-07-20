@@ -2,7 +2,7 @@
 rut: 77126823-4
 razon_social: "RESTAURANTE MARINA SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-07-20
 ---
 
 # RESTAURANTE MARINA SPA
@@ -11,16 +11,16 @@ ultima_actualizacion: 2026-07-07
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $10.000.703 |
-| Facturas emitidas | 81 |
-| Facturas pendientes | 5 ($349.952) |
+| Total vendido | $10.718.456 |
+| Facturas emitidas | 85 |
+| Facturas pendientes | 8 ($1.067.705) |
 | Promedio días de pago | 35 |
-| Último pago | 2026-06-23 |
+| Último pago | 2026-07-03 |
 
 ## Estado de cuenta
 
-- 5 factura(s) pendiente(s) por $349.952
-- Último pago registrado: 2026-06-23
+- 8 factura(s) pendiente(s) por $1.067.705
+- Último pago registrado: 2026-07-03
 
 ## Patrón de comportamiento
 
@@ -45,6 +45,10 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-20: ⚠️ Total vendido bajó en $139.981 (posible NC o ajuste).
+- 2026-07-20: ⚠️ 5 factura(s) vencida(s) (>30 días): #4706, #4703, #4712, #4491, #4568 por $349.952.
+- 2026-07-20: 📄 4 factura(s) nueva(s) desde 2026-07-07.
+- 2026-07-20: 📈 Deuda pendiente aumentó en $857.734.
 - 2026-07-07: ⚠️ 2 factura(s) vencida(s) (>30 días): #4491, #4568 por $0.
 - 2026-06-25: 📄 2 factura(s) nueva(s) desde 2026-06-25.
 - 2026-06-25: 📈 Deuda pendiente aumentó en $139.981.

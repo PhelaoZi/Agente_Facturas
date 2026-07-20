@@ -1,12 +1,12 @@
 # Producto: Barril 30L Scotch Ale
 
-Actualizado: 2026-07-07
+Actualizado: 2026-07-20
 
 ## Clientes que lo compran
 
 | Cliente | RUT | Cantidad total |
 | --- | --- | --- |
-| [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] | 76364354-9 | 104 |
+| [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] | 76364354-9 | 106 |
 | [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] | 76701686-7 | 76 |
 | [[ESPACIOS GASTRONOMICOS OCULTO SPA]] | 77290617-K | 40 |
 | [[VDT SPA]] | 77220069-2 | 35 |

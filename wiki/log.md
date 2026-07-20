@@ -34,3 +34,8 @@
 ## 2026-07-07
 - **correccion fechas de pago (6 folios)** (19:15): Actualizadas 1 ficha(s): VDT SPA
 - **fix filtro productos (Logistica/PET)** (07:08): Actualizadas 68 ficha(s): A & C SERVICIOS GASTRONOMICOS LIMITADA, ALPINO LIMITADA, BAR CERVECERÍA ORIGINAL SPA, BEBIDA SOCIAL SPA, BIER BAR SPA y 63 más
+
+## 2026-07-20
+- **sync-nc** (14:28): Actualizadas 1 ficha(s): RESTAURANTE MARINA SPA
+- **sync-nc** (14:28): Actualizadas 1 ficha(s): INVERSIONES Y SERVICIOS GASTRONOMICOS SPA
+- **monitoreo-facturas** (14:28): Actualizadas 13 ficha(s): HERMANOS TORRE VILLAR LIMITADA, GR RESTAURANTES LIMITADA, SOCIEDAD GASTRONOMICA SAER SPA, A & C SERVICIOS GASTRONOMICOS LIMITADA, INVERSIONES Y SERVICIOS GASTRONOMICOS SPA y 8 más

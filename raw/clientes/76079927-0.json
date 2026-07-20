@@ -1,0 +1,25 @@
+{
+  "_snapshot_fecha": "2026-07-20",
+  "cliente_desde": "2026-07-14",
+  "comuna": "PROVIDENCIA",
+  "deuda_pendiente": 78192.0,
+  "direccion": "AV VICUNA MACKENA 24",
+  "estado": "activo",
+  "facturas_emitidas": 1,
+  "facturas_pendientes": 1,
+  "promedio_dias_pago": null,
+  "razon_social": "HERMANOS TORRE VILLAR LIMITADA",
+  "rut": "76079927-0",
+  "top_productos": [
+    {
+      "cantidad": 24.0,
+      "nombre": "Botella 330c Cream Ale"
+    },
+    {
+      "cantidad": 24.0,
+      "nombre": "Botella 33cc Scotch Ale"
+    }
+  ],
+  "total_vendido": 78192.0,
+  "ultimo_pago": null
+}

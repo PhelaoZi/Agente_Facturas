@@ -2,7 +2,7 @@
 rut: 77220069-2
 razon_social: "VDT SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-07-20
 ---
 
 # VDT SPA
@@ -11,15 +11,15 @@ ultima_actualizacion: 2026-07-07
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $10.424.437 |
-| Facturas emitidas | 92 |
-| Facturas pendientes | 5 ($678.971) |
+| Total vendido | $10.494.427 |
+| Facturas emitidas | 93 |
+| Facturas pendientes | 6 ($748.961) |
 | Promedio días de pago | 57 |
 | Último pago | 2026-06-30 |
 
 ## Estado de cuenta
 
-- 5 factura(s) pendiente(s) por $678.971
+- 6 factura(s) pendiente(s) por $748.961
 - Último pago registrado: 2026-06-30
 
 ## Patrón de comportamiento
@@ -41,10 +41,12 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Inconsistencias
 
-- Ninguna detectada
+- Producto principal histórico = **Barril 30L Cream Ale**, pero en las últimas 3 facturas predomina **Barril  30L Cream Ale**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-07-20: ⚠️ 3 factura(s) vencida(s) (>30 días): #4400, #4525, #4694 por $380.431.
+- 2026-07-20: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-07: ⚠️ 3 factura(s) vencida(s) (>30 días): #4400, #4525, #4694 por $380.431.
 - 2026-06-25: ⚠️ 2 factura(s) vencida(s) (>30 días): #4400, #4525 por $0.
 - 2026-06-25: 📄 2 factura(s) nueva(s) desde 2026-06-03.

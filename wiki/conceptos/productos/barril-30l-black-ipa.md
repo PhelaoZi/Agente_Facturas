@@ -1,6 +1,6 @@
 # Producto: Barril 30L Black IPA
 
-Actualizado: 2026-07-07
+Actualizado: 2026-07-20
 
 ## Clientes que lo compran
 
