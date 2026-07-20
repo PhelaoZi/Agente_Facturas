@@ -914,8 +914,8 @@ def origen_permitido(host, origin):
     return origin in ORIGENES_PERMITIDOS
 
 
-def run_agent(pregunta: str) -> dict:
-    """Reutiliza el agente (Claude Agent SDK) del proyecto. Degrada con gracia."""
+def run_agent(pregunta: str, model: str = "google/gemini-2.5-flash") -> dict:
+    """Reutiliza el agente (Claude Agent SDK o OpenRouter local) del proyecto. Degrada con gracia."""
     try:
         from app.agent import orchestrator
         from app.canvas.artifacts import Collector
@@ -923,7 +923,7 @@ def run_agent(pregunta: str) -> dict:
         return {"ok": False, "error": "asistente_no_disponible", "detalle": str(e)}
     try:
         col = Collector()
-        texto, session_id = orchestrator.run(pregunta, col, CHAT_SESSION["id"])
+        texto, session_id = orchestrator.run(pregunta, col, CHAT_SESSION["id"], model=model)
         CHAT_SESSION["id"] = session_id
         arts = [{"tipo": a.tipo, "titulo": a.titulo, "payload": a.payload} for a in col.items]
         return {"ok": True, "texto": texto, "artefactos": arts}
@@ -1112,13 +1112,16 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(length) if length else b"{}"
-                q = (json.loads(body or b"{}").get("q") or "").strip()
+                payload = json.loads(body or b"{}")
+                q = (payload.get("q") or "").strip()
+                model = (payload.get("model") or "google/gemini-2.5-flash").strip()
             except Exception:
                 q = ""
+                model = "google/gemini-2.5-flash"
             if not q:
                 self._send(400, json.dumps({"ok": False, "error": "pregunta_vacia"}))
                 return
-            res = run_agent(q)
+            res = run_agent(q, model)
             self._send(200, json.dumps(res, default=_json_default, ensure_ascii=False))
         elif path == "/api/chat-reset":
             # "Limpiar" en la UI: descarta la sesion para partir una conversacion nueva.

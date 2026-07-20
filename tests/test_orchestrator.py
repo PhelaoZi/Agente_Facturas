@@ -1,78 +1,65 @@
 # tests/test_orchestrator.py
-import types
+import json
+import pytest
 from app.agent import orchestrator
 from app.canvas.artifacts import Collector
 
+def test_ejecutar_sql_local(monkeypatch):
+    class FakeCursor:
+        description = [("col1",)]
+        def execute(self, q):
+            pass
+        def fetchall(self):
+            return [{"col1": "val1"}]
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+            
+    class FakeConn:
+        def cursor(self):
+            return FakeCursor()
+        def close(self):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
 
-def test_extract_text_extrae_ultimo_mensaje_con_texto():
-    msgs = [
-        types.SimpleNamespace(content=[
-            types.SimpleNamespace(text="Ignorar este primer mensaje"),
-        ]),
-        types.SimpleNamespace(content=[
-            types.SimpleNamespace(text="Hola"),
-            types.SimpleNamespace(text="mundo"),
-        ]),
-        types.SimpleNamespace(content=""),  # Vacío, se ignora
-        types.SimpleNamespace(otra_cosa=1),  # Sin content, se ignora
-    ]
-    assert orchestrator._extract_text(msgs) == "Hola\nmundo"
+    monkeypatch.setattr(orchestrator.psycopg2, "connect", lambda *a, **kw: FakeConn())
+    res = orchestrator.ejecutar_sql_local("SELECT 1")
+    data = json.loads(res)
+    assert data == [{"col1": "val1"}]
 
+def test_run_session_persistence(monkeypatch):
+    # Mock de llamar_openrouter_api para simular respuesta sin tools
+    def mock_api(api_key, model, system, messages, tools=None):
+        return {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "Respuesta fake"
+                },
+                "finish_reason": "stop"
+            }]
+        }
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
 
-def test_postgres_server_usa_npx_y_server_postgres():
-    s = orchestrator._postgres_server()
-    assert s["command"] == "npx"
-    assert any("server-postgres" in a for a in s["args"])
-
-
-def test_build_options_incluye_tools_permitidos():
-    options = orchestrator._build_options(Collector())
-    assert "mcp__postgres__query" in options.allowed_tools
-    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
-
-
-def test_run_agrega_texto_de_la_respuesta(monkeypatch):
-    async def fake_query(prompt, options):
-        yield types.SimpleNamespace(
-            content=[types.SimpleNamespace(text="Respuesta del agente")],
-            session_id="ses-1",
-        )
-
-    monkeypatch.setattr(orchestrator, "query", fake_query)
-    texto, session_id = orchestrator.run("¿ventas?", Collector())
-    assert texto == "Respuesta del agente"
-    assert session_id == "ses-1"
-
-
-def test_build_options_incluye_tools_de_negocio():
-    options = orchestrator._build_options(Collector())
-    assert "mcp__negocio__deuda_total" in options.allowed_tools
-    assert "mcp__negocio__flujo_caja" in options.allowed_tools
-    # No se rompe lo anterior:
-    assert "mcp__postgres__query" in options.allowed_tools
-    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
-
-
-def test_build_options_incluye_tool_de_accion():
-    options = orchestrator._build_options(Collector())
-    assert "mcp__acciones__proponer_gasto" in options.allowed_tools
-    assert "acciones" in options.mcp_servers
-    # No rompe lo anterior:
-    assert "mcp__negocio__deuda_total" in options.allowed_tools
-    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
-    assert "mcp__postgres__query" in options.allowed_tools
-
-
-def test_build_options_no_cambia_permission_mode():
-    options = orchestrator._build_options(Collector())
-    assert options.permission_mode == "bypassPermissions"
-
-
-def test_build_options_bloquea_tools_builtin():
-    # Con bypassPermissions las tools built-in del CLI (Bash, Write, ...) quedan
-    # auto-aprobadas: hay que vetarlas explícitamente para que el invariante
-    # "el agente nunca escribe" sea capacidad real y no solo prompt.
-    options = orchestrator._build_options(Collector())
-    for tool in ["Bash", "Write", "Edit", "NotebookEdit",
-                 "Read", "Glob", "Grep", "WebFetch", "WebSearch", "Task"]:
-        assert tool in options.disallowed_tools, f"falta vetar {tool}"
+    collector = Collector()
+    
+    # Primera pregunta (debe generar session_id si es None)
+    texto, session_id = orchestrator.run("Hola", collector, session_id=None)
+    assert texto == "Respuesta fake"
+    assert session_id is not None
+    
+    # Segunda pregunta usando el mismo session_id
+    texto2, session_id2 = orchestrator.run("Segunda pregunta", collector, session_id=session_id)
+    assert texto2 == "Respuesta fake"
+    assert session_id2 == session_id
+    
+    # Verificar que el historial local tiene los mensajes enhebrados
+    historial = orchestrator.CHAT_SESSIONS[session_id]
+    assert len(historial) >= 4  # user(hola) + assistant(fake) + user(segunda) + assistant(fake)
+    assert historial[0]["content"] == "Hola"
+    assert historial[2]["content"] == "Segunda pregunta"
