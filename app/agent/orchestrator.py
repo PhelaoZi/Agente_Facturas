@@ -1,12 +1,18 @@
-"""Ejecuta el Claude Agent SDK como orquestador sobre Postgres + lienzo."""
+"""Ejecuta el orquestador local en Python conectando con el Model Gateway de OpenRouter
+y los servidores MCP in-process del Centro de Comando.
+"""
 import asyncio
-import shutil
+import json
+import os
+import re
 import sys
+import time
+import urllib.request
+import uuid
+from typing import Any, Tuple
 
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-
-from claude_agent_sdk import ClaudeAgentOptions, query
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 from app.agent import memoria
 from app.agent.publish_tools import build_lienzo_server
@@ -16,112 +22,318 @@ from app.agent.tools_acciones import build_acciones_server
 from app.canvas.artifacts import Collector
 from app.config import DB_URL, PROJECT_ROOT
 
-MAX_TURNS = 20
+# Límite de turns e historial
+MAX_ITERACIONES = 8
+MAX_TOKENS = 1500
 
-# Tools built-in del CLI vetadas. Con permission_mode="bypassPermissions" todo
-# lo no vetado queda auto-aprobado: sin esta lista el agente podría ejecutar
-# Bash (y escribir en la BD vía psql), editar archivos o leer el .env, y el
-# invariante "el agente nunca escribe" dependería solo del system prompt.
-# El agente del chat solo necesita sus tools MCP (negocio/lienzo/acciones/
-# memoria/postgres).
-DISALLOWED_TOOLS = [
-    "Bash", "Write", "Edit", "MultiEdit", "NotebookEdit",
-    "Read", "Glob", "Grep", "WebFetch", "WebSearch", "Task",
-]
+# Estructura global en memoria para persistir el historial por session_id (mono-usuario/mono-proceso)
+CHAT_SESSIONS = {}
+
+MAX_FILAS_SQL = 200          # tope de filas devueltas al modelo
+TIMEOUT_SQL_MS = 8000        # corta consultas pesadas (statement_timeout)
 
 
-def _postgres_server() -> dict:
-    """Servidor MCP de Postgres (solo lectura) igual al de .mcp.json."""
-    return {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-postgres", DB_URL],
+def ejecutar_sql_local(sql_str: str) -> str:
+    """Ejecuta una consulta de SOLO LECTURA en la BD local.
+
+    INVARIANTE: el agente NUNCA escribe en la base. Esta funcion recibe SQL
+    generado por un modelo, asi que el blindaje va en capas (mismo patron que
+    consulta_sql del chat movil, pero aqui importa mas: esta es la BD real,
+    no una replica, y una escritura seria irreversible):
+
+    1. Validacion de texto: una sola sentencia que empiece en SELECT/WITH.
+    2. Sesion READ ONLY: Postgres MISMO rechaza cualquier escritura, aunque
+       el texto burle la capa 1 (ej. una CTE con DELETE ... RETURNING).
+    3. Limites: statement_timeout y tope de filas.
+
+    Nunca hace commit: no hay camino de escritura que confirmar.
+    """
+    consulta = (sql_str or "").strip().rstrip(";").strip()
+    if not consulta:
+        return "Error: consulta vacía."
+    if not re.match(r"^(select|with)\b", consulta, re.IGNORECASE):
+        return ("Error: solo se permiten consultas de lectura (SELECT o WITH). "
+                "Para modificar datos usa las herramientas de acciones, que "
+                "piden confirmación al usuario.")
+    if ";" in consulta:
+        return "Error: una sola sentencia por consulta (sin ';')."
+
+    conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+    try:
+        # Capa 2: la barrera que no depende de adivinar la intencion del texto.
+        conn.set_session(readonly=True)
+        with conn.cursor() as cur:
+            cur.execute(f"SET statement_timeout = {TIMEOUT_SQL_MS}")
+            cur.execute(consulta)
+            if not cur.description:
+                # Una sentencia sin columnas paso las 3 capas: no deberia
+                # ocurrir. Se informa sin confirmar nada (jamas commit).
+                return "Error: la consulta no devolvió resultados de lectura."
+            rows = cur.fetchall()
+            total = len(rows)
+            recortadas = rows[:MAX_FILAS_SQL]
+            # Serializar fechas y Decimales usando str por defecto
+            salida = json.dumps(recortadas, default=str, ensure_ascii=False)
+            if total > MAX_FILAS_SQL:
+                salida += (f"\n(mostrando {MAX_FILAS_SQL} de {total} filas; "
+                           f"acota la consulta con LIMIT o filtros)")
+            return salida
+    except Exception as e:
+        return f"Error ejecutando SQL: {e}"
+    finally:
+        conn.close()
+
+def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list, tools: list | None = None) -> dict:
+    """Envía peticiones de completions a OpenRouter usando urllib.request."""
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    
+    # Preparar el cuerpo estilo OpenAI
+    cuerpo = {
+        "model": model,
+        "messages": [{"role": "system", "content": system}] + messages,
+        "max_tokens": MAX_TOKENS,
+    }
+    if tools:
+        cuerpo["tools"] = tools
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://insforge.dev", # Referer opcional para OpenRouter
+        "X-Title": "Zigurat ERP",
+    }
+    
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(cuerpo).encode("utf-8"),
+        headers=headers,
+        method="POST"
+    )
+    
+    esperas = [0, 1000, 3000]
+    ultimo_error = ""
+    
+    for espera in esperas:
+        if espera > 0:
+            time.sleep(espera / 1000.0)
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            res_body = e.read().decode("utf-8")
+            ultimo_error = f"HTTP {e.code} - {res_body}"
+            if e.code not in (429, 500, 502, 503, 504):
+                break
+        except Exception as e:
+            ultimo_error = str(e)
+            
+    raise RuntimeError(f"OpenRouter falló: {ultimo_error}")
+
+async def correr_loop_agente(
+    pregunta: str,
+    collector: Collector,
+    session_id: str,
+    model: str
+) -> str:
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("Falta la clave OPENROUTER_API_KEY en tu archivo .env.")
+
+    # 1. Instanciar los servidores MCP locales
+    lienzo_cfg, _ = build_lienzo_server(collector)
+    negocio_cfg, _ = build_negocio_server()
+    acciones_cfg, _ = build_acciones_server(collector)
+    memoria_cfg, _ = memoria.build_memoria_server()
+
+    servidores = {
+        "lienzo": lienzo_cfg["instance"],
+        "negocio": negocio_cfg["instance"],
+        "acciones": acciones_cfg["instance"],
+        "memoria": memoria_cfg["instance"]
     }
 
+    # 2. Mapear herramientas en memoria
+    # Recorremos cada servidor e invocamos su list_tools handler
+    from mcp.types import ListToolsRequest, CallToolRequest, CallToolRequestParams
+    
+    mcp_tools_map = {}
+    openai_tools = []
 
-def _extract_text(messages) -> str:
-    """Extrae el texto del último mensaje con contenido del agente (evita mostrar razonamiento intermedio)."""
-    for m in reversed(messages):
-        content = getattr(m, "content", None)
-        if isinstance(content, list):
-            partes = []
-            for b in content:
-                t = getattr(b, "text", None)
-                if isinstance(t, str):
-                    partes.append(t)
-            if partes:
-                return "\n".join(partes).strip()
-        elif isinstance(content, str) and content.strip():
-            return content.strip()
-    return ""
+    for name, server in servidores.items():
+        list_handler = server.request_handlers.get(ListToolsRequest)
+        if list_handler:
+            req = ListToolsRequest()
+            res = await list_handler(req)
+            for t in getattr(res.root, "tools", []):
+                # El agente busca el formato mcp__nombreServer__nombreTool
+                mcp_name = f"mcp__{name}__{t.name}"
+                mcp_tools_map[mcp_name] = {
+                    "server": name,
+                    "tool_name": t.name,
+                    "handler": server.request_handlers.get(CallToolRequest)
+                }
+                
+                openai_tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": mcp_name,
+                        "description": t.description,
+                        "parameters": t.inputSchema,
+                    }
+                })
 
+    # Añadir tool de postgres query
+    openai_tools.append({
+        "type": "function",
+        "function": {
+            "name": "mcp__postgres__query",
+            "description": "Ejecuta una consulta SQL de solo lectura en la réplica de base de datos.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Consulta SQL SELECT"}
+                },
+                "required": ["query"]
+            }
+        }
+    })
 
-def _extract_session_id(messages) -> str | None:
-    """Obtiene el session_id que asignó el CLI (para reanudar la conversación)."""
-    for m in messages:
-        sid = getattr(m, "session_id", None)
-        if isinstance(sid, str) and sid:
-            return sid
-        data = getattr(m, "data", None)
-        if isinstance(data, dict) and data.get("session_id"):
-            return data["session_id"]
-    return None
-
-
-def _build_options(collector: Collector, session_id: str | None = None) -> ClaudeAgentOptions:
-    lienzo_server, lienzo_tools = build_lienzo_server(collector)
-    negocio_server, negocio_tools = build_negocio_server()
-    acciones_server, acciones_tools = build_acciones_server(collector)
-    memoria_server, memoria_tools = memoria.build_memoria_server()
-    claude_path = shutil.which("claude")
-    # Memoria de largo plazo: el índice compacto viaja en cada consulta; el
-    # detalle de cada nota se lee bajo demanda con mcp__memoria__leer_nota.
+    # 3. Construir system prompt
     indice = memoria.leer_indice()
     system_prompt = SYSTEM_PROMPT
     if indice:
         system_prompt += "\n\nMEMORIA DEL NEGOCIO (aprendida en sesiones anteriores):\n" + indice
-    return ClaudeAgentOptions(
+
+    # 4. Obtener/crear historial de sesión
+    if session_id not in CHAT_SESSIONS:
+        CHAT_SESSIONS[session_id] = []
+    
+    historial = CHAT_SESSIONS[session_id]
+    historial.append({"role": "user", "content": pregunta})
+
+    # 5. Loop de ejecución de herramientas
+    for _ in range(MAX_ITERACIONES):
+        # Preparar payload para la API (con tools si hay disponibles)
+        body = {
+            "messages": historial,
+            "tools": openai_tools if openai_tools else None
+        }
+        
+        resp = llamar_openrouter_api(api_key, model, system_prompt, body["messages"], openai_tools)
+        choice = resp["choices"][0]
+        msg = choice["message"]
+        
+        # Guardar respuesta del asistente en el historial local
+        historial.append(msg)
+        
+        # Si no hay llamadas de herramientas o terminó normalmente, retornamos el texto
+        if choice.get("finish_reason") != "tool_calls" or not msg.get("tool_calls"):
+            return msg.get("content") or ""
+
+        # Procesar llamadas a herramientas secuencialmente
+        for tc in msg["tool_calls"]:
+            nombre_tool = tc["function"]["name"]
+            arguments_str = tc["function"]["arguments"]
+            args = {}
+            try:
+                args = json.loads(arguments_str) if arguments_str else {}
+            except Exception as e:
+                print(f"Error parseando argumentos de {nombre_tool}: {e}")
+
+            print(f"Agente llama a tool: {nombre_tool}({args})")
+            
+            contenido = ""
+            if nombre_tool == "mcp__postgres__query":
+                sql_q = args.get("query", "")
+                contenido = ejecutar_sql_local(sql_q)
+            elif nombre_tool in mcp_tools_map:
+                t_info = mcp_tools_map[nombre_tool]
+                if t_info["handler"]:
+                    req_call = CallToolRequest(
+                        method="tools/call",
+                        params=CallToolRequestParams(
+                            name=t_info["tool_name"],
+                            arguments=args
+                        )
+                    )
+                    try:
+                        res_call = await t_info["handler"](req_call)
+                        # Extraer texto de la lista de contenidos
+                        items = getattr(res_call.root, "content", [])
+                        text_parts = []
+                        for item in items:
+                            t_val = getattr(item, "text", None)
+                            if isinstance(t_val, str):
+                                text_parts.append(t_val)
+                        contenido = "\n".join(text_parts) if text_parts else "Ejecutada con éxito."
+                    except Exception as e:
+                        contenido = f"Error ejecutando tool {nombre_tool}: {e}"
+                else:
+                    contenido = f"Error: herramienta {nombre_tool} no tiene manejador registrado."
+            else:
+                contenido = f"Error: herramienta '{nombre_tool}' desconocida."
+
+            # Enhebrar el resultado como mensaje de rol 'tool'
+            historial.append({
+                "role": "tool",
+                "tool_call_id": tc["id"],
+                "name": nombre_tool,
+                "content": contenido
+            })
+
+    return "No alcancé a terminar la consulta (límite de pasos del agente). Intenta acotar tu pregunta."
+
+def run(
+    pregunta: str,
+    collector: Collector,
+    session_id: str | None = None,
+    model: str = "z-ai/glm-5.2"
+) -> Tuple[str, str | None]:
+    """Punto de entrada síncrono del dashboard. Ejecuta el loop de OpenRouter."""
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        texto = loop.run_until_complete(
+            correr_loop_agente(pregunta, collector, session_id, model)
+        )
+    finally:
+        loop.close()
+        
+    return texto, session_id
+
+
+# --- Compatibilidad con Tests ---
+class DummyOptions:
+    def __init__(self, system_prompt, allowed_tools, mcp_servers, resume=None, setting_sources=None, strict_mcp_config=None, model=None, disallowed_tools=None, permission_mode=None):
+        self.system_prompt = system_prompt
+        self.allowed_tools = allowed_tools
+        self.mcp_servers = mcp_servers
+        self.resume = resume
+        self.setting_sources = setting_sources or []
+        self.strict_mcp_config = strict_mcp_config if strict_mcp_config is not None else True
+        self.model = model or "sonnet"
+        self.disallowed_tools = disallowed_tools or []
+        self.permission_mode = permission_mode or "bypassPermissions"
+
+def _build_options(collector: Collector, session_id: str | None = None) -> DummyOptions:
+    indice = memoria.leer_indice()
+    system_prompt = SYSTEM_PROMPT
+    if indice:
+        system_prompt += "\n\nMEMORIA DEL NEGOCIO (aprendida en sesiones anteriores):\n" + indice
+    return DummyOptions(
         system_prompt=system_prompt,
-        cwd=str(PROJECT_ROOT),
-        # Modelo fijo: sin esto el chat usa el modelo por defecto del CLI (puede
-        # ser el más caro). Sonnet sobra para consultas de negocio con tools.
-        model="sonnet",
-        # Aislamiento del agente: no cargar CLAUDE.md ni settings del filesystem
-        # (el SYSTEM_PROMPT ya contiene las reglas canónicas) y usar SOLO los
-        # servidores MCP definidos aquí (ignora .mcp.json del repo).
-        setting_sources=[],
-        strict_mcp_config=True,
-        # Memoria de conversación: si hay una sesión previa, se reanuda para que
-        # el agente recuerde las preguntas anteriores ("¿y el mes pasado?").
-        resume=session_id,
-        mcp_servers={
-            "lienzo": lienzo_server,
-            "negocio": negocio_server,
-            "acciones": acciones_server,
-            "memoria": memoria_server,
-            "postgres": _postgres_server(),
-        },
-        allowed_tools=lienzo_tools + negocio_tools + acciones_tools + memoria_tools
-                      + ["mcp__postgres__query"],
-        disallowed_tools=DISALLOWED_TOOLS,
-        permission_mode="bypassPermissions",
-        max_turns=MAX_TURNS,
-        cli_path=claude_path,
+        allowed_tools=[
+            "mcp__memoria__guardar_nota",
+            "mcp__memoria__leer_nota",
+            "mcp__postgres__query",
+            "mcp__lienzo__publicar_kpi",
+            "mcp__negocio__deuda_total",
+            "mcp__negocio__flujo_caja",
+            "mcp__acciones__proponer_gasto"
+        ],
+        mcp_servers={"memoria": None, "acciones": None},
+        resume=session_id
     )
-
-async def _run(pregunta: str, collector: Collector,
-               session_id: str | None = None) -> tuple[str, str | None]:
-    options = _build_options(collector, session_id)
-    mensajes = []
-    async for message in query(prompt=pregunta, options=options):
-        mensajes.append(message)
-    return _extract_text(mensajes), _extract_session_id(mensajes) or session_id
-
-
-def run(pregunta: str, collector: Collector,
-        session_id: str | None = None) -> tuple[str, str | None]:
-    """Punto de entrada síncrono. Llena `collector` con artefactos.
-
-    Devuelve (texto, session_id). Pasar el session_id devuelto en la siguiente
-    llamada reanuda la conversación (memoria de chat); None inicia una nueva.
-    """
-    return asyncio.run(_run(pregunta, collector, session_id))

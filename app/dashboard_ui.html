@@ -417,7 +417,15 @@
   <section class="sec hidden" id="sec-asistente">
     <div class="card hero">
       <h3><span class="ic">💬</span> Pregúntame lo que quieras
-        <button class="chat-clear" id="chat-clear" title="Borrar la conversación">🧹 Limpiar</button>
+        <div style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
+          <select id="chat-model-select" title="Modelo que responde tus preguntas" style="background:#1c2230; color:var(--text); border:1px solid var(--border2); border-radius:9px; padding:5px 9px; font-size:12px; font-family:inherit; cursor:pointer; outline:none; font-weight:600;">
+            <option value="z-ai/glm-5.2">GLM 5.2 — recomendado (barato y bueno con herramientas)</option>
+            <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite — el más barato (preguntas simples)</option>
+            <option value="anthropic/claude-sonnet-5">Claude Sonnet 5 — el más confiable (análisis y acciones)</option>
+            <option value="openai/gpt-5.6-luna">GPT-5.6 Luna — alternativa equilibrada</option>
+          </select>
+          <button class="chat-clear" id="chat-clear" title="Borrar la conversación">🧹 Limpiar</button>
+        </div>
       </h3>
       <div class="csub">Escribe en lenguaje natural y te respondo con cifras, gráficos y tablas de tu base.</div>
       <div class="suggest" id="chat-suggest">
@@ -760,11 +768,12 @@ async function askAgent(q){
   document.getElementById('chat-q').value='';
   const think=addBubble('bot think','Pensando… consultando tu base 🍺');
   try{
-    const res=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q})});
+    const model = document.getElementById('chat-model-select').value;
+    const res=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q, model})});
     const d=await res.json(); think.remove();
     if(!d.ok){
       if(d.error==='asistente_no_disponible')
-        addBubble('bot','El chat con IA no está disponible en este momento. Suele faltar el motor de IA (<b>claude-agent-sdk</b>) o el comando <b>claude</b> en el PATH. Mientras tanto, los <b>Informes rápidos</b> de abajo funcionan perfecto y no necesitan IA.');
+        addBubble('bot','El chat con IA no está disponible en este momento. Revisa la configuración de tu clave <b>OPENROUTER_API_KEY</b> en el archivo .env.');
       else
         addBubble('bot','Tuve un problema al responder: '+esc(d.detalle||d.error||'error'));
       chatBusy=false; return;

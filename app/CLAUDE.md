@@ -23,19 +23,31 @@ pasan por confirmación (ver abajo).
 | Agente | `app/agent/*` | Orquestador del Claude Agent SDK + tools MCP in-process + system prompt. |
 | Briefing | `app/briefing/{data,render}.py` | Datos y render del brief diario. |
 
-El orquestador (`app/agent/orchestrator.py`) corre el Claude Agent SDK con cuatro
-servidores MCP in-process — `lienzo` (publicar artefactos), `negocio` (lecturas),
-`acciones` (proponer escrituras) y `memoria` (aprendizaje persistente) — más el
-server `postgres` de solo lectura. `run_agent()` en `dashboard.py` devuelve
-`{texto, artefactos}` al frontend.
+El orquestador (`app/agent/orchestrator.py`) corre un **loop propio contra el
+Model Gateway de OpenRouter** (migración de Antigravity, 2026-07-20; antes usaba
+el Claude Agent SDK) exponiendo cuatro servidores MCP in-process — `lienzo`
+(publicar artefactos), `negocio` (lecturas), `acciones` (proponer escrituras) y
+`memoria` (aprendizaje persistente) — traducidos al formato de tools de OpenAI,
+más `mcp__postgres__query` de solo lectura. `run_agent()` en `dashboard.py`
+devuelve `{texto, artefactos}` al frontend.
 
-**El agente del chat corre AISLADO y determinista** (hardening 2026-07-07):
-- `setting_sources=[]`: NO lee este CLAUDE.md ni settings del filesystem. Todo
-  su conocimiento vive en `app/agent/system_prompt.py` + su memoria persistente.
-  Si cambias una regla de negocio aquí, replicarla en el system prompt.
-- `strict_mcp_config=True`: ignora `.mcp.json`; usa solo los servers definidos
-  en código (credenciales desde `.env`).
-- `model="sonnet"` fijo: el chat no depende del modelo por defecto del CLI.
+**Selector de modelo:** la UI ofrece varios modelos y `POST /api/ask` acepta
+`model`. La lista viva está en `MODELOS_CHAT_PERMITIDOS` (`dashboard.py`) y debe
+coincidir con las `<option>` de `dashboard_ui.html`; el servidor **valida contra
+esa whitelist** (el id llega del navegador). Default: `z-ai/glm-5.2`. Todos
+deben soportar *tool calling*: el agente encadena hasta 8 iteraciones de tools.
+
+**El agente del chat corre AISLADO y determinista:**
+- No lee este CLAUDE.md: todo su conocimiento vive en
+  `app/agent/system_prompt.py` + su memoria persistente. Si cambias una regla de
+  negocio aquí, replicarla en el system prompt.
+- Requiere `OPENROUTER_API_KEY` en `.env`.
+- **`ejecutar_sql_local` es de SOLO LECTURA y nunca hace commit** (blindaje
+  2026-07-20): valida una sola sentencia `SELECT`/`WITH`, abre la sesión con
+  `set_session(readonly=True)` — Postgres mismo rechaza escrituras aunque el
+  texto burle la validación (CTE con `DELETE ... RETURNING`) — y aplica
+  `statement_timeout` + tope de filas. **No reintroducir ningún `conn.commit()`
+  ahí:** las escrituras solo pasan por el mecanismo propose/confirm/execute.
 
 **Memoria del agente (dos capas):**
 - Conversación: `run()` devuelve `(texto, session_id)` y reanuda con `resume`;

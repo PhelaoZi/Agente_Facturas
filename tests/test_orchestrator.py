@@ -1,78 +1,200 @@
 # tests/test_orchestrator.py
-import types
+import json
+import pytest
 from app.agent import orchestrator
 from app.canvas.artifacts import Collector
 
 
-def test_extract_text_extrae_ultimo_mensaje_con_texto():
-    msgs = [
-        types.SimpleNamespace(content=[
-            types.SimpleNamespace(text="Ignorar este primer mensaje"),
-        ]),
-        types.SimpleNamespace(content=[
-            types.SimpleNamespace(text="Hola"),
-            types.SimpleNamespace(text="mundo"),
-        ]),
-        types.SimpleNamespace(content=""),  # Vacío, se ignora
-        types.SimpleNamespace(otra_cosa=1),  # Sin content, se ignora
-    ]
-    assert orchestrator._extract_text(msgs) == "Hola\nmundo"
+class FakeCursor:
+    """Cursor falso que registra lo ejecutado. `description=None` imita a las
+    sentencias que no devuelven filas (INSERT/UPDATE/DELETE/DDL)."""
+    def __init__(self, description=None, rows=None, registro=None):
+        self.description = description
+        self._rows = rows or []
+        self.registro = registro if registro is not None else []
+
+    def execute(self, q, params=None):
+        self.registro.append(q)
+
+    def fetchall(self):
+        return self._rows
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
 
 
-def test_postgres_server_usa_npx_y_server_postgres():
-    s = orchestrator._postgres_server()
-    assert s["command"] == "npx"
-    assert any("server-postgres" in a for a in s["args"])
+class FakeConn:
+    def __init__(self, cursor):
+        self._cursor = cursor
+        self.commits = 0
+        self.cerrada = False
+        self.readonly_seteado = None
+
+    def cursor(self):
+        return self._cursor
+
+    def set_session(self, readonly=None, **kw):
+        self.readonly_seteado = readonly
+
+    def commit(self):
+        self.commits += 1
+
+    def close(self):
+        self.cerrada = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
 
 
-def test_build_options_incluye_tools_permitidos():
-    options = orchestrator._build_options(Collector())
-    assert "mcp__postgres__query" in options.allowed_tools
-    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
+def _fake_connect(monkeypatch, cursor):
+    conn = FakeConn(cursor)
+    monkeypatch.setattr(orchestrator.psycopg2, "connect", lambda *a, **kw: conn)
+    return conn
 
 
-def test_run_agrega_texto_de_la_respuesta(monkeypatch):
-    async def fake_query(prompt, options):
-        yield types.SimpleNamespace(
-            content=[types.SimpleNamespace(text="Respuesta del agente")],
-            session_id="ses-1",
-        )
-
-    monkeypatch.setattr(orchestrator, "query", fake_query)
-    texto, session_id = orchestrator.run("¿ventas?", Collector())
-    assert texto == "Respuesta del agente"
-    assert session_id == "ses-1"
+def test_ejecutar_sql_local(monkeypatch):
+    cur = FakeCursor(description=[("col1",)], rows=[{"col1": "val1"}])
+    _fake_connect(monkeypatch, cur)
+    res = orchestrator.ejecutar_sql_local("SELECT 1")
+    data = json.loads(res)
+    assert data == [{"col1": "val1"}]
 
 
-def test_build_options_incluye_tools_de_negocio():
-    options = orchestrator._build_options(Collector())
-    assert "mcp__negocio__deuda_total" in options.allowed_tools
-    assert "mcp__negocio__flujo_caja" in options.allowed_tools
-    # No se rompe lo anterior:
-    assert "mcp__postgres__query" in options.allowed_tools
-    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
+# --- Blindaje de solo lectura (2026-07-20) ---
+# El agente del PC habla con la BD REAL (fuente de verdad), no con una replica:
+# una escritura aqui es irreversible. Mismo patron ya validado en el chat movil.
+
+@pytest.mark.parametrize("sql_malo", [
+    "DELETE FROM ventas",
+    "UPDATE ventas SET fecha_pago = NULL",
+    "INSERT INTO ventas (folio) VALUES (1)",
+    "DROP TABLE ventas",
+    "TRUNCATE ventas",
+    "ALTER TABLE ventas ADD COLUMN x int",
+    "SELECT 1; DELETE FROM ventas",          # multi-sentencia
+])
+def test_ejecutar_sql_local_rechaza_escrituras(monkeypatch, sql_malo):
+    """Capa 1: la escritura ni siquiera llega a la BD (validacion de texto)."""
+    cur = FakeCursor(description=None)
+    conn = _fake_connect(monkeypatch, cur)
+
+    res = orchestrator.ejecutar_sql_local(sql_malo)
+
+    assert "Error" in res, f"deberia rechazar: {sql_malo}"
+    assert cur.registro == [], "la sentencia no debe ejecutarse en la BD"
+    assert conn.commits == 0, "NUNCA debe hacer commit"
 
 
-def test_build_options_incluye_tool_de_accion():
-    options = orchestrator._build_options(Collector())
-    assert "mcp__acciones__proponer_gasto" in options.allowed_tools
-    assert "acciones" in options.mcp_servers
-    # No rompe lo anterior:
-    assert "mcp__negocio__deuda_total" in options.allowed_tools
-    assert "mcp__lienzo__publicar_kpi" in options.allowed_tools
-    assert "mcp__postgres__query" in options.allowed_tools
+def test_cte_con_escritura_queda_a_cargo_de_la_sesion_readonly(monkeypatch):
+    """Capa 2: una CTE con DELETE empieza con WITH, asi que pasa la validacion
+    de texto — y por eso existe la sesion READ ONLY, donde Postgres la rechaza.
+    Aqui se verifica que la barrera este puesta y que nunca haya commit."""
+    cur = FakeCursor(description=None)
+    conn = _fake_connect(monkeypatch, cur)
+
+    orchestrator.ejecutar_sql_local(
+        "WITH x AS (DELETE FROM ventas RETURNING *) SELECT * FROM x")
+
+    assert conn.readonly_seteado is True, "debe abrir la sesion en READ ONLY"
+    assert conn.commits == 0, "NUNCA debe hacer commit"
 
 
-def test_build_options_no_cambia_permission_mode():
-    options = orchestrator._build_options(Collector())
-    assert options.permission_mode == "bypassPermissions"
+def test_ejecutar_sql_local_abre_la_sesion_en_readonly(monkeypatch):
+    """Segunda barrera: aunque el texto burle la validacion, la BD misma
+    rechaza la escritura porque la sesion es READ ONLY."""
+    cur = FakeCursor(description=[("n",)], rows=[{"n": 1}])
+    conn = _fake_connect(monkeypatch, cur)
+
+    orchestrator.ejecutar_sql_local("SELECT COUNT(*) AS n FROM ventas")
+
+    assert conn.readonly_seteado is True
+    assert conn.commits == 0
 
 
-def test_build_options_bloquea_tools_builtin():
-    # Con bypassPermissions las tools built-in del CLI (Bash, Write, ...) quedan
-    # auto-aprobadas: hay que vetarlas explícitamente para que el invariante
-    # "el agente nunca escribe" sea capacidad real y no solo prompt.
-    options = orchestrator._build_options(Collector())
-    for tool in ["Bash", "Write", "Edit", "NotebookEdit",
-                 "Read", "Glob", "Grep", "WebFetch", "WebSearch", "Task"]:
-        assert tool in options.disallowed_tools, f"falta vetar {tool}"
+def test_ejecutar_sql_local_acepta_with_y_tolera_punto_y_coma_final(monkeypatch):
+    cur = FakeCursor(description=[("n",)], rows=[{"n": 7}])
+    _fake_connect(monkeypatch, cur)
+
+    res = orchestrator.ejecutar_sql_local(
+        "WITH t AS (SELECT 1) SELECT COUNT(*) AS n FROM t;")
+
+    assert json.loads(res) == [{"n": 7}]
+    # registro[0] es el statement_timeout; la consulta va despues, sin el ';'
+    assert cur.registro[-1].endswith("FROM t"), "debe quitar el ; final"
+    assert any("statement_timeout" in q for q in cur.registro)
+
+
+def test_ejecutar_sql_local_cierra_la_conexion_siempre(monkeypatch):
+    """Incluso cuando se rechaza antes de conectar, no debe quedar conexion
+    abierta (el rechazo temprano ni siquiera abre una)."""
+    cur = FakeCursor(description=[("n",)], rows=[{"n": 1}])
+    conn = _fake_connect(monkeypatch, cur)
+    orchestrator.ejecutar_sql_local("SELECT 1 AS n")
+    assert conn.cerrada is True
+
+
+def test_selector_de_modelos_coincide_ui_y_servidor():
+    """La whitelist del servidor y las <option> de la UI deben ser el mismo
+    conjunto: un id en la UI que el servidor rechace degrada al default sin
+    avisar, y uno permitido pero no ofrecido es codigo muerto."""
+    import re as _re
+    from pathlib import Path
+    from app import dashboard
+
+    html = (Path(__file__).resolve().parent.parent /
+            "app" / "dashboard_ui.html").read_text(encoding="utf-8")
+    bloque = html.split('id="chat-model-select"', 1)[1].split("</select>", 1)[0]
+    en_ui = set(_re.findall(r'<option value="([^"]+)"', bloque))
+
+    assert en_ui == dashboard.MODELOS_CHAT_PERMITIDOS
+    assert dashboard.MODELO_CHAT_DEFAULT in dashboard.MODELOS_CHAT_PERMITIDOS
+
+
+def test_ejecutar_sql_local_recorta_resultados_enormes(monkeypatch):
+    """Tope de filas: protege el contexto del modelo y el costo por tokens."""
+    muchas = [{"id": i} for i in range(500)]
+    cur = FakeCursor(description=[("id",)], rows=muchas)
+    _fake_connect(monkeypatch, cur)
+
+    res = orchestrator.ejecutar_sql_local("SELECT id FROM ventas")
+
+    assert "mostrando 200 de 500 filas" in res
+
+def test_run_session_persistence(monkeypatch):
+    # Mock de llamar_openrouter_api para simular respuesta sin tools
+    def mock_api(api_key, model, system, messages, tools=None):
+        return {
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "Respuesta fake"
+                },
+                "finish_reason": "stop"
+            }]
+        }
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    collector = Collector()
+    
+    # Primera pregunta (debe generar session_id si es None)
+    texto, session_id = orchestrator.run("Hola", collector, session_id=None)
+    assert texto == "Respuesta fake"
+    assert session_id is not None
+    
+    # Segunda pregunta usando el mismo session_id
+    texto2, session_id2 = orchestrator.run("Segunda pregunta", collector, session_id=session_id)
+    assert texto2 == "Respuesta fake"
+    assert session_id2 == session_id
+    
+    # Verificar que el historial local tiene los mensajes enhebrados
+    historial = orchestrator.CHAT_SESSIONS[session_id]
+    assert len(historial) >= 4  # user(hola) + assistant(fake) + user(segunda) + assistant(fake)
+    assert historial[0]["content"] == "Hola"
+    assert historial[2]["content"] == "Segunda pregunta"
