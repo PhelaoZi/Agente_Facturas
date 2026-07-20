@@ -4,6 +4,7 @@ y los servidores MCP in-process del Centro de Comando.
 import asyncio
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -28,19 +29,55 @@ MAX_TOKENS = 1500
 # Estructura global en memoria para persistir el historial por session_id (mono-usuario/mono-proceso)
 CHAT_SESSIONS = {}
 
+MAX_FILAS_SQL = 200          # tope de filas devueltas al modelo
+TIMEOUT_SQL_MS = 8000        # corta consultas pesadas (statement_timeout)
+
+
 def ejecutar_sql_local(sql_str: str) -> str:
-    """Ejecuta consultas de solo lectura en la base de datos local usando psycopg2."""
+    """Ejecuta una consulta de SOLO LECTURA en la BD local.
+
+    INVARIANTE: el agente NUNCA escribe en la base. Esta funcion recibe SQL
+    generado por un modelo, asi que el blindaje va en capas (mismo patron que
+    consulta_sql del chat movil, pero aqui importa mas: esta es la BD real,
+    no una replica, y una escritura seria irreversible):
+
+    1. Validacion de texto: una sola sentencia que empiece en SELECT/WITH.
+    2. Sesion READ ONLY: Postgres MISMO rechaza cualquier escritura, aunque
+       el texto burle la capa 1 (ej. una CTE con DELETE ... RETURNING).
+    3. Limites: statement_timeout y tope de filas.
+
+    Nunca hace commit: no hay camino de escritura que confirmar.
+    """
+    consulta = (sql_str or "").strip().rstrip(";").strip()
+    if not consulta:
+        return "Error: consulta vacía."
+    if not re.match(r"^(select|with)\b", consulta, re.IGNORECASE):
+        return ("Error: solo se permiten consultas de lectura (SELECT o WITH). "
+                "Para modificar datos usa las herramientas de acciones, que "
+                "piden confirmación al usuario.")
+    if ";" in consulta:
+        return "Error: una sola sentencia por consulta (sin ';')."
+
     conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
     try:
+        # Capa 2: la barrera que no depende de adivinar la intencion del texto.
+        conn.set_session(readonly=True)
         with conn.cursor() as cur:
-            cur.execute(sql_str)
-            if cur.description:
-                rows = cur.fetchall()
-                # Serializar fechas y Decimales usando str por defecto
-                return json.dumps(rows, default=str, ensure_ascii=False)
-            else:
-                conn.commit()
-                return "Consulta ejecutada con éxito (0 filas devueltas)."
+            cur.execute(f"SET statement_timeout = {TIMEOUT_SQL_MS}")
+            cur.execute(consulta)
+            if not cur.description:
+                # Una sentencia sin columnas paso las 3 capas: no deberia
+                # ocurrir. Se informa sin confirmar nada (jamas commit).
+                return "Error: la consulta no devolvió resultados de lectura."
+            rows = cur.fetchall()
+            total = len(rows)
+            recortadas = rows[:MAX_FILAS_SQL]
+            # Serializar fechas y Decimales usando str por defecto
+            salida = json.dumps(recortadas, default=str, ensure_ascii=False)
+            if total > MAX_FILAS_SQL:
+                salida += (f"\n(mostrando {MAX_FILAS_SQL} de {total} filas; "
+                           f"acota la consulta con LIMIT o filtros)")
+            return salida
     except Exception as e:
         return f"Error ejecutando SQL: {e}"
     finally:
