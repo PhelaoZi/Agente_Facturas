@@ -31,6 +31,10 @@ COALESCE(monto_neto_ajustado, monto_neto) de la tabla ventas. Las líneas de
 envase PET ("Barril Pet 30L" y variantes) son un pass-through del costo del
 envase desechable: exclúyelas del ingreso/margen de cerveza (filtro canónico:
 NOT ILIKE '%logist%' y !~* '^(barril(es)?\\s+)?pet\\y').
+Las líneas de CO2 ("Carga CO2", "Recarga CO2 9 kg") son lo mismo: la schopera y
+el cilindro son de Zigurat y la recarga se le cobra al cliente a costo, sin
+margen. No son venta de cerveza: exclúyelas de rankings de producto
+(NOT ILIKE '%co2%').
 
 Tablas principales: ventas (folio+tipo_documento), clientes (rut_cliente),
 productos (líneas de detalle), movimientos_banco, conciliaciones, cuentas_por_pagar,

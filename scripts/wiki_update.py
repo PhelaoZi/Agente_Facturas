@@ -183,9 +183,11 @@ def obtener_datos_cliente(cur, rut):
         "FROM productos p "
         "JOIN ventas v ON v.folio::text = p.folio::text AND v.tipo_documento = p.tipo_documento "
         "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
-        # Excluir lineas que no son producto (ver CLAUDE.md): Logistica y envase PET
+        # Excluir lineas que no son producto (ver CLAUDE.md): Logistica, envase
+        # PET y carga de CO2
         "AND p.nombre_producto NOT ILIKE '%%logist%%' "
         "AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y' "
+        "AND p.nombre_producto NOT ILIKE '%%co2%%' "
         "GROUP BY p.nombre_producto "
         "ORDER BY SUM(cantidad) DESC LIMIT 3",
         (rut,)
@@ -512,6 +514,7 @@ def detectar_inconsistencias(cur, datos, notas_existentes=""):
             "  ) "
             "  AND p.nombre_producto NOT ILIKE '%%logist%%' "
             "  AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y' "
+            "  AND p.nombre_producto NOT ILIKE '%%co2%%' "
             "GROUP BY p.nombre_producto "
             "ORDER BY SUM(p.cantidad) DESC LIMIT 1",
             (rut, rut),
@@ -896,6 +899,7 @@ def actualizar_conceptos(cur):
         # aqui el % va simple, no doblado.
         "AND p.nombre_producto NOT ILIKE '%logist%' "
         "AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y' "
+        "AND p.nombre_producto NOT ILIKE '%co2%' "
         "GROUP BY p.nombre_producto "
         "ORDER BY cant DESC LIMIT 15"
     )

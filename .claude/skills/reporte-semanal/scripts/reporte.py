@@ -91,9 +91,11 @@ QUERY_TOP_PRODUCTOS = """
     WHERE v.tipo_documento != '61'
       AND v.fecha BETWEEN %s AND %s
       -- Excluir lineas que no son producto (ver CLAUDE.md): desglose de
-      -- Logistica y envases PET traspasados al cliente (pass-through).
+      -- Logistica, y envases PET y cargas de CO2 traspasados al cliente
+      -- (pass-through, sin margen).
       AND p.nombre_producto NOT ILIKE '%%logist%%'
       AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y'
+      AND p.nombre_producto NOT ILIKE '%%co2%%'
     GROUP BY p.nombre_producto
     ORDER BY total DESC
     LIMIT 5

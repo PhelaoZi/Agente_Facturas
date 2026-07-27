@@ -261,6 +261,7 @@ def q_top_productos(cur, cols, limit=12):
         WHERE {NOT_NC}
           AND p.{name_col} NOT ILIKE '%%logist%%'
           AND p.{name_col} !~* '^(barril(es)?\\s+)?pet\\y'
+          AND p.{name_col} NOT ILIKE '%%co2%%'
         GROUP BY p.{name_col}
         ORDER BY unidades DESC NULLS LAST
         LIMIT %s

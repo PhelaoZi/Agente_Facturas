@@ -143,12 +143,53 @@ productor, folio 4664 como ejemplo):
 ```sql
 AND p.nombre_producto NOT ILIKE '%logist%'
 AND p.nombre_producto !~* '^(barril(es)?\s+)?pet\y'
+AND p.nombre_producto NOT ILIKE '%co2%'
 ```
 
 > Ojo con `parse_dte.py`: `ITEMS_NO_CATALOGO = {"logistica"}` filtra por match
 > EXACTO, así que las variantes reales ("Logistica Cream Ale", "Logistic", …)
 > **sí quedan en `productos`**. La tabla `productos` contiene todas esas líneas;
 > la exclusión correcta se hace al consultar, con el filtro de arriba.
+
+### Línea de CO2 — pass-through, tampoco es venta de cerveza
+
+Zigurat instala en algunos restaurantes una **schopera de su propiedad**, y el
+cilindro de CO2 que empuja la cerveza también es suyo. Cuando se acaba, le
+llevan una carga nueva comprada en **Clean Ice** (aparece en las facturas de
+compra) y se le cobra al cliente **exactamente lo que costó**.
+
+- La línea de CO2 ("9 kg CO2", "Carga CO2", "Recarga CO2 9 kg"… hay variantes)
+  es un **traspaso de costo sin margen**, igual que el envase PET: no es un
+  producto del catálogo ni venta de cerveza, aunque sí suma en el monto
+  facturado.
+- Va excluida del filtro canónico de arriba y de la base de reparto de la
+  logística en `app/negocio/precios_venta.py`.
+
+### Barriles de 20L y 25L — no son otro formato
+
+Todos los barriles son de 30L. Cuando los últimos litros del fermentador no
+alcanzan a llenar uno, se despacha ese mismo barril con 20 o 25 litros dentro y
+se factura como "Barril 25L". **Precio y logística escalan con los litros**, así
+que `precios_venta.py` normaliza el precio a barril de 30L equivalente y todos
+comparten la clave de formato `barril 30L`.
+
+### Precio de venta — se deduce de las facturas, no de una lista
+
+`app/negocio/precios_venta.py` reconstruye el precio neto unitario real por
+`(cerveza, formato)` sumando la línea de producto más la logística que le
+corresponde. **Regla con que el productor escribe la logística** (confirmada):
+
+- Mismo costo de logística para todo lo facturado → **una sola línea**
+  `Logistica`, sin nombrar nada.
+- Costos distintos → la **desglosa por estilo** (`Logistica Scotch` +
+  `Logistica Stout`), y cada línea lleva la **misma cantidad** que su producto.
+
+La logística sin nombrar se reparte **por litro** en barriles y **por unidad**
+en botellas. Una factura que mezcle familias sin desglosar la logística se
+descarta y se reporta: no hay forma de saber cuánto le toca a cada una.
+
+`PRECIOS_VENTA_NETO` en `costos.py` quedó solo de **respaldo** para un SKU que
+todavía no se ha vendido nunca.
 
 ### Precios de venta por barril 30L (neto, confirmados por el productor)
 
