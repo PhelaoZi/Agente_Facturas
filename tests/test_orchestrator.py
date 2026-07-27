@@ -209,7 +209,7 @@ def test_al_agotar_los_pasos_responde_con_lo_que_alcanzo_a_reunir(monkeypatch):
     """
     llamadas = []
 
-    def mock_api(api_key, model, system, messages, tools=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
         llamadas.append(tools)
         if tools:
             return {"choices": [{
@@ -238,7 +238,7 @@ def test_al_agotar_los_pasos_responde_con_lo_que_alcanzo_a_reunir(monkeypatch):
 def test_si_el_turno_de_cierre_falla_queda_el_mensaje_de_siempre(monkeypatch):
     """Red de seguridad: si la ultima llamada revienta, el usuario igual recibe
     una explicacion en vez de un string vacio."""
-    def mock_api(api_key, model, system, messages, tools=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
         if tools is None:
             raise RuntimeError("OpenRouter caido")
         return {"choices": [{
@@ -254,3 +254,40 @@ def test_si_el_turno_de_cierre_falla_queda_el_mensaje_de_siempre(monkeypatch):
     texto, _sid = orchestrator.run("otra pregunta", Collector())
 
     assert "límite de pasos" in texto
+
+
+def test_el_turno_de_cierre_pide_mas_tokens_que_un_turno_normal(monkeypatch):
+    """Root cause del bug del 2026-07-27: los modelos de razonamiento (GLM 5.2)
+    gastan tokens PENSANDO antes de escribir, y esos reasoning_tokens cuentan
+    contra max_tokens. Con un historial largo, los 1500 del loop se consumian
+    razonando y la respuesta llegaba vacia (finish_reason=length, content=None),
+    asi que el usuario veia el mensaje de limite de pasos aunque el agente si
+    tenia los datos. El turno de cierre necesita su propio presupuesto.
+    """
+    vistos = []
+
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+        vistos.append({"tools": tools, "max_tokens": max_tokens})
+        if tools:
+            return {"choices": [{
+                "message": {"role": "assistant", "content": None,
+                            "tool_calls": [{"id": f"c{len(vistos)}",
+                                            "type": "function",
+                                            "function": {"name": "mcp__inexistente__x",
+                                                         "arguments": "{}"}}]},
+                "finish_reason": "tool_calls"}]}
+        return {"choices": [{
+            "message": {"role": "assistant", "content": "Cierro con lo que tengo."},
+            "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    texto, _sid = orchestrator.run("pregunta larga", Collector())
+
+    assert texto == "Cierro con lo que tengo."
+    assert orchestrator.MAX_TOKENS_CIERRE > orchestrator.MAX_TOKENS
+    assert vistos[-1]["tools"] is None, "el cierre va sin herramientas"
+    assert vistos[-1]["max_tokens"] == orchestrator.MAX_TOKENS_CIERRE
+    # Los turnos del loop siguen con el presupuesto normal.
+    assert vistos[0]["max_tokens"] is None

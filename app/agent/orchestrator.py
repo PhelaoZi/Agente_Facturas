@@ -26,6 +26,14 @@ from app.config import DB_URL, PROJECT_ROOT
 MAX_ITERACIONES = 12
 MAX_TOKENS = 1500
 
+# Presupuesto aparte para el turno de cierre. Los modelos de razonamiento
+# (GLM 5.2, el default) gastan tokens PENSANDO antes de escribir, y esos
+# reasoning_tokens cuentan contra max_tokens. Cerrar un turno largo exige
+# releer todo el historial: con 1500 el modelo se quedaba sin presupuesto
+# razonando y devolvia content=None con finish_reason=length, o sea el usuario
+# recibia "limite de pasos" aunque el agente ya tenia la respuesta.
+MAX_TOKENS_CIERRE = 4000
+
 # Estructura global en memoria para persistir el historial por session_id (mono-usuario/mono-proceso)
 CHAT_SESSIONS = {}
 
@@ -83,15 +91,16 @@ def ejecutar_sql_local(sql_str: str) -> str:
     finally:
         conn.close()
 
-def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list, tools: list | None = None) -> dict:
+def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
+                          tools: list | None = None, max_tokens: int | None = None) -> dict:
     """Envía peticiones de completions a OpenRouter usando urllib.request."""
     url = "https://openrouter.ai/api/v1/chat/completions"
-    
+
     # Preparar el cuerpo estilo OpenAI
     cuerpo = {
         "model": model,
         "messages": [{"role": "system", "content": system}] + messages,
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": max_tokens or MAX_TOKENS,
     }
     if tools:
         cuerpo["tools"] = tools
@@ -149,8 +158,16 @@ def _respuesta_de_cierre(api_key, model, system_prompt, historial):
     """
     mensajes = historial + [{"role": "user", "content": INSTRUCCION_CIERRE}]
     try:
-        resp = llamar_openrouter_api(api_key, model, system_prompt, mensajes, None)
-        return (resp["choices"][0]["message"].get("content") or "").strip()
+        resp = llamar_openrouter_api(api_key, model, system_prompt, mensajes, None,
+                                     max_tokens=MAX_TOKENS_CIERRE)
+        choice = resp["choices"][0]
+        texto = (choice["message"].get("content") or "").strip()
+        if not texto:
+            # Sin esto el modo de falla es invisible: el usuario ve el mensaje
+            # generico y en el log no queda por que.
+            print(f"El turno de cierre no devolvió texto "
+                  f"(finish_reason={choice.get('finish_reason')})")
+        return texto
     except Exception as e:
         print(f"El turno de cierre falló: {e}")
         return ""
