@@ -369,14 +369,18 @@ def q_costos_sku(cur, objs):
     return cur.fetchall()
 
 
-# Precios de venta confirmados (neto, por barril 30L) - desde CLAUDE.md
-PRECIOS_VENTA_NETO = {
-    "cream ale": 55370,
-    "scotch ale": 55370,
-    "stout cafe": 75000,
-    "stout cacao": 75000,
-    "paint it black": 98000,
-}
+def q_margenes(cur, objs):
+    """Margen por SKU desde app/negocio/costos.py — la MISMA funcion que usa el
+    chat, para que el panel y el agente nunca den cifras distintas.
+
+    Antes el panel tenia su propia lista de precios pegada aqui y calculaba el
+    margen en JavaScript: solo cubria barriles y descontaba el envase PET, que
+    el cliente paga en linea aparte, asi que el PET salia con perdida falsa.
+    """
+    if "vista_costo_sku" not in objs:
+        return []
+    from app.negocio import costos as costos_data
+    return costos_data.margenes(cur)
 
 import datetime as _dt
 from calendar import monthrange as _monthrange
@@ -473,21 +477,13 @@ def construir_recomendaciones(payload):
             recs.append({"prioridad": "media", "icono": "alert-triangle",
                 "titulo": f"Riesgo de concentración: {tc[0].get('razon_social')} es el {share:.0f}% de tus ventas",
                 "detalle": "Depender tanto de un solo cliente es riesgoso; conviene diversificar la cartera."})
-    costos = payload.get("costos_sku") or []
-    precios = payload.get("precios_venta") or {}
+    # Margen bajo: se lee de la misma fuente que el panel y el chat, asi que
+    # cubre todos los formatos y no descuenta el envase PET que va facturado
+    # aparte.
     bajos = []
-    for x in costos:
-        f = (x.get("formato") or "").lower()
-        if not ("30" in f or "barril" in f):
-            continue
-        key = next((k for k in precios if k in (x.get("nombre_cerveza") or "").lower()), None)
-        if not key:
-            continue
-        venta = precios[key]; costo = float(x.get("costo_total_unitario") or 0)
-        if venta:
-            m = (venta - costo) / venta * 100
-            if m < 25:
-                bajos.append((x.get("nombre_cerveza"), m))
+    for m in (payload.get("margenes") or []):
+        if m.get("margen_pct") is not None and m["margen_pct"] < 25:
+            bajos.append((f"{m['cerveza']} {m['formato']}", m["margen_pct"]))
     if bajos:
         nm = ", ".join(f"{b[0]} ({b[1]:.0f}%)" for b in bajos)
         recs.append({"prioridad": "media", "icono": "chart-bar",
@@ -841,7 +837,7 @@ def build_payload():
                 payload["por_cobrar"] = run("por_cobrar", q_por_cobrar, cols)
                 payload["por_pagar"] = run("por_pagar", q_por_pagar, cols, objs)
                 payload["costos_sku"] = run("costos_sku", q_costos_sku, objs)
-                payload["precios_venta"] = PRECIOS_VENTA_NETO
+                payload["margenes"] = run("margenes", q_margenes, objs)
                 payload["flujo_caja"] = run("flujo_caja", q_flujo_caja, cols, objs)
                 payload["cobranza"] = run("cobranza", q_cobranza, cols, objs)
     finally:

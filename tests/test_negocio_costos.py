@@ -104,6 +104,24 @@ def test_margenes_cae_a_la_lista_cuando_no_hay_facturas():
     assert r[0]["origen"] == "lista"
 
 
+def test_el_dashboard_no_tiene_su_propia_lista_de_precios():
+    """El panel tenia PRECIOS_VENTA_NETO pegado en dashboard.py y calculaba el
+    margen en JavaScript: solo cubria barriles, usaba precios de lista viejos y
+    descontaba el envase PET (que el cliente paga aparte), asi que mostraba
+    cifras distintas a las del chat. Ahora ambos leen costos.margenes().
+
+    Si alguien vuelve a pegar una lista de precios ahi, el panel y el agente
+    empiezan a contradecirse otra vez.
+    """
+    from pathlib import Path
+    fuente = (Path(__file__).resolve().parent.parent /
+              "app" / "dashboard.py").read_text(encoding="utf-8")
+    assert "PRECIOS_VENTA_NETO" not in fuente
+
+    from app import dashboard
+    assert hasattr(dashboard, "q_margenes")
+
+
 def test_el_envase_pet_no_se_descuenta_del_margen():
     """El barril PET se factura con su propia línea por el costo del envase, así
     que el cliente ya lo pagó. Descontarlo otra vez del margen daba una pérdida

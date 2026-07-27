@@ -442,7 +442,7 @@
     </div>
     <div class="section-grid">
       <div class="card">
-        <h3><span class="ic">💵</span> Margen por barril 30L</h3>
+        <h3><span class="ic">💵</span> Margen por producto</h3>
         <div class="csub">Costo vs precio de venta neto confirmado</div>
         <div class="tbl-scroll"><table id="tbl-margen"></table></div>
       </div>
@@ -723,21 +723,25 @@ function renderTables(){
 }
 
 function renderMargen(){
-  const cs=DATA.costos_sku||[]; const precios=DATA.precios_venta||{};
-  const norm=s=>(s||'').toLowerCase();
-  const rows=[];
-  cs.forEach(x=>{
-    const f=norm(x.formato);
-    if(!(f.includes('30')||f.includes('barril'))) return;
-    const key=Object.keys(precios).find(k=>norm(x.nombre_cerveza).includes(k));
-    if(!key) return;
-    const venta=precios[key], costo=+x.costo_total_unitario;
-    const margen=venta-costo, pct=venta? (margen/venta*100):0;
+  // El margen ya viene calculado del servidor (app/negocio/costos.py), la misma
+  // funcion que usa el chat: el panel y el agente no pueden dar cifras
+  // distintas. Aqui solo se dibuja.
+  const rows=(DATA.margenes||[]).map(m=>{
+    if(m.margen===null||m.margen===undefined){
+      return `<tr><td>${esc(m.cerveza)}</td><td>${esc(m.formato)}</td>
+        <td class="num">${clp(m.costo_comparable)}</td>
+        <td class="num" colspan="3" style="opacity:.6">aún sin ventas</td></tr>`;
+    }
+    const pct=+m.margen_pct;
     const cl=pct>=50?'pos':pct>=25?'':'neg';
-    rows.push(`<tr><td>${esc(x.nombre_cerveza)}</td><td>${esc(x.formato)}</td>
-      <td class="num">${clp(costo)}</td><td class="num">${clp(venta)}</td>
-      <td class="num"><span class="${margen>=0?'pos':'neg'}" style="font-weight:700">${clp(margen)}</span></td>
-      <td class="num"><span class="${cl}" style="font-weight:700">${pct.toFixed(0)}%</span></td></tr>`);
+    // El envase PET va facturado aparte a costo: no se descuenta del margen.
+    const nota=m.envase_pass_through? ' <span style="opacity:.55;font-size:.85em">(envase aparte)</span>':'';
+    const apoyo=m.origen==='facturas'? `${m.n_facturas} fact.` : 'lista';
+    return `<tr><td>${esc(m.cerveza)}</td><td>${esc(m.formato)}${nota}</td>
+      <td class="num">${clp(m.costo_comparable)}</td>
+      <td class="num">${clp(m.precio_venta)} <span style="opacity:.55;font-size:.85em">${apoyo}</span></td>
+      <td class="num"><span class="${m.margen>=0?'pos':'neg'}" style="font-weight:700">${clp(m.margen)}</span></td>
+      <td class="num"><span class="${cl}" style="font-weight:700">${pct.toFixed(0)}%</span></td></tr>`;
   });
   tbl('tbl-margen', `<th>Cerveza</th><th>Formato</th><th class="num">Costo</th><th class="num">Precio venta neto</th><th class="num">Margen $</th><th class="num">Margen %</th>`, rows);
 }
