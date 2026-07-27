@@ -104,7 +104,7 @@ ITEM_MAP = {
     "endozym aldc":           ("Endozym ALDC",                          1),   # unidad (1L aprox)
     # maltas Almacén (sacos 25kg, "MD S" = molido doble saco)
     "aroma 150 md s":         ("Malta Arome",                         25),
-    "cara 50 md s":           ("Malta Cara 50",                       25),
+    "cara 50 md s":           ("Malta Cara 50 / Ruby",                25),
     "biscuit 50 md s":        ("Malta Biscuit",                       25),
 
     # ── Mundo Cervecero (precios por kg directamente) ─────────────────────────
@@ -113,7 +113,7 @@ ITEM_MAP = {
     "trigo malteado claro":   ("Trigo Malteado claro",                   1),
     "trigo malteado best malz": ("Trigo Malteado claro",                 1),
     "dextrosa":               ("Dextrosa",                               1),
-    "cara ruby":              ("Malta Cara Ruby",                        1),
+    "cara ruby":              ("Malta Cara 50 / Ruby",                   1),
 
     # ── Bucarest (bolsas de 25 kg, PrcItem = precio por bolsa) ───────────────
     "malta uma - pilsen":     ("Malta Pilsen",                          25),
@@ -130,7 +130,7 @@ ITEM_MAP = {
     "carafa especial tipo 2 weyermann 1 kilo": ("Malta Carafa 2",         1),
     "roast barley":                            ("Cebada Tostada",         1),
     "roasted barley":                          ("Cebada Tostada",         1),  # la marca da igual
-    "cara 50 ebc":                             ("Malta Cara 50",         10),  # saco Castle Malting
+    "cara 50 ebc":                             ("Malta Cara 50 / Ruby", 10),  # saco Castle Malting
     "avena 10 kilos":                          ("Avena",                 10),
     "avena 1 kilo":                            ("Avena",                  1),
     "hojuelas de cebada 10":                   ("Hojuela de Cebada",     10),

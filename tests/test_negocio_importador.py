@@ -391,9 +391,9 @@ def test_compra_de_cafe_actualiza_el_insumo_de_la_stout(item, precio, esperado):
     ("76518077-5", "ROASTED BARLEY WEYERMANN 1 KILO", 2437,
      "Cebada Tostada -> $2437.0000/unidad"),
     ("76518077-5", "MALTA CARA 50 EBC CR CASTLE MALTING 10 KILOS", 21008,
-     "Malta Cara 50 -> $2100.8000/unidad"),
+     "Malta Cara 50 / Ruby -> $2100.8000/unidad"),
     ("76045387-0", "Malta Cara Ruby 50 Castle Malting", 2437,
-     "Malta Cara Ruby -> $2437.0000/unidad"),
+     "Malta Cara 50 / Ruby -> $2437.0000/unidad"),
 ])
 def test_maltas_con_otra_marca_mapean_al_mismo_insumo(rut, item, precio, esperado):
     cur = FakeCursor()
