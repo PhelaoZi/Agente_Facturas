@@ -125,8 +125,19 @@ puras que se extrajeron de `scripts/`: `parse_dte.parsear_contenido` /
 `scripts/`, la web la hereda sola.
 
 - **Clasificación automática** por RUT emisor: `76308012-9` (Zigurat) + tipo
-  33/34/39/41 → venta; + todos tipo 61 → nota de crédito; otro emisor → compra.
-  Emisores mezclados o archivo sin `<Documento>` → error explícito, sin escribir.
+  33/34/39/41 → venta; + todos tipo 61 → nota de crédito; **ningún** documento
+  con el RUT propio → compra. Lo que discrimina es *si Zigurat es el emisor*,
+  no cuántos emisores hay: la descarga masiva de documentos recibidos del SII
+  trae en un mismo archivo las facturas de todos los proveedores del período,
+  así que varios emisores ajenos es la forma normal de una compra. Solo la
+  mezcla de documentos propios con ajenos (ventas + compras juntas) o un
+  archivo sin `<Documento>` → error explícito, sin escribir.
+- **Orden cronológico de proceso:** `importar_dte` ordena los archivos por su
+  última `FchEmis` y `importar_compra` ordena los documentos dentro de cada uno.
+  Es necesario porque `procesar_insumos` sobrescribe el precio con un `UPDATE`
+  sin condición —manda el último documento procesado— y el SII numera la
+  descarga masiva al revés (el `(7)` es el más antiguo). Sin este orden, cargar
+  un período completo deja los insumos con los precios más viejos del lote.
 - **Invariante:** validar e insertar viven dentro de `importar_venta`, en ese
   orden y sin camino alternativo — el equivalente en proceso del flag
   `.changes_validated` que protege a la CLI. Si la validación falla, retorna sin

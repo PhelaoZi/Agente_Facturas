@@ -1038,6 +1038,10 @@ def importar_dte(archivos: list) -> dict:
     y los demás se importan igual.
     """
     resultados = []
+    # Del más antiguo al más nuevo: la descarga masiva del SII numera los
+    # archivos al revés, y el precio de un insumo lo fija el último UPDATE.
+    archivos = sorted(
+        archivos, key=lambda a: importador.fecha_mas_reciente(importador.decodificar(a[1])))
     conn = get_conn_tuplas()
     try:
         for nombre, raw in archivos:

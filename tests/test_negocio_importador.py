@@ -92,19 +92,44 @@ def xml_nota_credito(folio=910, folio_ref=4743):
 </Documento></DTE></SetDTE></EnvioDTE>"""
 
 
-def xml_compra(rut_emisor="77755083-7", razon="BUCAREST SPA", item="MALTA UMA - PILSEN",
-               precio=32000, folio=8801):
-    return f"""<?xml version="1.0" encoding="ISO-8859-1"?>
-<EnvioDTE><SetDTE><DTE><Documento ID="F{folio}T33">
+def doc_compra(rut_emisor="77755083-7", razon="BUCAREST SPA", item="MALTA UMA - PILSEN",
+               precio=32000, folio=8801, fecha="2026-07-20"):
+    """Un <Documento> de proveedor, sin envoltorio (para armar descargas masivas)."""
+    return f"""<Documento ID="F{folio}T33">
 <Encabezado>
-<IdDoc><TipoDTE>33</TipoDTE><Folio>{folio}</Folio><FchEmis>2026-07-20</FchEmis></IdDoc>
+<IdDoc><TipoDTE>33</TipoDTE><Folio>{folio}</Folio><FchEmis>{fecha}</FchEmis></IdDoc>
 <Emisor><RUTEmisor>{rut_emisor}</RUTEmisor><RznSoc>{razon}</RznSoc></Emisor>
 <Receptor><RUTRecep>{importador.RUT_EMISOR_PROPIO}</RUTRecep></Receptor>
 <Totales><MntNeto>320000</MntNeto><IVA>60800</IVA><MntTotal>380800</MntTotal></Totales>
 </Encabezado>
 <Detalle><NmbItem>{item}</NmbItem><QtyItem>10</QtyItem>
 <PrcItem>{precio}</PrcItem><MontoItem>320000</MontoItem></Detalle>
-</Documento></DTE></SetDTE></EnvioDTE>"""
+</Documento>"""
+
+
+def envio_dte(*documentos):
+    """Envuelve uno o varios <Documento> en un EnvioDTE, como lo entrega el SII."""
+    return ('<?xml version="1.0" encoding="ISO-8859-1"?>\n<EnvioDTE><SetDTE>'
+            + "".join(f"<DTE>{d}</DTE>" for d in documentos)
+            + "</SetDTE></EnvioDTE>")
+
+
+def xml_compra(**kw):
+    return envio_dte(doc_compra(**kw))
+
+
+def xml_compras_masivo():
+    """Descarga masiva de documentos recibidos: varios proveedores en un archivo.
+
+    Es el formato real y único en que el SII entrega las compras del período.
+    """
+    return envio_dte(
+        doc_compra(folio=8801),                                        # Bucarest, insumo
+        doc_compra(rut_emisor="76052927-3", razon="AUTOPISTA VESPUCIO SUR",
+                   item="PEAJE", folio=5511),                          # gasto
+        doc_compra(rut_emisor="76045387-0", razon="MUNDO CERVECERO",
+                   item="MALTA CHOCOLATE", precio=2400, folio=7702),   # insumo
+    )
 
 
 # ─── nombre_seguro ────────────────────────────────────────────────────────────
@@ -166,7 +191,18 @@ def test_clasifica_desconocido_sin_documentos():
     assert "<Documento>" in r["motivo"]
 
 
-def test_clasifica_desconocido_si_mezcla_emisores():
+def test_clasifica_descarga_masiva_de_compras_como_compra():
+    # El SII entrega los documentos RECIBIDOS de todo el período en un solo
+    # archivo, con un emisor distinto por proveedor. Varios emisores ajenos es
+    # la forma normal de una compra, no un archivo mal armado.
+    r = importador.clasificar(xml_compras_masivo())
+    assert r["clase"] == "compra"
+    assert r["rut_emisor"] is None                      # no hay uno solo
+    assert set(r["ruts_emisores"]) == {"77755083-7", "76052927-3", "76045387-0"}
+
+
+def test_clasifica_desconocido_si_mezcla_documentos_propios_con_ajenos():
+    # Esto sí es ambiguo de verdad: ventas y compras van a pipelines distintos.
     r = importador.clasificar(xml_venta() + xml_compra())
     assert r["clase"] == "desconocido"
     assert "mezcla" in r["motivo"]
@@ -294,6 +330,60 @@ def test_marcar_una_compra_la_deja_registrada_para_la_proxima():
     # Marcar dos veces no duplica ni rompe el archivo.
     importador.marcar_compra_procesada("compra.xml")
     assert sync_compras._load_procesados() == {"compra.xml"}
+
+
+def test_importar_compra_procesa_todos_los_proveedores_del_archivo():
+    cur = FakeCursor()
+    res = importador.importar_compra(cur, xml_compras_masivo().encode("latin-1"), "masivo.xml")
+
+    assert res["estado"] == "ok"
+    assert res["gastos_insertados"] == 1                         # el peaje
+    assert len(res["precios_actualizados"]) == 2                 # Bucarest + Mundo Cervecero
+    assert res["procesado_completo"] is True
+
+
+def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():
+    # El UPDATE de precios no tiene condición: manda el último documento
+    # procesado. Con los documentos desordenados dentro del archivo (así los
+    # entrega el SII), el insumo debe quedar con el precio más reciente.
+    xml = envio_dte(
+        doc_compra(precio=35000, folio=9001, fecha="2026-07-22"),   # el nuevo, primero
+        doc_compra(precio=32000, folio=8801, fecha="2026-06-02"),   # el viejo, después
+    )
+    cur = FakeCursor()
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "desordenado.xml")
+
+    assert res["precios_actualizados"] == [
+        "Malta Pilsen -> $1280.0000/unidad",     # junio, primero
+        "Malta Pilsen -> $1400.0000/unidad",     # julio, gana
+    ]
+    updates = [p for sql, p in cur.ejecutados if "UPDATE maestro_insumos" in sql]
+    assert updates[-1] == (1400.0, "Malta Pilsen")
+
+
+@pytest.mark.parametrize("contenido, esperado", [
+    (envio_dte(doc_compra(fecha="2026-06-02"), doc_compra(fecha="2026-07-22")), "2026-07-22"),
+    (envio_dte(doc_compra(fecha="2026-06-02")), "2026-06-02"),
+    ("<html>sin fechas</html>", ""),
+])
+def test_fecha_mas_reciente_ordena_la_carga(contenido, esperado):
+    assert importador.fecha_mas_reciente(contenido) == esperado
+
+
+def test_un_proveedor_desconocido_no_bloquea_al_resto_del_archivo():
+    # Casi toda descarga masiva trae algún proveedor nuevo: los conocidos deben
+    # cargarse igual, y el archivo NO marcarse para poder reimportarlo después.
+    xml = envio_dte(
+        doc_compra(folio=8801),
+        doc_compra(rut_emisor="11111111-1", razon="PROVEEDOR NUEVO SPA", folio=9902),
+    )
+    cur = FakeCursor()
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "masivo_parcial.xml")
+
+    assert res["precios_actualizados"] == ["Malta Pilsen -> $1280.0000/unidad"]
+    assert res["estado"] == "omitido"
+    assert res["procesado_completo"] is False
+    assert any("sin clasificar" in e for e in res["errores"])
 
 
 def test_proveedor_sin_clasificar_no_se_marca_como_procesado():

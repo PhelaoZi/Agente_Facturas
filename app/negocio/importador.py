@@ -73,18 +73,32 @@ def nombre_seguro(nombre):
 def clasificar(contenido):
     """Decide si el XML es venta, nota de crédito o compra.
 
-    Mira el emisor de cada <Documento> (no la carátula del envío):
-    - emisor propio + todos los documentos tipo 61 → nota_credito
-    - emisor propio + cualquier otro tipo          → venta
-    - otro emisor                                  → compra
-    - sin documentos, sin emisor o con emisores mezclados → desconocido
+    Mira el emisor de cada <Documento> (no la carátula del envío). Lo que
+    discrimina es **si Zigurat es el emisor**, no cuántos emisores hay: la
+    descarga masiva de documentos *recibidos* del SII empaqueta en un mismo
+    archivo las facturas de todos los proveedores del período, así que "varios
+    emisores distintos" es la forma normal —y única— de una compra.
 
-    Retorna {"clase", "rut_emisor", "tipos", "motivo"}.
+    - ningún documento con emisor propio          → compra (1 o N proveedores)
+    - todos con emisor propio, todos tipo 61      → nota_credito
+    - todos con emisor propio, cualquier otro tipo → venta
+    - mezcla de emisor propio con terceros        → desconocido (ventas y
+      compras van a pipelines distintos; hay que separar el archivo)
+    - sin documentos o sin emisor                 → desconocido
+
+    Retorna {"clase", "rut_emisor", "ruts_emisores", "tipos", "motivo"}, donde
+    `rut_emisor` es el emisor solo cuando hay uno; con varios proveedores es
+    None y la lista completa va en `ruts_emisores`.
     """
+    def resultado(clase, ruts, tipos, motivo=None):
+        return {"clase": clase, "tipos": tipos, "motivo": motivo,
+                "ruts_emisores": ruts,
+                "rut_emisor": ruts[0] if len(ruts) == 1 else None}
+
     bloques = re.findall(r"<Documento ID=.*?</Documento>", contenido, re.DOTALL)
     if not bloques:
-        return {"clase": "desconocido", "rut_emisor": None, "tipos": [],
-                "motivo": "El archivo no contiene documentos DTE (<Documento>)."}
+        return resultado("desconocido", [], [],
+                         "El archivo no contiene documentos DTE (<Documento>).")
 
     ruts, tipos = [], []
     for bloque in bloques:
@@ -96,19 +110,22 @@ def clasificar(contenido):
             tipos.append(tipo.group(1).strip())
 
     if not ruts:
-        return {"clase": "desconocido", "rut_emisor": None, "tipos": tipos,
-                "motivo": "Los documentos no traen RUT del emisor."}
-    if len(ruts) > 1:
-        return {"clase": "desconocido", "rut_emisor": None, "tipos": tipos,
-                "motivo": f"El archivo mezcla varios emisores ({', '.join(ruts)}); "
-                          f"sepáralos en archivos distintos."}
+        return resultado("desconocido", ruts, tipos,
+                         "Los documentos no traen RUT del emisor.")
 
-    rut = ruts[0]
-    if rut != RUT_EMISOR_PROPIO:
-        return {"clase": "compra", "rut_emisor": rut, "tipos": tipos, "motivo": None}
+    ajenos = [r for r in ruts if r != RUT_EMISOR_PROPIO]
+    if ajenos and len(ajenos) < len(ruts):
+        # Único caso realmente ambiguo: ventas propias y compras en un mismo
+        # archivo, que van a pipelines distintos.
+        return resultado("desconocido", ruts, tipos,
+                         f"El archivo mezcla documentos emitidos por Zigurat con documentos "
+                         f"de terceros ({', '.join(ajenos)}); las ventas y las compras se "
+                         f"procesan aparte, sepáralos en archivos distintos.")
+    if ajenos:
+        return resultado("compra", ruts, tipos)
 
     clase = "nota_credito" if all(t == TIPO_NOTA_CREDITO for t in tipos) else "venta"
-    return {"clase": clase, "rut_emisor": rut, "tipos": tipos, "motivo": None}
+    return resultado(clase, ruts, tipos)
 
 
 # ─── Resultado por archivo ───────────────────────────────────────────────────
@@ -208,7 +225,9 @@ def importar_compra(cur, raw, nombre):
         return res
 
     sin_clasificar = []
-    for dte in dtes:
+    # De más antiguo a más nuevo: el precio que queda es el de la factura
+    # más reciente, no el del documento que venía último en el archivo.
+    for dte in sorted(dtes, key=lambda d: d["fecha"] or ""):
         rut = dte["rut_emisor"]
         if rut in sync_compras.PROVEEDORES_GASTOS:
             _, categoria = sync_compras.PROVEEDORES_GASTOS[rut]
@@ -282,6 +301,19 @@ def guardar_xml(raw, nombre, clase):
 def decodificar(raw):
     """Los DTE del SII vienen en ISO-8859-1 (latin-1), que nunca falla al decodificar."""
     return raw.decode("latin-1")
+
+
+def fecha_mas_reciente(contenido):
+    """Última fecha de emisión del archivo, para ordenar la carga cronológicamente.
+
+    `procesar_insumos` sobrescribe el precio con un UPDATE sin condición: manda
+    el último documento procesado. Como la descarga masiva del SII numera los
+    archivos al revés (el "(7)" es el más antiguo), procesarlos en el orden que
+    llegan dejaría los insumos con precios viejos. Retorna "" si no hay fechas
+    (esos archivos van primero y de todos modos fallan la clasificación).
+    """
+    fechas = re.findall(r"<FchEmis>(\d{4}-\d{2}-\d{2})</FchEmis>", contenido)
+    return max(fechas) if fechas else ""
 
 
 def ruta_relativa(path):
