@@ -988,6 +988,7 @@ function renderImportacion(d){
     (a.precios_actualizados||[]).forEach(p=>{ html+=`<li>${esc(p)}</li>`; });
     if(a.gastos_insertados) html+=`<li>${num(a.gastos_insertados)} gasto(s) operativo(s) registrado(s)</li>`;
     (a.sin_mapeo||[]).forEach(x=>{ html+=`<li>No es insumo de receta, va a gastos varios: ${esc(x)}</li>`; });
+    (a.precios_mas_nuevos||[]).forEach(x=>{ html+=`<li>Precio sin cambio — ${esc(x)}</li>`; });
     (a.advertencias||[]).forEach(x=>{ html+=`<li>${esc(x)}</li>`; });
     (a.errores||[]).forEach(x=>{ html+=`<li class="err">${esc(x)}</li>`; });
     html+='</ul>';

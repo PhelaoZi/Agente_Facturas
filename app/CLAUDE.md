@@ -134,10 +134,14 @@ puras que se extrajeron de `scripts/`: `parse_dte.parsear_contenido` /
   archivo sin `<Documento>` → error explícito, sin escribir.
 - **Orden cronológico de proceso:** `importar_dte` ordena los archivos por su
   última `FchEmis` y `importar_compra` ordena los documentos dentro de cada uno.
-  Es necesario porque `procesar_insumos` sobrescribe el precio con un `UPDATE`
-  sin condición —manda el último documento procesado— y el SII numera la
-  descarga masiva al revés (el `(7)` es el más antiguo). Sin este orden, cargar
-  un período completo deja los insumos con los precios más viejos del lote.
+  El SII numera la descarga masiva al revés (el `(7)` es el más antiguo), así
+  que sin este orden se procesaría de lo nuevo a lo viejo.
+- **Precio del insumo = factura más nueva, no último archivo procesado.**
+  `maestro_insumos.precio_fecha_dte` guarda la `FchEmis` de la factura que fijó
+  el precio vigente, y el `UPDATE` de `procesar_insumos` solo pisa si la nueva
+  es igual o posterior. Es la defensa de fondo: el orden cronológico ayuda pero
+  se rompe apenas alguien reimporta una compra vieja por separado. Los precios
+  bloqueados se reportan (`precios_mas_nuevos`), no se silencian.
 - **Invariante:** validar e insertar viven dentro de `importar_venta`, en ese
   orden y sin camino alternativo — el equivalente en proceso del flag
   `.changes_validated` que protege a la CLI. Si la validación falla, retorna sin
@@ -146,11 +150,11 @@ puras que se extrajeron de `scripts/`: `parse_dte.parsear_contenido` /
   de `sync_db`) y se reportan; la UI avisa cuántos y muestra cuáles solo si se
   despliega el `<details>`.
 - **Duplicados en compras:** se chequea `facturas-compras/.procesados.json`
-  **antes** de procesar (`compra_ya_procesada`). Es imprescindible: los gastos
-  son idempotentes por `(folio, rut_emisor)`, pero `procesar_insumos` hace un
-  `UPDATE precio_neto_unitario` sin condición, así que recargar una factura
-  antigua dejaría el insumo con un precio viejo. Ese registro es la única
-  defensa — no quitarlo ni convertirlo en escritura-solamente.
+  **antes** de procesar (`compra_ya_procesada`). Los gastos son idempotentes por
+  `(folio, rut_emisor)` y los precios están protegidos por `precio_fecha_dte`,
+  así que este registro ya no es la única defensa; sigue siendo el que evita
+  reprocesar trabajo en vano y el que permite reimportar un archivo cuando se
+  agrega el proveedor que faltaba.
 - **Transacción por archivo:** un XML corrupto hace rollback de lo suyo y los
   demás se importan igual. Usa `get_conn_tuplas()`, **no `get_conn()`**:
   `sync_db` lee las filas por índice (`row[0]`) y un `RealDictCursor` lo rompe

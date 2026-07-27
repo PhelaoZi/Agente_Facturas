@@ -17,7 +17,7 @@ variables del lote.
 
 | Tabla | Propósito |
 |-------|-----------|
-| `maestro_insumos` | Catálogo de insumos con `categoria` (malta, lupulo, levadura, adjunto, clarificante, envase, tapa, etiqueta, caja) y `precio_neto_unitario`. |
+| `maestro_insumos` | Catálogo de insumos con `categoria` (malta, lupulo, levadura, adjunto, clarificante, envase, tapa, etiqueta, caja) y `precio_neto_unitario`. `precio_fecha_dte` = fecha de la factura que fijó ese precio: `sync_compras` solo lo pisa con una factura igual o más nueva, así que reimportar una compra vieja no lo retrocede. |
 | `recetas` | Una fila por cerveza, con `costo_mano_obra_lote`, `costo_servicios_lote` y `merma_porcentaje`. |
 | `receta_detalle` | BOM de líquido por receta. |
 | `formatos` | Catálogo plano: Botella 330ml / Barril 30L acero / Barril 30L PET. |

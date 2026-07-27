@@ -453,6 +453,56 @@ def test_lo_que_no_es_insumo_se_registra_como_gasto():
     assert params[8] == "insumos varios"
 
 
+class CursorConPrecioVigente(FakeCursor):
+    """Simula un insumo cuyo precio ya viene de una factura más nueva.
+
+    El UPDATE lleva la guarda de fecha en el WHERE, así que Postgres no toca
+    ninguna fila: acá eso se representa con rowcount 0 y el SELECT de control
+    devolviendo la fecha vigente.
+    """
+
+    def __init__(self, fecha_vigente):
+        super().__init__(rowcount=0)
+        self.fecha_vigente = fecha_vigente
+
+    def fetchone(self):
+        if "SELECT precio_fecha_dte" in self._ultimo:
+            return (self.fecha_vigente,)
+        return None
+
+
+def test_una_factura_vieja_no_pisa_el_precio_de_una_mas_nueva():
+    # El caso que motiva la columna: reimportar una compra antigua dejaría el
+    # insumo con un precio de hace meses sin que nadie se entere.
+    cur = CursorConPrecioVigente("2026-07-23")
+    xml = xml_compra(precio=25000, fecha="2026-06-02")
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "vieja.xml")
+
+    assert res["precios_actualizados"] == []
+    assert len(res["precios_mas_nuevos"]) == 1
+    assert "más nueva" in res["precios_mas_nuevos"][0]
+    assert res["sin_mapeo"] == []          # el insumo existe, no es un problema de mapeo
+
+
+def test_el_update_de_precio_lleva_la_guarda_de_fecha():
+    cur = FakeCursor()
+    importador.importar_compra(cur, xml_compra(fecha="2026-07-20").encode("latin-1"), "c.xml")
+
+    sql, params = [e for e in cur.ejecutados if "UPDATE maestro_insumos" in e[0]][0]
+    assert "precio_fecha_dte IS NULL OR precio_fecha_dte <= %s" in sql
+    assert params == (1280.0, "2026-07-20", "Malta Pilsen", "2026-07-20")
+
+
+def test_un_insumo_que_no_existe_se_reporta_como_falta_de_mapeo():
+    # rowcount 0 tiene dos causas; no hay que confundir "no existe el insumo"
+    # con "la factura es vieja".
+    cur = FakeCursor(rowcount=0)          # fetchone() -> None: el insumo no está
+    res = importador.importar_compra(cur, xml_compra().encode("latin-1"), "c.xml")
+
+    assert res["precios_mas_nuevos"] == []
+    assert any("no existe el insumo" in s for s in res["sin_mapeo"])
+
+
 def test_actualizar_un_precio_deja_el_sello_de_fecha_al_dia():
     # Si el UPDATE no toca actualizado_el, la columna queda marcando la última
     # edición manual y no la factura que de verdad cambió el precio.
@@ -472,9 +522,10 @@ def test_una_factura_solo_de_insumos_no_genera_gasto():
 
 
 def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():
-    # El UPDATE de precios no tiene condición: manda el último documento
-    # procesado. Con los documentos desordenados dentro del archivo (así los
-    # entrega el SII), el insumo debe quedar con el precio más reciente.
+    # Con los documentos desordenados dentro del archivo (así los entrega el
+    # SII), el insumo debe quedar con el precio de la factura más reciente. Lo
+    # garantizan dos cosas: el orden cronológico de proceso y, por si acaso, la
+    # guarda de precio_fecha_dte en el UPDATE.
     xml = envio_dte(
         doc_compra(precio=35000, folio=9001, fecha="2026-07-22"),   # el nuevo, primero
         doc_compra(precio=32000, folio=8801, fecha="2026-06-02"),   # el viejo, después
@@ -487,7 +538,7 @@ def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():
         "Malta Pilsen -> $1400.0000/unidad",     # julio, gana
     ]
     updates = [p for sql, p in cur.ejecutados if "UPDATE maestro_insumos" in sql]
-    assert updates[-1] == (1400.0, "Malta Pilsen")
+    assert updates[-1] == (1400.0, "2026-07-22", "Malta Pilsen", "2026-07-22")
 
 
 @pytest.mark.parametrize("contenido, esperado", [

@@ -136,7 +136,8 @@ def _resultado_base(nombre, clase):
         "archivo": nombre, "clase": clase, "estado": "ok",
         "facturas": 0, "notas_credito": 0, "productos": 0,
         "duplicados": [], "precios_actualizados": [], "gastos_insertados": 0,
-        "sin_mapeo": [], "ruts": [], "errores": [], "advertencias": [],
+        "sin_mapeo": [], "precios_mas_nuevos": [], "ruts": [],
+        "errores": [], "advertencias": [],
         "guardado_en": None, "procesado_completo": True, "ya_procesada": False,
     }
 
@@ -237,9 +238,10 @@ def importar_compra(cur, raw, nombre):
                 res["advertencias"].append(
                     f"Folio {dte['folio']} de {dte['razon_social']}: ya estaba registrado.")
         elif rut in sync_compras.PROVEEDORES_INSUMOS:
-            actualizados, no_mapeados = sync_compras.procesar_insumos(dte, cur)
+            actualizados, no_mapeados, omitidos = sync_compras.procesar_insumos(dte, cur)
             res["precios_actualizados"] += actualizados
             res["sin_mapeo"] += no_mapeados
+            res["precios_mas_nuevos"] += omitidos
             # Lo que no es insumo de receta no se bota: queda como gasto.
             if sync_compras.procesar_lineas_no_insumo(dte, no_mapeados, cur):
                 res["gastos_insertados"] += 1

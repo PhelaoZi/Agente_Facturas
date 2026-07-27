@@ -272,9 +272,17 @@ def parse_xml(filepath):
 
 
 def procesar_insumos(dte, cur):
-    """Actualiza precios en maestro_insumos según los items del DTE."""
-    actualizados = []
-    no_mapeados  = []
+    """Actualiza precios en maestro_insumos según los items del DTE.
+
+    El precio solo se pisa si esta factura es igual o más nueva que la que fijó
+    el precio vigente (`precio_fecha_dte`). Sin esa guarda manda el último
+    archivo procesado y no la factura más reciente: reimportar una compra vieja
+    dejaría el insumo con un precio de hace meses, en silencio.
+
+    Retorna (actualizados, no_mapeados, omitidos), listas de texto para mostrar.
+    """
+    actualizados, no_mapeados, omitidos = [], [], []
+    fecha = dte["fecha"]
     for item in dte["items"]:
         nombre_lower = item["nombre"].lower()
         match = next(
@@ -286,18 +294,31 @@ def procesar_insumos(dte, cur):
         _, (nombre_bd, unidades_paquete) = match
         precio_por_unidad = round(item["precio_unitario"] / unidades_paquete, 4)
         cur.execute(
-            # actualizado_el va en el mismo UPDATE: sin eso la columna miente —
-            # marcaba la última edición manual aunque el precio lo hubiera
-            # cambiado una factura, y cualquier lógica que compare fechas de
-            # precio (como la fusión de insumos) decide con datos viejos.
+            # actualizado_el va en el mismo UPDATE: sin eso la columna marcaría
+            # la última edición manual aunque el precio lo cambiara una factura.
             """UPDATE maestro_insumos
-               SET precio_neto_unitario = %s, actualizado_el = NOW()
-               WHERE nombre = %s""",
-            (precio_por_unidad, nombre_bd)
+               SET precio_neto_unitario = %s, actualizado_el = NOW(), precio_fecha_dte = %s
+               WHERE nombre = %s
+                 AND (precio_fecha_dte IS NULL OR precio_fecha_dte <= %s)""",
+            (precio_por_unidad, fecha, nombre_bd, fecha)
         )
         if cur.rowcount:
             actualizados.append(f"{nombre_bd} -> ${precio_por_unidad:.4f}/unidad")
-    return actualizados, no_mapeados
+            continue
+
+        # Sin filas tocadas hay dos causas distintas y conviene no confundirlas:
+        # el insumo no existe (ITEM_MAP apunta a un nombre que no está en el
+        # maestro) o el precio vigente viene de una factura más nueva.
+        cur.execute(
+            "SELECT precio_fecha_dte FROM maestro_insumos WHERE nombre = %s", (nombre_bd,))
+        fila = cur.fetchone()
+        if fila is None:
+            no_mapeados.append(f"{item['nombre']} (no existe el insumo '{nombre_bd}')")
+        else:
+            omitidos.append(
+                f"{nombre_bd}: el precio vigente es de una factura más nueva "
+                f"({fila[0]}), esta es del {fecha}")
+    return actualizados, no_mapeados, omitidos
 
 
 # Categoría de las líneas que factura un proveedor de insumos y no son insumo
@@ -410,9 +431,11 @@ def main():
                         estado = "insertado" if insertado else "ya existía"
                         print(f"    Gasto [{categoria}]: {estado}")
                     elif rut in PROVEEDORES_INSUMOS:
-                        actualizados, no_mapeados = procesar_insumos(dte, cur)
+                        actualizados, no_mapeados, omitidos = procesar_insumos(dte, cur)
                         for msg in actualizados:
                             print(f"    Precio: {msg}")
+                        for msg in omitidos:
+                            print(f"    Sin cambio: {msg}")
                         if procesar_lineas_no_insumo(dte, no_mapeados, cur):
                             print(f"    Gasto [{CATEGORIA_NO_INSUMO}]: {', '.join(no_mapeados)}")
                         elif no_mapeados:
