@@ -35,7 +35,16 @@ devuelve `{texto, artefactos}` al frontend.
 `model`. La lista viva está en `MODELOS_CHAT_PERMITIDOS` (`dashboard.py`) y debe
 coincidir con las `<option>` de `dashboard_ui.html`; el servidor **valida contra
 esa whitelist** (el id llega del navegador). Default: `z-ai/glm-5.2`. Todos
-deben soportar *tool calling*: el agente encadena hasta 8 iteraciones de tools.
+deben soportar *tool calling*: el agente encadena hasta 12 iteraciones de tools.
+
+**Turno de cierre (no borrarlo):** al agotar `MAX_ITERACIONES`, el orquestador
+hace una última llamada **sin tools** para que el modelo responda con lo que ya
+reunió, en vez de botar el turno y devolver una disculpa. Esa llamada usa
+`MAX_TOKENS_CIERRE` (4000) y **no** `MAX_TOKENS` (1500): los modelos de
+razonamiento gastan tokens *pensando* antes de escribir, y esos
+`reasoning_tokens` cuentan contra `max_tokens`. Con 1500, cerrar un turno de 30
+mensajes devolvía `content=None` con `finish_reason=length` — o sea el usuario
+seguía viendo "límite de pasos" aunque el agente ya tenía la respuesta.
 
 **El agente del chat corre AISLADO y determinista:**
 - No lee este CLAUDE.md: todo su conocimiento vive en
@@ -62,8 +71,18 @@ deben soportar *tool calling*: el agente encadena hasta 8 iteraciones de tools.
 - **Lectura (`mcp__negocio__*`):** `deuda_total`, `deuda_cliente`,
   `ranking_deudores`, `facturas_vencidas`, `ventas_total`, `ranking_clientes`,
   `ventas_cliente`, `ventas_producto`, `flujo_caja`, `costos_sku`, `margenes`,
-  `listar_gastos`. Aplican las reglas canónicas (montos ajustados, excluir NC,
-  `fecha_pago`); el prompt obliga a usarlas en vez de improvisar SQL.
+  `margen_cliente`, `listar_gastos`. Aplican las reglas canónicas (montos
+  ajustados, excluir NC, `fecha_pago`); el prompt obliga a usarlas en vez de
+  improvisar SQL.
+
+**Precio y margen — una sola fuente.** `margenes` (precio general) y
+`margen_cliente` (precio de un cliente puntual) salen de
+`app/negocio/costos.py`, que deduce el precio real de las facturas con
+`app/negocio/precios_venta.py`. **El panel de "Costos & Márgenes" consume la
+misma función** vía `q_margenes` en `dashboard.py`: antes tenía su propia lista
+de precios pegada y calculaba el margen en JavaScript, así que el panel y el
+chat mostraban cifras distintas. No reintroducir una lista de precios ahí — hay
+un test que lo impide.
 - **Publicar en el lienzo (`mcp__lienzo__*`):** `publicar_kpi`,
   `publicar_grafico`, `publicar_tabla`, `publicar_informe`.
 - **Proponer escrituras (`mcp__acciones__proponer_*`):** ver mecanismo abajo.
