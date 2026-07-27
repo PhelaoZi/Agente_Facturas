@@ -376,6 +376,25 @@ def test_compra_de_cafe_actualiza_el_insumo_de_la_stout(item, precio, esperado):
     assert res["gastos_insertados"] == 0
 
 
+@pytest.mark.parametrize("rut, item, precio, esperado", [
+    # El nombre del proveedor trae la marca y el formato; el precio se guarda
+    # siempre por unidad del maestro (kg), dividiendo por lo que trae el envase.
+    ("76518077-5", "ROASTED BARLEY WEYERMANN 1 KILO", 2437,
+     "Cebada Tostada -> $2437.0000/unidad"),
+    ("76518077-5", "MALTA CARA 50 EBC CR CASTLE MALTING 10 KILOS", 21008,
+     "Malta Cara 50 -> $2100.8000/unidad"),
+    ("76045387-0", "Malta Cara Ruby 50 Castle Malting", 2437,
+     "Malta Cara Ruby -> $2437.0000/unidad"),
+])
+def test_maltas_con_otra_marca_mapean_al_mismo_insumo(rut, item, precio, esperado):
+    cur = FakeCursor()
+    xml = xml_compra(rut_emisor=rut, item=item, precio=precio)
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "malta.xml")
+
+    assert res["precios_actualizados"] == [esperado]
+    assert res["sin_mapeo"] == []
+
+
 def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():
     # El UPDATE de precios no tiene condición: manda el último documento
     # procesado. Con los documentos desordenados dentro del archivo (así los
