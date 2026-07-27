@@ -143,6 +143,7 @@ ITEM_MAP = {
 
     # ── Gourmet Select ────────────────────────────────────────────────────────
     "grue de cacao":          ("Cacao",                                   1),
+    "pasta de pistacho":      ("Pistacho",                                1),   # pote de 1 kg
 
     # ── Clean Ice SA ──────────────────────────────────────────────────────────
     "co2 anhidrido":          ("CO2",                                     1),

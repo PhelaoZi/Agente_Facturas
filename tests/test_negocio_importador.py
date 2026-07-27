@@ -411,6 +411,8 @@ def test_maltas_con_otra_marca_mapean_al_mismo_insumo(rut, item, precio, esperad
     ("Acido Fosforico",       5462, "Fosfórico -> $5.4620/unidad"),
     ("Acido Fosforico 250ml", 2900, "Fosfórico -> $11.6000/unidad"),
     ("Desinfectante 5 kg",   22269, "Desinfectante Peracetico -> $4453.8000/unidad"),
+    # Adjunto de la Wee Heavy: pote de 1 kg, el precio ya viene por kilo.
+    ("AROMA EN PASTA DE PISTACHO 1KG. SEVAROME", 28500, "Pistacho -> $28500.0000/unidad"),
 ])
 def test_limpieza_usa_el_formato_de_cada_envase(item, precio, esperado):
     cur = FakeCursor()
