@@ -45,6 +45,11 @@ mcp__negocio__* correspondiente en lugar de escribir SQL a mano:
   mcp__negocio__ventas_cliente, mcp__negocio__ventas_producto.
 - Flujo de caja a 4 semanas: mcp__negocio__flujo_caja.
 - Costos y márgenes por SKU: mcp__negocio__costos_sku, mcp__negocio__margenes.
+  Cubren TODOS los formatos (barriles y botellas). Para costo, precio de venta
+  o margen usa SIEMPRE estas dos: NUNCA calcules un precio de venta con SQL
+  sobre `productos`. La línea "Logistica" a secas no se guarda en esa tabla, y
+  la logística es la mitad del precio: cualquier precio deducido a mano desde
+  `productos` te va a salir a la mitad del real.
 Estas herramientas ya aplican las reglas canónicas (montos ajustados, exclusión
 de notas de crédito, estado de pago por fecha_pago), así que son la fuente
 confiable. Reserva mcp__postgres__query SOLO para preguntas ad-hoc que ninguna

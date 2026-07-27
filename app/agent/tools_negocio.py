@@ -162,8 +162,10 @@ def build_negocio_server():
             f"- {s['codigo']} {s['cerveza']} {s['formato']}: costo {_pesos(s['costo_total'])}"
             for s in r))
 
-    @tool("margenes", "Margen por cerveza/formato (precio venta − costo; solo barriles). "
-                      "Opcional: filtrar por receta.", {"receta": str})
+    @tool("margenes", "Margen por cerveza y formato: precio de venta real menos "
+                      "costo unitario. Cubre barriles Y botellas. El precio se "
+                      "deduce de las facturas emitidas. Opcional: filtrar por "
+                      "receta.", {"receta": str})
     @_tool_seguro
     async def margenes(args):
         r = _con_cursor(costos_data.margenes, args.get("receta"))
@@ -172,12 +174,21 @@ def build_negocio_server():
         lineas = []
         for m in r:
             if m["margen"] is None:
-                lineas.append(f"- {m['cerveza']} {m['formato']}: costo {_pesos(m['costo_total'])} "
-                              f"(sin precio de venta confirmado)")
+                lineas.append(f"- {m['cerveza']} {m['formato']}: costo "
+                              f"{_pesos(m['costo_total'])} (aún sin ventas, "
+                              f"así que no hay precio de venta conocido)")
+                continue
+            if m["origen"] == "facturas":
+                respaldo = (f" [{m['n_facturas']} facturas; promedio "
+                            f"{_pesos(m['precio_promedio'])}]")
             else:
-                lineas.append(f"- {m['cerveza']} {m['formato']}: precio {_pesos(m['precio_venta'])} "
-                              f"− costo {_pesos(m['costo_total'])} = margen {_pesos(m['margen'])} "
-                              f"({m['margen_pct']}%)")
+                respaldo = " [precio de lista, este SKU aún no se ha vendido]"
+            if m["envase_pass_through"]:
+                respaldo += " (el envase PET se factura aparte a costo)"
+            lineas.append(f"- {m['cerveza']} {m['formato']}: precio "
+                          f"{_pesos(m['precio_venta'])} − costo "
+                          f"{_pesos(m['costo_comparable'])} = margen "
+                          f"{_pesos(m['margen'])} ({m['margen_pct']}%)" + respaldo)
         return _texto("\n".join(lineas))
 
     @tool("listar_gastos", "Lista los gastos pendientes (cuentas por pagar) con su id, "

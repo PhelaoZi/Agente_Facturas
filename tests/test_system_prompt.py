@@ -44,3 +44,12 @@ def test_system_prompt_incluye_gerente_comercial():
     assert "listar_seguimiento" in SYSTEM_PROMPT
     assert "proponer_agregar_seguimiento" in SYSTEM_PROMPT
     assert "proponer_marcar_seguimiento" in SYSTEM_PROMPT
+
+
+def test_el_prompt_prohibe_calcular_precios_sobre_productos():
+    """La linea `Logistica` exacta no se guarda en `productos`, asi que
+    cualquier precio deducido con SQL a mano sale a la mitad. El agente del
+    chat no lee CLAUDE.md: si la regla no esta aqui, no existe para el."""
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "NUNCA calcules un precio de venta con SQL" in SYSTEM_PROMPT
+    assert "mcp__negocio__margenes" in SYSTEM_PROMPT
