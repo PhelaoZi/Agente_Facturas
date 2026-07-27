@@ -131,9 +131,15 @@ puras que se extrajeron de `scripts/`: `parse_dte.parsear_contenido` /
   orden y sin camino alternativo — el equivalente en proceso del flag
   `.changes_validated` que protege a la CLI. Si la validación falla, retorna sin
   tocar la BD y el XML no se archiva.
-- **Duplicados:** los folios que ya están en la BD se omiten (lógica de
-  `sync_db`) y se reportan; la UI avisa cuántos y muestra cuáles solo si se
+- **Duplicados en ventas:** los folios que ya están en la BD se omiten (lógica
+  de `sync_db`) y se reportan; la UI avisa cuántos y muestra cuáles solo si se
   despliega el `<details>`.
+- **Duplicados en compras:** se chequea `facturas-compras/.procesados.json`
+  **antes** de procesar (`compra_ya_procesada`). Es imprescindible: los gastos
+  son idempotentes por `(folio, rut_emisor)`, pero `procesar_insumos` hace un
+  `UPDATE precio_neto_unitario` sin condición, así que recargar una factura
+  antigua dejaría el insumo con un precio viejo. Ese registro es la única
+  defensa — no quitarlo ni convertirlo en escritura-solamente.
 - **Transacción por archivo:** un XML corrupto hace rollback de lo suyo y los
   demás se importan igual. Usa `get_conn_tuplas()`, **no `get_conn()`**:
   `sync_db` lee las filas por índice (`row[0]`) y un `RealDictCursor` lo rompe

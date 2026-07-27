@@ -120,7 +120,7 @@ def _resultado_base(nombre, clase):
         "facturas": 0, "notas_credito": 0, "productos": 0,
         "duplicados": [], "precios_actualizados": [], "gastos_insertados": 0,
         "sin_mapeo": [], "ruts": [], "errores": [], "advertencias": [],
-        "guardado_en": None, "procesado_completo": True,
+        "guardado_en": None, "procesado_completo": True, "ya_procesada": False,
     }
 
 
@@ -173,14 +173,33 @@ def importar_venta(cur, contenido, nombre, clase="venta"):
 
 # ─── Compras a proveedores ───────────────────────────────────────────────────
 
+def compra_ya_procesada(nombre):
+    """True si el XML ya figura en facturas-compras/.procesados.json."""
+    return nombre in sync_compras._load_procesados()
+
+
 def importar_compra(cur, raw, nombre):
     """Procesa un XML de proveedor: actualiza precios de insumos o registra gastos.
+
+    Se omite si el archivo ya está en `.procesados.json`. Esa lista es la única
+    protección contra reprocesar una compra: los gastos son idempotentes por
+    (folio, rut_emisor), pero los precios de insumos se sobrescriben con un
+    UPDATE simple, así que volver a cargar una factura antigua dejaría el
+    precio del insumo en un valor viejo.
 
     Un proveedor sin clasificar no es un error del archivo: se reporta como
     "omitido" pidiendo agregar el RUT, y el archivo NO se marca como procesado
     para poder reprocesarlo después (mismo criterio que sync_compras.py).
     """
     res = _resultado_base(nombre, "compra")
+    if compra_ya_procesada(nombre):
+        res["estado"] = "omitido"
+        res["procesado_completo"] = False   # ya está en la lista: no re-anotar
+        res["ya_procesada"] = True
+        res["advertencias"].append(
+            "Esta compra ya la habías procesado antes — no la volví a cargar.")
+        return res
+
     try:
         dtes = sync_compras.parse_contenido(raw, nombre)
     except Exception as e:

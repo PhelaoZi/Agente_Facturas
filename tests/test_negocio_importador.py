@@ -8,7 +8,7 @@ el flag `.changes_validated` y aquí protege el orden dentro de `importar_venta`
 import pytest
 
 from app.negocio import importador
-from scripts import parse_dte, sync_db
+from scripts import parse_dte, sync_compras, sync_db
 
 
 # ─── Cursor falso ─────────────────────────────────────────────────────────────
@@ -236,6 +236,20 @@ def test_folio_ya_existente_se_omite_y_se_reporta():
 
 # ─── importar_compra ──────────────────────────────────────────────────────────
 
+@pytest.fixture(autouse=True)
+def registro_procesados(tmp_path, monkeypatch):
+    """Apunta .procesados.json a un archivo temporal vacío.
+
+    Aísla los tests del registro real del proyecto (si no, que un test pase
+    dependería de qué XMLs se hayan importado en el equipo) y deja correr la
+    función de verdad en vez de parchearla. Devuelve la ruta para los tests que
+    necesitan sembrar un archivo ya procesado.
+    """
+    registro = tmp_path / ".procesados.json"
+    monkeypatch.setattr(sync_compras, "LOG_PROCESADOS", registro)
+    return registro
+
+
 def test_importar_compra_de_insumos_actualiza_precios():
     cur = FakeCursor()
     res = importador.importar_compra(cur, xml_compra().encode("latin-1"), "compra.xml")
@@ -254,6 +268,32 @@ def test_importar_compra_de_gasto_inserta_gasto_operativo():
     assert res["estado"] == "ok"
     assert res["gastos_insertados"] == 1
     assert len(cur.inserts("gastos_operativos")) == 1
+
+
+def test_compra_ya_procesada_no_se_vuelve_a_cargar(registro_procesados):
+    # La lista .procesados.json es lo único que evita que una factura antigua
+    # de insumos pise el precio vigente con un UPDATE.
+    registro_procesados.write_text('["compra.xml"]', encoding="utf-8")
+
+    cur = FakeCursor()
+    res = importador.importar_compra(cur, xml_compra().encode("latin-1"), "compra.xml")
+
+    assert res["estado"] == "omitido"
+    assert res["ya_procesada"] is True
+    assert res["procesado_completo"] is False
+    assert res["precios_actualizados"] == []
+    assert cur.ejecutados == []
+
+
+def test_marcar_una_compra_la_deja_registrada_para_la_proxima():
+    assert importador.compra_ya_procesada("compra.xml") is False
+
+    importador.marcar_compra_procesada("compra.xml")
+    assert importador.compra_ya_procesada("compra.xml") is True
+
+    # Marcar dos veces no duplica ni rompe el archivo.
+    importador.marcar_compra_procesada("compra.xml")
+    assert sync_compras._load_procesados() == {"compra.xml"}
 
 
 def test_proveedor_sin_clasificar_no_se_marca_como_procesado():

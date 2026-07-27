@@ -1073,6 +1073,11 @@ def importar_dte(archivos: list) -> dict:
                 resultados.append(res)
                 continue
 
+            # Una compra ya procesada no se archiva de nuevo: no se tocó nada.
+            if res.get("ya_procesada"):
+                resultados.append(res)
+                continue
+
             # Recién con la transacción cerrada archivamos el XML.
             try:
                 destino = importador.guardar_xml(raw, nombre, clase)
