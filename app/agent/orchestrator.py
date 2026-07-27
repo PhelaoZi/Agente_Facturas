@@ -23,7 +23,7 @@ from app.canvas.artifacts import Collector
 from app.config import DB_URL, PROJECT_ROOT
 
 # Límite de turns e historial
-MAX_ITERACIONES = 8
+MAX_ITERACIONES = 12
 MAX_TOKENS = 1500
 
 # Estructura global en memoria para persistir el historial por session_id (mono-usuario/mono-proceso)
@@ -128,6 +128,33 @@ def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
             ultimo_error = str(e)
             
     raise RuntimeError(f"OpenRouter falló: {ultimo_error}")
+
+MENSAJE_SIN_PASOS = ("No alcancé a terminar la consulta (límite de pasos del "
+                     "agente). Intenta acotar tu pregunta.")
+
+INSTRUCCION_CIERRE = (
+    "Se acabaron los pasos disponibles para herramientas. Responde AHORA al "
+    "usuario con lo que ya averiguaste, sin pedir mas herramientas. Si algo "
+    "quedo incompleto, dilo explicitamente en una linea al final."
+)
+
+
+def _respuesta_de_cierre(api_key, model, system_prompt, historial):
+    """Ultimo turno SIN tools: el modelo cierra con lo que ya reunio.
+
+    Sin esto, agotar MAX_ITERACIONES botaba todo el trabajo del turno y el
+    usuario recibia una disculpa vacia. Una respuesta parcial y honesta le
+    sirve; la disculpa no. La instruccion de cierre NO se guarda en el
+    historial: es andamiaje de este turno, no parte de la conversacion.
+    """
+    mensajes = historial + [{"role": "user", "content": INSTRUCCION_CIERRE}]
+    try:
+        resp = llamar_openrouter_api(api_key, model, system_prompt, mensajes, None)
+        return (resp["choices"][0]["message"].get("content") or "").strip()
+    except Exception as e:
+        print(f"El turno de cierre falló: {e}")
+        return ""
+
 
 async def correr_loop_agente(
     pregunta: str,
@@ -281,7 +308,11 @@ async def correr_loop_agente(
                 "content": contenido
             })
 
-    return "No alcancé a terminar la consulta (límite de pasos del agente). Intenta acotar tu pregunta."
+    texto = _respuesta_de_cierre(api_key, model, system_prompt, historial)
+    if texto:
+        historial.append({"role": "assistant", "content": texto})
+        return texto
+    return MENSAJE_SIN_PASOS
 
 def run(
     pregunta: str,

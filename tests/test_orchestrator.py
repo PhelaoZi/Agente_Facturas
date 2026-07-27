@@ -198,3 +198,59 @@ def test_run_session_persistence(monkeypatch):
     assert len(historial) >= 4  # user(hola) + assistant(fake) + user(segunda) + assistant(fake)
     assert historial[0]["content"] == "Hola"
     assert historial[2]["content"] == "Segunda pregunta"
+
+
+def test_al_agotar_los_pasos_responde_con_lo_que_alcanzo_a_reunir(monkeypatch):
+    """Antes devolvia una disculpa vacia y tiraba a la basura todo lo que el
+    agente ya habia averiguado en el turno. Ahora hace una ultima llamada SIN
+    herramientas para que cierre con lo que tenga.
+
+    La tool que se pide a proposito no existe: asi el loop gira sin tocar la BD.
+    """
+    llamadas = []
+
+    def mock_api(api_key, model, system, messages, tools=None):
+        llamadas.append(tools)
+        if tools:
+            return {"choices": [{
+                "message": {"role": "assistant", "content": None,
+                            "tool_calls": [{"id": f"c{len(llamadas)}",
+                                            "type": "function",
+                                            "function": {"name": "mcp__inexistente__x",
+                                                         "arguments": "{}"}}]},
+                "finish_reason": "tool_calls"}]}
+        return {"choices": [{
+            "message": {"role": "assistant",
+                        "content": "Alcance a ver el costo. Me falto el margen."},
+            "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    texto, _sid = orchestrator.run("pregunta larga", Collector())
+
+    assert texto == "Alcance a ver el costo. Me falto el margen."
+    assert "limite de pasos" not in texto
+    assert len(llamadas) == orchestrator.MAX_ITERACIONES + 1
+    assert llamadas[-1] is None, "el turno de cierre va SIN herramientas"
+
+
+def test_si_el_turno_de_cierre_falla_queda_el_mensaje_de_siempre(monkeypatch):
+    """Red de seguridad: si la ultima llamada revienta, el usuario igual recibe
+    una explicacion en vez de un string vacio."""
+    def mock_api(api_key, model, system, messages, tools=None):
+        if tools is None:
+            raise RuntimeError("OpenRouter caido")
+        return {"choices": [{
+            "message": {"role": "assistant", "content": None,
+                        "tool_calls": [{"id": "c1", "type": "function",
+                                        "function": {"name": "mcp__inexistente__x",
+                                                     "arguments": "{}"}}]},
+            "finish_reason": "tool_calls"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    texto, _sid = orchestrator.run("otra pregunta", Collector())
+
+    assert "límite de pasos" in texto
