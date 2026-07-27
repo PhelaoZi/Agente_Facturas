@@ -104,6 +104,85 @@ def test_margenes_cae_a_la_lista_cuando_no_hay_facturas():
     assert r[0]["origen"] == "lista"
 
 
+class FakeCursorPeriodo:
+    """margen_periodo() hace 4 consultas: costos, recetas, lineas del periodo y
+    el neto total del periodo."""
+
+    def __init__(self, filas_costos, lineas, neto_periodo, recetas=("Cream Ale",)):
+        self._respuestas = [
+            filas_costos,
+            [{"nombre_cerveza": r} for r in recetas],
+            lineas,
+            [{"neto": neto_periodo, "n": 1}],
+        ]
+        self._actual = []
+
+    def execute(self, sql, params=None):
+        self._actual = self._respuestas.pop(0) if self._respuestas else []
+
+    def fetchall(self):
+        return self._actual
+
+    def fetchone(self):
+        return self._actual[0] if self._actual else None
+
+
+def _linea_periodo(folio, neto, nombre, cant, total):
+    from datetime import date
+    return {"folio": folio, "fecha": date(2026, 6, 10), "monto_neto": neto,
+            "nombre_producto": nombre, "cantidad": cant, "total_linea": total}
+
+
+def test_margen_periodo_suma_lo_realmente_vendido():
+    """La pregunta de gerente: cuanto gane el mes pasado. Son 3 barriles a
+    55.370 con costo 39.322 cada uno."""
+    from datetime import date
+    sku = {"codigo": "CREAM-B30", "nombre_cerveza": "Cream Ale",
+           "formato": "Barril 30L acero", "costo_liquido_unitario": 39322,
+           "costo_envasado_unitario": 0, "costo_total_unitario": 39322}
+    lineas = [_linea_periodo(4736, 166110, "Barril 30L Cream Ale", 3, 60000)]
+
+    r = costos.margen_periodo(FakeCursorPeriodo([sku], lineas, 166110),
+                              date(2026, 6, 1), date(2026, 6, 30))
+
+    assert r["ingreso_costeado"] == 3 * 55370.0
+    assert r["costo"] == 3 * 39322.0
+    assert r["margen"] == 3 * (55370.0 - 39322.0)
+    assert r["margen_pct"] == 29.0
+    assert r["por_producto"][0]["unidades"] == 3
+
+
+def test_margen_periodo_declara_lo_que_no_pudo_costear():
+    """Varias cervezas vendidas (RIS, APA, Sour) no tienen receta cargada. Un
+    margen que las ignore en silencio miente: se reportan aparte y la cobertura
+    dice sobre que fraccion de la venta se calculo."""
+    from datetime import date
+    sku = {"codigo": "CREAM-B30", "nombre_cerveza": "Cream Ale",
+           "formato": "Barril 30L acero", "costo_liquido_unitario": 39322,
+           "costo_envasado_unitario": 0, "costo_total_unitario": 39322}
+    lineas = [
+        _linea_periodo(4694, 110740, "Barril 30L Cream Ale", 1, 20000),
+        _linea_periodo(4694, 110740, "Logistica Cream Ale", 1, 35370),
+        _linea_periodo(4694, 110740, "Barril 30L RIS", 1, 35000),
+        _linea_periodo(4694, 110740, "Logistica RIS", 1, 20370),
+    ]
+    r = costos.margen_periodo(FakeCursorPeriodo([sku], lineas, 110740),
+                              date(2026, 6, 1), date(2026, 6, 30))
+
+    assert r["ingreso_costeado"] == 55370.0
+    assert any("ris" in s["producto"].lower() for s in r["sin_costo"])
+    assert 0 < r["cobertura_pct"] < 100, "no puede declarar cobertura total"
+
+
+def test_margen_periodo_sin_ventas_no_divide_por_cero():
+    from datetime import date
+    r = costos.margen_periodo(FakeCursorPeriodo([], [], 0),
+                              date(2026, 1, 1), date(2026, 1, 31))
+    assert r["margen"] == 0
+    assert r["margen_pct"] is None
+    assert r["por_producto"] == []
+
+
 class FakeCursorCliente:
     """margen_cliente() hace 5 consultas: costos, recetas+lineas globales
     (via margenes) y recetas+lineas del cliente."""

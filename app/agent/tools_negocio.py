@@ -191,6 +191,41 @@ def build_negocio_server():
                           f"{_pesos(m['margen'])} ({m['margen_pct']}%)" + respaldo)
         return _texto("\n".join(lineas))
 
+    @tool("margen_periodo",
+          "Margen REALIZADO de un período: cuánto se ganó de verdad entre dos "
+          "fechas (ingreso menos costo de lo efectivamente vendido). Úsala para "
+          "'cuánto gané en junio', 'margen del mes', 'utilidad del trimestre'. "
+          "Fechas YYYY-MM-DD. NO uses margenes para esto: esa da el margen "
+          "unitario de catálogo, no el total del período.",
+          {"desde": str, "hasta": str})
+    @_tool_seguro
+    async def margen_periodo(args):
+        r = _con_cursor(costos_data.margen_periodo, args["desde"], args["hasta"])
+        if not r["por_producto"] and not r["sin_costo"]:
+            return _texto(f"Sin ventas entre {args['desde']} y {args['hasta']}.")
+
+        out = [
+            f"Margen realizado {args['desde']} a {args['hasta']} "
+            f"({r['n_facturas']} facturas):",
+            f"- Ventas netas del período: {_pesos(r['ventas_netas'])}",
+            f"- Ingreso con costo conocido: {_pesos(r['ingreso_costeado'])} "
+            f"(cubre el {r['cobertura_pct']}% de la venta)",
+            f"- Costo: {_pesos(r['costo'])}",
+            f"- MARGEN: {_pesos(r['margen'])} ({r['margen_pct']}%)",
+            "",
+            "Por producto:",
+        ]
+        out += [f"- {f['cerveza']} {f['formato']}: {f['unidades']:.0f} u · "
+                f"ingreso {_pesos(f['ingreso'])} · margen {_pesos(f['margen'])} "
+                f"({f['margen_pct']}%)" for f in r["por_producto"]]
+        if r["sin_costo"]:
+            total = sum(s["ingreso"] for s in r["sin_costo"])
+            out += ["", f"SIN COSTO CARGADO ({_pesos(total)} de venta que no entra "
+                        f"en el margen — falta cargar su receta):"]
+            out += [f"- {s['producto']}: {s['unidades']:.0f} u · {_pesos(s['ingreso'])}"
+                    for s in r["sin_costo"]]
+        return _texto("\n".join(out))
+
     @tool("margen_cliente",
           "Margen de cada cerveza AL PRECIO QUE PAGA UN CLIENTE, comparado con "
           "el precio general. Úsala cuando pregunten cuánto deja un cliente, a "
@@ -264,7 +299,8 @@ def build_negocio_server():
     server = create_sdk_mcp_server(name="negocio", version="1.0.0", tools=[
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
-        flujo_caja, costos_sku, margenes, margen_cliente, listar_gastos,
+        flujo_caja, costos_sku, margenes, margen_periodo, margen_cliente,
+        listar_gastos,
         clientes_en_riesgo, listar_seguimiento,
     ])
     tool_names = [
@@ -273,7 +309,8 @@ def build_negocio_server():
         "mcp__negocio__ventas_total", "mcp__negocio__ranking_clientes",
         "mcp__negocio__ventas_cliente", "mcp__negocio__ventas_producto",
         "mcp__negocio__flujo_caja", "mcp__negocio__costos_sku", "mcp__negocio__margenes",
-        "mcp__negocio__margen_cliente", "mcp__negocio__listar_gastos",
+        "mcp__negocio__margen_periodo", "mcp__negocio__margen_cliente",
+        "mcp__negocio__listar_gastos",
         "mcp__negocio__clientes_en_riesgo", "mcp__negocio__listar_seguimiento",
     ]
     return server, tool_names

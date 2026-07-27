@@ -291,3 +291,56 @@ def test_el_turno_de_cierre_pide_mas_tokens_que_un_turno_normal(monkeypatch):
     assert vistos[-1]["max_tokens"] == orchestrator.MAX_TOKENS_CIERRE
     # Los turnos del loop siguen con el presupuesto normal.
     assert vistos[0]["max_tokens"] is None
+
+
+def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
+    """El modelo puede terminar SIN tool_calls y SIN texto: tipicamente
+    finish_reason=length, con todo el presupuesto gastado en razonamiento. El
+    loop devolvia ese '' tal cual y la UI mostraba "(sin respuesta)".
+
+    Ahora se cierra el turno con el presupuesto ampliado en vez de entregar una
+    burbuja en blanco.
+    """
+    vistos = []
+
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+        vistos.append(max_tokens)
+        if len(vistos) == 1:
+            # Se quedo sin tokens razonando: ni texto ni herramientas.
+            return {"choices": [{"message": {"role": "assistant", "content": None},
+                                 "finish_reason": "length"}]}
+        return {"choices": [{
+            "message": {"role": "assistant", "content": "Aqui va la respuesta."},
+            "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    texto, _sid = orchestrator.run("pregunta cara", Collector())
+
+    assert texto == "Aqui va la respuesta."
+    assert len(vistos) == 2, "debe reintentar el cierre, no devolver vacio"
+    assert vistos[1] == orchestrator.MAX_TOKENS_CIERRE
+
+
+def test_el_system_prompt_le_dice_al_agente_que_dia_es_hoy(monkeypatch):
+    """Sin la fecha, "el margen de junio" es una moneda al aire: el modelo
+    elegia el año por su cuenta y consultaba junio del año pasado sin avisar.
+    Toda pregunta relativa ("este mes", "el trimestre pasado") depende de esto.
+    """
+    from datetime import date
+    vistos = []
+
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+        vistos.append(system)
+        return {"choices": [{"message": {"role": "assistant", "content": "ok"},
+                             "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    orchestrator.run("¿cuánto vendí este mes?", Collector())
+
+    hoy = date.today()
+    assert str(hoy) in vistos[0], "el prompt debe traer la fecha de hoy"
+    assert str(hoy.year) in vistos[0]

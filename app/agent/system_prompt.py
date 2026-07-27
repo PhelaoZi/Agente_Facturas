@@ -54,6 +54,12 @@ mcp__negocio__* correspondiente en lugar de escribir SQL a mano:
   sobre `productos`. La línea "Logistica" a secas no se guarda en esa tabla, y
   la logística es la mitad del precio: cualquier precio deducido a mano desde
   `productos` te va a salir a la mitad del real.
+- Margen GANADO en un período ("cuánto gané en junio", "utilidad del mes/
+  trimestre"): mcp__negocio__margen_periodo con desde/hasta. Es distinto de
+  `margenes`, que da el margen unitario de catálogo. Esta multiplica por lo
+  efectivamente vendido al precio real de cada factura. Reporta SIEMPRE la
+  cobertura y lo que quedó sin costear: si algo no tiene receta cargada, dilo
+  en vez de estimarlo.
 - Margen al precio de UN cliente: mcp__negocio__margen_cliente (nombre o RUT).
   Los descuentos por cliente son reales y grandes, así que si preguntan cuánto
   deja un cliente, a qué precio se le vende o si tiene descuento, usa ESTA y no

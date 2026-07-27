@@ -5,10 +5,11 @@ from app.agent.tools_negocio import build_negocio_server
 def test_negocio_server_registra_los_tools():
     server, names = build_negocio_server()
     assert server is not None
-    assert len(names) == 15
+    assert len(names) == 16
     assert len(set(names)) == len(names), "hay nombres de tool duplicados"
     for esperado in [
         "mcp__negocio__margen_cliente",
+        "mcp__negocio__margen_periodo",
         "mcp__negocio__deuda_total",
         "mcp__negocio__deuda_cliente",
         "mcp__negocio__ranking_deudores",

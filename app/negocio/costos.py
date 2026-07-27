@@ -88,6 +88,92 @@ def _envase_es_pass_through(formato):
     return "pet" in _norm(formato).split()
 
 
+SQL_NETO_PERIODO = """
+    SELECT COALESCE(SUM(COALESCE(monto_neto_ajustado, monto_neto)), 0) AS neto,
+           COUNT(*) AS n
+    FROM ventas
+    WHERE tipo_documento != 61
+      AND fecha BETWEEN %s AND %s
+"""
+
+
+def margen_periodo(cur, desde, hasta):
+    """Margen realizado de un período: lo que se vendió menos lo que costó.
+
+    Es la pregunta de gerente ("¿cuánto gané en junio?") y no se puede sacar de
+    `margenes`, que da el margen unitario de catálogo: aquí hay que multiplicar
+    por lo efectivamente vendido, factura por factura, al precio real de cada
+    una (que cambia según el cliente).
+
+    Declara siempre qué NO pudo costear. Varias cervezas que se venden (RIS,
+    APA, Sour…) no tienen receta cargada, así que un total que las ignore en
+    silencio se ve preciso y está mal. `cobertura_pct` dice sobre qué fracción
+    de la venta del período se calculó el margen.
+    """
+    costos_por_clave = {}
+    for sku in costos_sku(cur):
+        clave = precios_venta.clave_formato_desde_nombre(sku["formato"])
+        if not clave or sku["costo_total"] is None:
+            continue
+        # El envase PET va facturado aparte a costo: no se descuenta del margen.
+        costo = sku["costo_total"]
+        if _envase_es_pass_through(sku["formato"]) and sku["costo_liquido"] is not None:
+            costo = sku["costo_liquido"]
+        # Acero y PET comparten clave; el primero que llega fija el costo del
+        # liquido, que es el que corresponde comparar en ambos.
+        costos_por_clave.setdefault((_norm(sku["cerveza"]), clave),
+                                    {"formato": sku["formato"], "costo": costo})
+
+    muestras, _descartadas = precios_venta.recolectar_muestras(cur, desde=desde, hasta=hasta)
+
+    por_producto, sin_costo = {}, {}
+    for m in muestras:
+        ingreso = m["precio"] * m["unidades"]
+        ref = (costos_por_clave.get((_norm(m["cerveza"]), m["formato"]))
+               if m["cerveza"] and m["formato"] else None)
+        if ref is None:
+            acum = sin_costo.setdefault(m["nombre"], {"producto": m["nombre"],
+                                                      "ingreso": 0.0, "unidades": 0.0})
+            acum["ingreso"] += ingreso
+            acum["unidades"] += m["unidades"]
+            continue
+        clave = (m["cerveza"], ref["formato"])
+        acum = por_producto.setdefault(clave, {
+            "cerveza": m["cerveza"], "formato": ref["formato"],
+            "unidades": 0.0, "ingreso": 0.0, "costo": 0.0})
+        acum["unidades"] += m["unidades"]
+        acum["ingreso"] += ingreso
+        acum["costo"] += ref["costo"] * m["unidades"]
+
+    filas = []
+    for acum in por_producto.values():
+        acum["margen"] = acum["ingreso"] - acum["costo"]
+        acum["margen_pct"] = (round(100 * acum["margen"] / acum["ingreso"], 1)
+                              if acum["ingreso"] else None)
+        filas.append(acum)
+    filas.sort(key=lambda x: x["margen"], reverse=True)
+
+    ingreso = sum(f["ingreso"] for f in filas)
+    costo = sum(f["costo"] for f in filas)
+
+    cur.execute(SQL_NETO_PERIODO, (desde, hasta))
+    fila = cur.fetchone() or {}
+    ventas_netas = float(fila.get("neto") or 0)
+
+    return {
+        "desde": desde, "hasta": hasta,
+        "ventas_netas": ventas_netas,
+        "n_facturas": int(fila.get("n") or 0),
+        "ingreso_costeado": ingreso,
+        "costo": costo,
+        "margen": ingreso - costo,
+        "margen_pct": round(100 * (ingreso - costo) / ingreso, 1) if ingreso else None,
+        "cobertura_pct": round(100 * ingreso / ventas_netas, 1) if ventas_netas else None,
+        "por_producto": filas,
+        "sin_costo": sorted(sin_costo.values(), key=lambda x: x["ingreso"], reverse=True),
+    }
+
+
 def margen_cliente(cur, cliente, receta=None):
     """Margen de cada SKU al precio que paga UN cliente, contra el general.
 

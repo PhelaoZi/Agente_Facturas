@@ -155,12 +155,22 @@ JOIN_CLIENTE = "JOIN clientes c ON c.rut_cliente = v.rut_cliente"
 FILTRO_CLIENTE = "AND (c.razon_social ILIKE %s OR v.rut_cliente ILIKE %s)"
 
 
-def _sql_lineas(cliente=None):
-    """(sql, params) para la consulta de líneas, con filtro de cliente opcional."""
-    if not cliente:
-        return SQL_LINEAS.format(join_cliente="", filtro_cliente=""), ()
-    sql = SQL_LINEAS.format(join_cliente=JOIN_CLIENTE, filtro_cliente=FILTRO_CLIENTE)
-    return sql, (f"%{cliente}%", f"%{cliente}%")
+def _sql_lineas(cliente=None, desde=None, hasta=None):
+    """(sql, params) para la consulta de líneas, con filtros opcionales."""
+    filtros, params = [], []
+    if cliente:
+        filtros.append(FILTRO_CLIENTE)
+        params += [f"%{cliente}%", f"%{cliente}%"]
+    if desde:
+        filtros.append("AND v.fecha >= %s")
+        params.append(desde)
+    if hasta:
+        filtros.append("AND v.fecha <= %s")
+        params.append(hasta)
+    sql = SQL_LINEAS.format(
+        join_cliente=JOIN_CLIENTE if cliente else "",
+        filtro_cliente="\n      ".join(filtros))
+    return sql, tuple(params)
 
 
 def _leer_linea(fila, recetas):
@@ -276,13 +286,48 @@ def _procesar_factura(filas, recetas, descartadas):
 
     muestras = []
     for linea in cervezas:
-        if not linea["cerveza"]:
-            continue                      # no esta en el catalogo de recetas
-        clave = clave_formato(linea["familia"], linea["capacidad_ml"])
         precio = _precio_de_linea(linea)
-        if clave and precio is not None:
-            muestras.append((linea["cerveza"], clave, precio, linea["cantidad"]))
+        if precio is None:
+            continue
+        # Las lineas sin receta reconocida (RIS, APA, Sour...) igual se
+        # devuelven, con cerveza=None: no aportan precio de catalogo, pero sin
+        # ellas un margen de periodo se calcularia sobre una venta incompleta
+        # sin que nadie lo note.
+        muestras.append({
+            "cerveza": linea["cerveza"],
+            "formato": clave_formato(linea["familia"], linea["capacidad_ml"]),
+            "nombre": linea["nombre_norm"],
+            "precio": precio,
+            "unidades": linea["cantidad"],
+        })
     return muestras
+
+
+def recolectar_muestras(cur, cliente=None, desde=None, hasta=None):
+    """Todas las lineas de cerveza con su precio real reconstruido.
+
+    Devuelve (muestras, descartadas). Cada muestra trae folio, fecha, cerveza
+    (None si no calza con ninguna receta), formato, precio unitario y unidades.
+    Es la materia prima de `precios_por_formato` (precio de catalogo) y de
+    `costos.margen_periodo` (margen realizado de un periodo).
+    """
+    cur.execute(SQL_RECETAS)
+    recetas = [r["nombre_cerveza"] for r in cur.fetchall()]
+
+    sql, params = _sql_lineas(cliente, desde, hasta)
+    cur.execute(sql, params)
+    por_factura = defaultdict(list)
+    for fila in cur.fetchall():
+        por_factura[fila["folio"]].append(fila)
+
+    descartadas = defaultdict(int)
+    muestras = []
+    for folio, filas in por_factura.items():
+        for m in _procesar_factura(filas, recetas, descartadas):
+            m["folio"] = folio
+            m["fecha"] = filas[0]["fecha"]
+            muestras.append(m)
+    return muestras, descartadas
 
 
 def precios_por_formato(cur, dias=None, cliente=None):
@@ -293,25 +338,16 @@ def precios_por_formato(cur, dias=None, cliente=None):
     `cliente` (nombre o RUT, busqueda parcial) acota el calculo a las facturas
     de ese cliente: sirve para saber a que precio le vende uno con descuento.
     """
-    cur.execute(SQL_RECETAS)
-    recetas = [r["nombre_cerveza"] for r in cur.fetchall()]
+    crudas, descartadas = recolectar_muestras(cur, cliente=cliente)
 
-    sql, params = _sql_lineas(cliente)
-    cur.execute(sql, params)
-    por_factura = defaultdict(list)
-    for fila in cur.fetchall():
-        por_factura[fila["folio"]].append(fila)
-
-    descartadas = defaultdict(int)
     # Una factura puede traer la misma cerveza en dos lineas (un barril lleno y
     # uno parcial): se promedian ponderadas por unidades para que cada factura
     # aporte UNA muestra por formato.
     muestras = defaultdict(list)
-    for folio, filas in por_factura.items():
-        for cerveza, clave, precio, unidades in _procesar_factura(filas, recetas, descartadas):
-            muestras[(cerveza, clave)].append(
-                {"folio": folio, "fecha": filas[0]["fecha"], "precio": precio,
-                 "unidades": unidades})
+    for m in crudas:
+        if not m["cerveza"] or not m["formato"]:
+            continue          # sin receta o sin formato: no es precio de catalogo
+        muestras[(m["cerveza"], m["formato"])].append(m)
 
     corte = (date.today() - timedelta(days=dias)) if dias else None
     precios = []

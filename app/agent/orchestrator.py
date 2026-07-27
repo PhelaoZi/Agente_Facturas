@@ -138,6 +138,33 @@ def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
             
     raise RuntimeError(f"OpenRouter falló: {ultimo_error}")
 
+MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+            "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def _bloque_fecha(hoy=None):
+    """Le dice al agente qué día es hoy.
+
+    Sin esto, "el margen de junio" era una moneda al aire: el modelo elegía el
+    año por su cuenta y consultaba junio del año pasado sin avisar. Toda
+    pregunta relativa ("este mes", "el trimestre pasado", "la semana pasada")
+    depende de este bloque.
+    """
+    from datetime import date, timedelta
+    hoy = hoy or date.today()
+    anterior = hoy.replace(day=1) - timedelta(days=1)
+    mes_actual = f"{MESES_ES[hoy.month - 1]} de {hoy.year}"
+    mes_pasado = f"{MESES_ES[anterior.month - 1]} de {anterior.year}"
+    return (
+        f"\n\nFECHA DE HOY: {hoy.isoformat()} ({mes_actual}).\n"
+        f'"Este mes" = {mes_actual}. "El mes pasado" = {mes_pasado}. Cuando el '
+        f"usuario nombre un mes sin año, entiende el MÁS RECIENTE que ya "
+        f"ocurrió, no el del año anterior. Si aun así queda ambiguo, pregunta "
+        f"antes de consultar: una cifra del período equivocado es peor que una "
+        f"repregunta."
+    )
+
+
 MENSAJE_SIN_PASOS = ("No alcancé a terminar la consulta (límite de pasos del "
                      "agente). Intenta acotar tu pregunta.")
 
@@ -244,7 +271,7 @@ async def correr_loop_agente(
 
     # 3. Construir system prompt
     indice = memoria.leer_indice()
-    system_prompt = SYSTEM_PROMPT
+    system_prompt = SYSTEM_PROMPT + _bloque_fecha()
     if indice:
         system_prompt += "\n\nMEMORIA DEL NEGOCIO (aprendida en sesiones anteriores):\n" + indice
 
@@ -272,7 +299,17 @@ async def correr_loop_agente(
         
         # Si no hay llamadas de herramientas o terminó normalmente, retornamos el texto
         if choice.get("finish_reason") != "tool_calls" or not msg.get("tool_calls"):
-            return msg.get("content") or ""
+            texto = (msg.get("content") or "").strip()
+            if texto:
+                return texto
+            # Ni texto ni herramientas: tipicamente finish_reason=length, con
+            # todo el presupuesto gastado razonando. Devolver ese "" tal cual
+            # dejaba una burbuja "(sin respuesta)" en la UI. Se cierra abajo,
+            # con el presupuesto ampliado.
+            print(f"Turno sin texto (finish_reason={choice.get('finish_reason')}); "
+                  f"cerrando con presupuesto ampliado")
+            historial.pop()          # el mensaje vacio no aporta nada al cierre
+            break
 
         # Procesar llamadas a herramientas secuencialmente
         for tc in msg["tool_calls"]:
