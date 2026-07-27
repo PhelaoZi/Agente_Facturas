@@ -342,6 +342,40 @@ def test_importar_compra_procesa_todos_los_proveedores_del_archivo():
     assert res["procesado_completo"] is True
 
 
+@pytest.mark.parametrize("rut, razon, item, categoria", [
+    ("76747198-K", "CENTRAL GAS SPA",   "CARGA 15 KL",          "servicios"),
+    ("76676921-7", "QUEZADA Y CIA",     "Amortiguadores",       "transporte"),
+    ("77983419-0", "COMERCIALIZADORA M.I.F.", "poleron",        "marketing"),
+    ("76568660-1", "EASY RETAIL S.A.",  "CINTA EMBALAJE PROF",  "otros"),
+])
+def test_proveedores_de_gasto_van_a_su_categoria(rut, razon, item, categoria):
+    cur = FakeCursor()
+    xml = xml_compra(rut_emisor=rut, razon=razon, item=item)
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "gasto.xml")
+
+    assert res["estado"] == "ok"
+    assert res["gastos_insertados"] == 1
+    _, params = cur.inserts("gastos_operativos")[0]
+    assert params[5] == item            # descripción
+    assert params[8] == categoria
+
+
+@pytest.mark.parametrize("item, precio, esperado", [
+    ("Café grano Bolivia 1kg",  18000, "Café -> $18000.0000/unidad"),
+    ("Café grano Bolivia 500g",  9300, "Café -> $18600.0000/unidad"),   # /0,5 → precio por kilo
+])
+def test_compra_de_cafe_actualiza_el_insumo_de_la_stout(item, precio, esperado):
+    # Lúdico es proveedor de insumos, no un gasto: el café entra a la receta
+    # de la Stout Café/Cacao y su precio alimenta el costo del SKU.
+    cur = FakeCursor()
+    xml = xml_compra(rut_emisor="77380521-0", razon="LUDICO SPA", item=item, precio=precio)
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "cafe.xml")
+
+    assert res["estado"] == "ok"
+    assert res["precios_actualizados"] == [esperado]
+    assert res["gastos_insertados"] == 0
+
+
 def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():
     # El UPDATE de precios no tiene condición: manda el último documento
     # procesado. Con los documentos desordenados dentro del archivo (así los

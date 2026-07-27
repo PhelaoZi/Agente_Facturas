@@ -60,6 +60,7 @@ PROVEEDORES_INSUMOS = {
     "76518077-5": "MACC SPA",             # maltas, lúpulos, adjuntos, clarificantes
     "76069212-3": "Gourmet Select",       # adjuntos especiales (nibs cacao, etc.)
     "76013386-8": "Clean Ice SA",         # CO2
+    "77380521-0": "Lúdico",               # café en grano para la Stout Café/Cacao
 }
 
 # RUT → (nombre legible, categoría). Sus documentos van a gastos_operativos.
@@ -71,6 +72,15 @@ PROVEEDORES_GASTOS = {
     "76989164-1": ("Bonta Publicidad",              "servicios"),     # etiquetas e impresión
     "97023000-9": ("Banco Itau Chile",              "servicios"),     # comisiones bancarias
     "76120331-2": ("Comercial CL",                  "combustible"),   # diésel
+    # El gas de producción va en "servicios" porque el modelo de costos lo
+    # agrupa con agua y luz ($185.000/lote de servicios variables), no con el
+    # diésel del furgón.
+    "76747198-K": ("Central Gas",                   "servicios"),
+    "76676921-7": ("Quezada, Quiroga, Yagnam y Cía", "transporte"),   # mecánico del furgón
+    "77983419-0": ("Comercializadora M.I.F.",       "marketing"),     # polerones con logo
+    # Retail variado (ferretería, repuestos, seguridad): sin categoría propia
+    # porque lo que se compra ahí cambia en cada factura.
+    "76568660-1": ("Easy Retail",                   "otros"),
 }
 
 # Substring del NmbItem (lowercase) → (nombre en maestro_insumos, unidades_por_paquete)
@@ -128,6 +138,13 @@ ITEM_MAP = {
 
     # ── Clean Ice SA ──────────────────────────────────────────────────────────
     "co2 anhidrido":          ("CO2",                                     1),
+
+    # ── Lúdico (café en grano de la Stout Café/Cacao) ─────────────────────────
+    # Claves sin tilde a propósito: el NmbItem llega como "Café grano ..." y el
+    # match es por substring, así no depende de cómo venga escrito el acento.
+    # El formato de 500 g divide por 0,5 para dejar siempre el precio por kilo.
+    "grano bolivia 1kg":      ("Café",                                    1),
+    "grano bolivia 500g":     ("Café",                                  0.5),
 
     # ── Limpieza (Mundo Cervecero y Almacén Cervecero) ────────────────────────
     "base peracetico":        ("Desinfectante Peracetico",                 1),   # precio por litro
