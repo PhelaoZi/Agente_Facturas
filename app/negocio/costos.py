@@ -1,11 +1,14 @@
 """Costos por SKU y márgenes (solo lectura).
 
 Costos: misma consulta a vista_costo_sku que scripts/costo_sku.py.
-Márgenes: cruza el costo total con los precios de venta netos confirmados.
-Los precios son por BARRIL 30L (confirmados por el productor, ver CLAUDE.md);
-para botellas no hay precio confirmado, así que el margen queda en None.
+Márgenes: cruza el costo total con el precio de venta REAL, deducido de las
+facturas por app/negocio/precios_venta.py — cubre todos los formatos, no solo
+los barriles. PRECIOS_VENTA_NETO quedó como respaldo para un SKU que todavía
+no se ha vendido nunca.
 """
 import unicodedata
+
+from app.negocio import precios_venta
 
 # Precios de venta netos confirmados por barril 30L (desde CLAUDE.md).
 # Lista de (patrón, precio): el patrón se busca como SUBCADENA en el nombre
@@ -68,24 +71,69 @@ def costos_sku(cur, receta=None, sku=None):
     ]
 
 
-def margenes(cur, receta=None):
-    """Margen por SKU = precio de venta confirmado − costo total.
+# Ventana del promedio: mas atras el precio ya no es comparable (cambian los
+# costos y la lista). El precio ULTIMO no usa ventana.
+DIAS_PROMEDIO = 180
 
-    Solo para formatos de barril (donde hay precio confirmado). Para botellas
-    u otros, precio_venta y margen quedan en None (no se inventa un margen).
+
+def _envase_es_pass_through(formato):
+    """¿El envase de este formato se le cobra al cliente en línea aparte?
+
+    Solo el barril PET. La factura trae su propia línea ("Barril Pet 30L") por
+    el costo exacto del envase, así que el cliente ya lo pagó: descontarlo del
+    margen sería cobrarlo dos veces y arroja una pérdida falsa. El envase de la
+    botella (botella, tapa, etiqueta, caja) NO va en línea aparte: ese sí es
+    costo propio y entra en el margen.
     """
+    return "pet" in _norm(formato).split()
+
+
+def margenes(cur, receta=None):
+    """Margen por SKU = precio de venta − costo total.
+
+    El precio sale de las facturas (fuente principal, refleja lo que realmente
+    se cobró, descuentos incluidos). Si el SKU no se ha vendido nunca, cae al
+    precio confirmado por el productor. Sin ninguno de los dos, el margen queda
+    en None: nunca se inventa.
+    """
+    skus = costos_sku(cur, receta=receta)
+    deducidos = precios_venta.precios_por_formato(cur, dias=DIAS_PROMEDIO)["precios"]
+    por_clave = {(_norm(p["cerveza"]), p["formato"]): p for p in deducidos}
+
     salida = []
-    for sku in costos_sku(cur, receta=receta):
-        precio = _precio_venta(sku["cerveza"], sku["formato"])
-        margen = None
-        margen_pct = None
-        if precio is not None and sku["costo_total"] is not None:
-            margen = float(precio) - sku["costo_total"]
+    for sku in skus:
+        clave = precios_venta.clave_formato_desde_nombre(sku["formato"])
+        ref = por_clave.get((_norm(sku["cerveza"]), clave)) if clave else None
+
+        if ref:
+            precio, origen = ref["precio_ultimo"], "facturas"
+        else:
+            precio = _precio_venta(sku["cerveza"], sku["formato"])
+            origen = "lista" if precio is not None else None
+
+        # El precio deducido excluye la línea del envase PET (pass-through), así
+        # que el costo contra el que se compara también debe excluirlo. Si no,
+        # se descuenta un envase que el cliente ya pagó aparte y el barril PET
+        # aparece con pérdida.
+        pass_through = _envase_es_pass_through(sku["formato"])
+        costo_comparable = sku["costo_total"]
+        if pass_through and sku["costo_liquido"] is not None:
+            costo_comparable = sku["costo_liquido"]
+
+        margen = margen_pct = None
+        if precio is not None and costo_comparable is not None:
+            margen = float(precio) - costo_comparable
             margen_pct = round(100 * margen / precio, 1) if precio else None
+
         salida.append({
             "codigo": sku["codigo"], "cerveza": sku["cerveza"], "formato": sku["formato"],
             "costo_total": sku["costo_total"],
+            "costo_comparable": costo_comparable,
+            "envase_pass_through": pass_through,
             "precio_venta": float(precio) if precio is not None else None,
             "margen": margen, "margen_pct": margen_pct,
+            "origen": origen,
+            "precio_promedio": ref["precio_promedio"] if ref else None,
+            "n_facturas": ref["n_facturas"] if ref else None,
         })
     return salida
