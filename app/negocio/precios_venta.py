@@ -124,3 +124,203 @@ def clave_formato_desde_nombre(nombre):
     los nombres de la tabla `formatos` ("Barril 30L acero", "Botella 330ml")."""
     familia, capacidad_ml = _familia_y_capacidad(_norm(nombre))
     return clave_formato(familia, capacidad_ml)
+
+
+# Tolerancia en pesos para el residual: los montos del SII son enteros y
+# arrastran redondeos de un peso.
+TOLERANCIA_PESOS = 1.0
+
+SQL_RECETAS = "SELECT nombre_cerveza FROM recetas"
+
+# Solo facturas de venta sin nota de credito aplicada: una anulada no dice a
+# cuanto se vende, y una parcial rebajaria el neto sin tocar las lineas de
+# `productos`, dejando el residual corto.
+SQL_LINEAS = """
+    SELECT v.folio, v.fecha, v.monto_neto,
+           p.nombre_producto, p.cantidad, p.total_linea
+    FROM ventas v
+    JOIN productos p ON p.folio = v.folio
+                    AND p.tipo_documento = v.tipo_documento
+    WHERE v.tipo_documento != 61
+      AND v.monto_neto_ajustado IS NULL
+      AND v.monto_neto > 0
+    ORDER BY v.fecha, v.folio, p.id
+"""
+
+
+def _leer_linea(fila, recetas):
+    """Convierte una fila cruda en el registro con que trabaja el algoritmo."""
+    nombre_norm = _norm(fila["nombre_producto"])
+    clase = _clase(nombre_norm)
+    familia, capacidad_ml = _familia_y_capacidad(nombre_norm)
+    return {
+        "nombre_norm": nombre_norm,
+        "clase": clase,
+        "familia": familia,
+        "capacidad_ml": capacidad_ml,
+        "cerveza": _detectar_cerveza(nombre_norm, recetas) if clase != "pass_through" else None,
+        "cantidad": float(fila["cantidad"] or 0),
+        "total_linea": float(fila["total_linea"] or 0),
+        "logistica": 0.0,
+    }
+
+
+def _atribuir_nombrada(logisticas, cervezas):
+    """Primera pasada: cada logistica que identifique UNA sola linea de cerveza
+    le entrega su monto. Devuelve las que quedaron sin atribuir.
+
+    El selector es la cerveza que nombra y/o la capacidad que nombra. La
+    capacidad es necesaria por casos como "Logistica Barril 25L" (folio 4572),
+    que no nombra cerveza pero senala sin ambiguedad al unico barril de 25L.
+    """
+    sin_atribuir = []
+    for log in logisticas:
+        _familia, capacidad = _familia_y_capacidad(log["nombre_norm"])
+        candidatas = [
+            c for c in cervezas
+            if (log["cerveza"] is None or c["cerveza"] == log["cerveza"])
+            and (capacidad is None or c["capacidad_ml"] == capacidad)
+        ]
+        # Un selector vacio calzaria con todas: eso no identifica nada.
+        identifica_algo = log["cerveza"] is not None or capacidad is not None
+        if identifica_algo and len(candidatas) == 1:
+            candidatas[0]["logistica"] += log["total_linea"]
+        else:
+            sin_atribuir.append(log)
+    return sin_atribuir
+
+
+def _repartir_residual(residual, pendientes):
+    """Segunda pasada: la logistica sin nombrar se reparte entre las lineas que
+    no recibieron ninguna. Devuelve el motivo de descarte, o None si salio bien.
+
+    En barriles se reparte POR LITRO, porque un barril parcial pago menos
+    logistica en la misma proporcion en que lleva menos cerveza. En botellas y
+    latas se reparte POR UNIDAD: son todas del mismo tamano y asi una errata de
+    capacidad ("33cc" por "330cc") no deforma el reparto.
+    """
+    if residual <= TOLERANCIA_PESOS:
+        return None
+    if not pendientes:
+        return "sin_base_de_reparto"
+    familias = {c["familia"] for c in pendientes}
+    if len(familias) > 1:
+        return "familia_mixta"
+
+    familia = familias.pop()
+    if familia == "barril":
+        pesos = [c["cantidad"] * (c["capacidad_ml"] or 0) / 1000.0 for c in pendientes]
+    else:
+        pesos = [c["cantidad"] for c in pendientes]
+    total = sum(pesos)
+    if total <= 0:
+        return "sin_base_de_reparto"
+    for linea, peso in zip(pendientes, pesos):
+        linea["logistica"] += residual * peso / total
+    return None
+
+
+def _precio_de_linea(linea):
+    """Precio neto por unidad, normalizado a barril de 30L cuando corresponde."""
+    if linea["cantidad"] <= 0:
+        return None
+    precio = (linea["total_linea"] + linea["logistica"]) / linea["cantidad"]
+    if linea["familia"] == "barril":
+        litros = (linea["capacidad_ml"] or 0) / 1000.0
+        if litros <= 0:
+            return None
+        precio *= LITROS_BARRIL_REFERENCIA / litros
+    return precio
+
+
+def _procesar_factura(filas, recetas, descartadas):
+    """Devuelve las muestras de precio de una factura: (cerveza, formato, precio,
+    unidades). Una factura ambigua no aporta ninguna y se cuenta aparte."""
+    lineas = [_leer_linea(f, recetas) for f in filas]
+    cervezas = [l for l in lineas if l["clase"] == "cerveza" and l["familia"]]
+    logisticas = [l for l in lineas if l["clase"] == "logistica"]
+
+    sin_atribuir = _atribuir_nombrada(logisticas, cervezas)
+
+    # El residual es la linea "Logistica" exacta, que parse_dte no guarda en
+    # `productos` (ITEMS_NO_CATALOGO), mas las logisticas que no identificaron
+    # a nadie ("Logistic", "Logistica Cream/Scotch").
+    neto = float(filas[0]["monto_neto"] or 0)
+    residual = neto - sum(l["total_linea"] for l in lineas)
+    residual += sum(l["total_linea"] for l in sin_atribuir)
+
+    if residual < -TOLERANCIA_PESOS:
+        descartadas["residual_negativo"] += 1
+        return []
+
+    pendientes = [c for c in cervezas if c["logistica"] == 0.0]
+    motivo = _repartir_residual(residual, pendientes)
+    if motivo:
+        descartadas[motivo] += 1
+        return []
+
+    muestras = []
+    for linea in cervezas:
+        if not linea["cerveza"]:
+            continue                      # no esta en el catalogo de recetas
+        clave = clave_formato(linea["familia"], linea["capacidad_ml"])
+        precio = _precio_de_linea(linea)
+        if clave and precio is not None:
+            muestras.append((linea["cerveza"], clave, precio, linea["cantidad"]))
+    return muestras
+
+
+def precios_por_formato(cur, dias=None):
+    """Precio neto de venta por (cerveza, formato), deducido de las facturas.
+
+    `dias` limita el PROMEDIO a los ultimos N dias (None = todo el historico);
+    `precio_ultimo` sale siempre del historico completo.
+    """
+    cur.execute(SQL_RECETAS)
+    recetas = [r["nombre_cerveza"] for r in cur.fetchall()]
+
+    cur.execute(SQL_LINEAS)
+    por_factura = defaultdict(list)
+    for fila in cur.fetchall():
+        por_factura[fila["folio"]].append(fila)
+
+    descartadas = defaultdict(int)
+    # Una factura puede traer la misma cerveza en dos lineas (un barril lleno y
+    # uno parcial): se promedian ponderadas por unidades para que cada factura
+    # aporte UNA muestra por formato.
+    muestras = defaultdict(list)
+    for folio, filas in por_factura.items():
+        for cerveza, clave, precio, unidades in _procesar_factura(filas, recetas, descartadas):
+            muestras[(cerveza, clave)].append(
+                {"folio": folio, "fecha": filas[0]["fecha"], "precio": precio,
+                 "unidades": unidades})
+
+    corte = (date.today() - timedelta(days=dias)) if dias else None
+    precios = []
+    for (cerveza, clave), lista in muestras.items():
+        por_folio = defaultdict(list)
+        for m in lista:
+            por_folio[m["folio"]].append(m)
+
+        agregadas = []
+        for folio, ms in por_folio.items():
+            unidades = sum(m["unidades"] for m in ms) or 1.0
+            precio = sum(m["precio"] * m["unidades"] for m in ms) / unidades
+            agregadas.append({"folio": folio, "fecha": ms[0]["fecha"], "precio": precio})
+
+        agregadas.sort(key=lambda m: (m["fecha"], m["folio"]))
+        ultima = agregadas[-1]
+        ventana = [m for m in agregadas if corte is None or m["fecha"] >= corte] or agregadas
+
+        precios.append({
+            "cerveza": cerveza,
+            "formato": clave,
+            "precio_ultimo": round(ultima["precio"], 2),
+            "fecha_ultimo": ultima["fecha"],
+            "folio_ultimo": ultima["folio"],
+            "precio_promedio": round(sum(m["precio"] for m in ventana) / len(ventana), 2),
+            "n_facturas": len(ventana),
+        })
+
+    precios.sort(key=lambda p: (p["cerveza"], p["formato"]))
+    return {"precios": precios, "descartadas": dict(descartadas)}
