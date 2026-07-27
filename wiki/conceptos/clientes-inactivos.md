@@ -1,6 +1,6 @@
 # Clientes inactivos (>60 días sin compra)
 
-Actualizado: 2026-07-20 | 43 clientes inactivos
+Actualizado: 2026-07-26 | 42 clientes inactivos
 
 | Cliente | RUT | Última factura |
 | --- | --- | --- |
@@ -42,7 +42,6 @@ Actualizado: 2026-07-20 | 43 clientes inactivos
 | [[MARIA ESTER MOLINA GONZALEZ]] | 3830475-5 | 2026-04-08 |
 | [[CAFETERIA FYLGJA LIMITADA]] | 77854791-0 | 2026-04-23 |
 | [[RESTOBAR RUBIK LIMITADA]] | 76231880-6 | 2026-04-23 |
-| [[BROTHERWOOD LA TIENDA SPA]] | 77245148-2 | 2026-04-29 |
 | [[COMERCIALIZADORA DE CERVEZAS JRB LIMITADA]] | 76773284-8 | 2026-05-06 |
 | [[COMERCIAL BACO SPA]] | 76407717-2 | 2026-05-12 |
 | [[RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.]] | 76524621-0 | 2026-05-13 |

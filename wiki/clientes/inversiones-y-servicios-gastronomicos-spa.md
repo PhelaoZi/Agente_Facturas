@@ -2,7 +2,7 @@
 rut: 76701686-7
 razon_social: "INVERSIONES Y SERVICIOS GASTRONOMICOS SPA"
 estado: activo
-ultima_actualizacion: 2026-07-20
+ultima_actualizacion: 2026-07-26
 ---
 
 # INVERSIONES Y SERVICIOS GASTRONOMICOS SPA
@@ -11,15 +11,15 @@ ultima_actualizacion: 2026-07-20
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $12.491.527 |
-| Facturas emitidas | 74 |
-| Facturas pendientes | 7 ($858.004) |
+| Total vendido | $12.739.529 |
+| Facturas emitidas | 75 |
+| Facturas pendientes | 8 ($1.106.006) |
 | Promedio días de pago | 35 |
 | Último pago | 2026-07-07 |
 
 ## Estado de cuenta
 
-- 7 factura(s) pendiente(s) por $858.004
+- 8 factura(s) pendiente(s) por $1.106.006
 - Último pago registrado: 2026-07-07
 
 ## Patrón de comportamiento
@@ -45,6 +45,9 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-07-26: ⚠️ 4 factura(s) vencida(s) (>30 días): #4705, #4699, #4715, #4537 por $548.004.
+- 2026-07-26: 📄 1 factura(s) nueva(s) desde 2026-07-20.
+- 2026-07-26: 📈 Deuda pendiente aumentó en $248.002.
 - 2026-07-20: ⚠️ 3 factura(s) vencida(s) (>30 días): #4705, #4699, #4537 por $486.004.
 - 2026-07-20: 📄 3 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-07: ⚠️ 5 factura(s) vencida(s) (>30 días): #4699, #4537, #4682, #4688, #4692 por $840.002.

@@ -1,6 +1,6 @@
 # Producto: Barril 30L Stout Cafe
 
-Actualizado: 2026-07-20
+Actualizado: 2026-07-26
 
 ## Clientes que lo compran
 

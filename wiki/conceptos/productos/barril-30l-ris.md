@@ -1,6 +1,6 @@
 # Producto: Barril 30L RIS
 
-Actualizado: 2026-07-20
+Actualizado: 2026-07-26
 
 ## Clientes que lo compran
 

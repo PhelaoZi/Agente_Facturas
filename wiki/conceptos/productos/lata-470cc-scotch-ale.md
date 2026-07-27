@@ -1,6 +1,6 @@
 # Producto: Lata 470cc Scotch Ale
 
-Actualizado: 2026-07-20
+Actualizado: 2026-07-26
 
 ## Clientes que lo compran
 

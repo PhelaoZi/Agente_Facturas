@@ -1,22 +1,22 @@
 {
-  "_snapshot_fecha": "2026-07-20",
+  "_snapshot_fecha": "2026-07-26",
   "cliente_desde": "2024-02-28",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 858004.0,
+  "deuda_pendiente": 1106006.0,
   "direccion": "SANTA ISABEL 0395 0399",
   "estado": "activo",
-  "facturas_emitidas": 74,
-  "facturas_pendientes": 7,
+  "facturas_emitidas": 75,
+  "facturas_pendientes": 8,
   "promedio_dias_pago": 35,
   "razon_social": "INVERSIONES Y SERVICIOS GASTRONOMICOS SPA",
   "rut": "76701686-7",
   "top_productos": [
     {
-      "cantidad": 116.0,
+      "cantidad": 118.0,
       "nombre": "Barril 30L Cream Ale"
     },
     {
-      "cantidad": 76.0,
+      "cantidad": 78.0,
       "nombre": "Barril 30L Scotch Ale"
     },
     {
@@ -24,6 +24,6 @@
       "nombre": "Barril 30L Scotch  Ale"
     }
   ],
-  "total_vendido": 12491527.0,
+  "total_vendido": 12739529.0,
   "ultimo_pago": "2026-07-07"
 }
