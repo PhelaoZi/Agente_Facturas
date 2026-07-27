@@ -286,7 +286,13 @@ def procesar_insumos(dte, cur):
         _, (nombre_bd, unidades_paquete) = match
         precio_por_unidad = round(item["precio_unitario"] / unidades_paquete, 4)
         cur.execute(
-            "UPDATE maestro_insumos SET precio_neto_unitario = %s WHERE nombre = %s",
+            # actualizado_el va en el mismo UPDATE: sin eso la columna miente —
+            # marcaba la última edición manual aunque el precio lo hubiera
+            # cambiado una factura, y cualquier lógica que compare fechas de
+            # precio (como la fusión de insumos) decide con datos viejos.
+            """UPDATE maestro_insumos
+               SET precio_neto_unitario = %s, actualizado_el = NOW()
+               WHERE nombre = %s""",
             (precio_por_unidad, nombre_bd)
         )
         if cur.rowcount:

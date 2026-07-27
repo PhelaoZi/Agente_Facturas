@@ -453,6 +453,16 @@ def test_lo_que_no_es_insumo_se_registra_como_gasto():
     assert params[8] == "insumos varios"
 
 
+def test_actualizar_un_precio_deja_el_sello_de_fecha_al_dia():
+    # Si el UPDATE no toca actualizado_el, la columna queda marcando la última
+    # edición manual y no la factura que de verdad cambió el precio.
+    cur = FakeCursor()
+    importador.importar_compra(cur, xml_compra().encode("latin-1"), "compra.xml")
+
+    updates = [sql for sql, _ in cur.ejecutados if "UPDATE maestro_insumos" in sql]
+    assert updates and all("actualizado_el" in sql for sql in updates)
+
+
 def test_una_factura_solo_de_insumos_no_genera_gasto():
     cur = FakeCursor()
     res = importador.importar_compra(cur, xml_compra().encode("latin-1"), "solo_insumos.xml")
