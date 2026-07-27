@@ -88,6 +88,50 @@ def _envase_es_pass_through(formato):
     return "pet" in _norm(formato).split()
 
 
+def margen_cliente(cur, cliente, receta=None):
+    """Margen de cada SKU al precio que paga UN cliente, contra el general.
+
+    Existe porque los descuentos son reales y grandes: A & C paga la Scotch a
+    $47.836 en vez de $55.370, así que su margen es 12,5% y no 24,4%. Sin esta
+    función el agente tenía que reconstruir el precio con SQL a mano sobre
+    `productos` — justo donde la doble línea lo engaña — y se quedaba sin pasos.
+
+    Devuelve solo los SKU que ese cliente compró. Lista vacía = no le hemos
+    vendido (o el nombre no calza con ningún cliente).
+    """
+    generales = {(_norm(m["cerveza"]), m["formato"]): m for m in margenes(cur, receta=receta)}
+    del_cliente = precios_venta.precios_por_formato(cur, cliente=cliente)["precios"]
+
+    salida = []
+    for p in del_cliente:
+        clave_sku = None
+        for (cerveza_norm, formato_sku), m in generales.items():
+            if cerveza_norm != _norm(p["cerveza"]):
+                continue
+            if precios_venta.clave_formato_desde_nombre(formato_sku) == p["formato"]:
+                clave_sku = m
+                break
+        if clave_sku is None or clave_sku["costo_comparable"] is None:
+            continue          # ese formato no tiene SKU con costo cargado
+
+        costo = clave_sku["costo_comparable"]
+        precio = p["precio_ultimo"]
+        margen = float(precio) - costo
+        salida.append({
+            "cerveza": p["cerveza"], "formato": clave_sku["formato"],
+            "costo": costo,
+            "precio_cliente": precio,
+            "precio_general": clave_sku["precio_venta"],
+            "margen": margen,
+            "margen_pct": round(100 * margen / precio, 1) if precio else None,
+            "margen_pct_general": clave_sku["margen_pct"],
+            "n_facturas": p["n_facturas"],
+            "fecha_ultimo": p["fecha_ultimo"],
+        })
+    salida.sort(key=lambda x: (x["cerveza"], x["formato"]))
+    return salida
+
+
 def margenes(cur, receta=None):
     """Margen por SKU = precio de venta − costo total.
 

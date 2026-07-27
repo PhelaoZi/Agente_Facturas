@@ -235,6 +235,27 @@ def test_la_consulta_excluye_las_facturas_con_nota_de_credito():
     assert "tipo_documento != 61" in sql_lineas
 
 
+def test_filtrar_por_cliente_acota_la_consulta_sin_cambiar_el_calculo():
+    """Un cliente con descuento paga otro precio, y saberlo es media respuesta
+    de "¿cuánto me deja este cliente?". El algoritmo es el mismo: solo cambia
+    de qué facturas sale."""
+    cur = _cursor([
+        _linea(4527, 95672, "Barril 30L Scotch Ale", 2, 30000),
+        _linea(4527, 95672, "Logistica Scotch Ale", 2, 65672),
+    ])
+    r = pv.precios_por_formato(cur, cliente="A & C SERVICIOS")
+    assert _precio(r, "Scotch Ale", "barril 30L") == 47836.0
+    sql_lineas = cur.sql[1]
+    assert "razon_social ILIKE" in sql_lineas
+    assert "rut_cliente ILIKE" in sql_lineas
+
+
+def test_sin_cliente_no_se_filtra_nada():
+    cur = _cursor([])
+    pv.precios_por_formato(cur)
+    assert "razon_social ILIKE" not in cur.sql[1]
+
+
 def test_precio_ultimo_y_promedio_se_calculan_por_separado():
     """El ultimo es el precio vigente; el promedio revela los descuentos."""
     r = pv.precios_por_formato(_cursor([

@@ -141,11 +141,26 @@ SQL_LINEAS = """
     FROM ventas v
     JOIN productos p ON p.folio = v.folio
                     AND p.tipo_documento = v.tipo_documento
+    {join_cliente}
     WHERE v.tipo_documento != 61
       AND v.monto_neto_ajustado IS NULL
       AND v.monto_neto > 0
+      {filtro_cliente}
     ORDER BY v.fecha, v.folio, p.id
 """
+
+# Un cliente con descuento paga otro precio: el mismo algoritmo, aplicado solo
+# a sus facturas, responde "¿cuánto me deja ESTE cliente?".
+JOIN_CLIENTE = "JOIN clientes c ON c.rut_cliente = v.rut_cliente"
+FILTRO_CLIENTE = "AND (c.razon_social ILIKE %s OR v.rut_cliente ILIKE %s)"
+
+
+def _sql_lineas(cliente=None):
+    """(sql, params) para la consulta de líneas, con filtro de cliente opcional."""
+    if not cliente:
+        return SQL_LINEAS.format(join_cliente="", filtro_cliente=""), ()
+    sql = SQL_LINEAS.format(join_cliente=JOIN_CLIENTE, filtro_cliente=FILTRO_CLIENTE)
+    return sql, (f"%{cliente}%", f"%{cliente}%")
 
 
 def _leer_linea(fila, recetas):
@@ -270,16 +285,19 @@ def _procesar_factura(filas, recetas, descartadas):
     return muestras
 
 
-def precios_por_formato(cur, dias=None):
+def precios_por_formato(cur, dias=None, cliente=None):
     """Precio neto de venta por (cerveza, formato), deducido de las facturas.
 
     `dias` limita el PROMEDIO a los ultimos N dias (None = todo el historico);
     `precio_ultimo` sale siempre del historico completo.
+    `cliente` (nombre o RUT, busqueda parcial) acota el calculo a las facturas
+    de ese cliente: sirve para saber a que precio le vende uno con descuento.
     """
     cur.execute(SQL_RECETAS)
     recetas = [r["nombre_cerveza"] for r in cur.fetchall()]
 
-    cur.execute(SQL_LINEAS)
+    sql, params = _sql_lineas(cliente)
+    cur.execute(sql, params)
     por_factura = defaultdict(list)
     for fila in cur.fetchall():
         por_factura[fila["folio"]].append(fila)

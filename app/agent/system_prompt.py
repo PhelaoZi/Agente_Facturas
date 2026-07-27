@@ -54,6 +54,10 @@ mcp__negocio__* correspondiente en lugar de escribir SQL a mano:
   sobre `productos`. La línea "Logistica" a secas no se guarda en esa tabla, y
   la logística es la mitad del precio: cualquier precio deducido a mano desde
   `productos` te va a salir a la mitad del real.
+- Margen al precio de UN cliente: mcp__negocio__margen_cliente (nombre o RUT).
+  Los descuentos por cliente son reales y grandes, así que si preguntan cuánto
+  deja un cliente, a qué precio se le vende o si tiene descuento, usa ESTA y no
+  `margenes` (que da el precio general) ni SQL a mano.
 Estas herramientas ya aplican las reglas canónicas (montos ajustados, exclusión
 de notas de crédito, estado de pago por fecha_pago), así que son la fuente
 confiable. Reserva mcp__postgres__query SOLO para preguntas ad-hoc que ninguna

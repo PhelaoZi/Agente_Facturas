@@ -104,6 +104,66 @@ def test_margenes_cae_a_la_lista_cuando_no_hay_facturas():
     assert r[0]["origen"] == "lista"
 
 
+class FakeCursorCliente:
+    """margen_cliente() hace 5 consultas: costos, recetas+lineas globales
+    (via margenes) y recetas+lineas del cliente."""
+
+    def __init__(self, filas_costos, lineas_globales, lineas_cliente,
+                 recetas=("Scotch Ale",)):
+        rec = [{"nombre_cerveza": r} for r in recetas]
+        self._respuestas = [filas_costos, rec, lineas_globales, rec, lineas_cliente]
+        self._actual = []
+        self.sql = []
+
+    def execute(self, sql, params=None):
+        self.sql.append(sql)
+        self._actual = self._respuestas.pop(0) if self._respuestas else []
+
+    def fetchall(self):
+        return self._actual
+
+
+def test_margen_cliente_compara_el_precio_que_paga_contra_el_general():
+    """Los descuentos son reales y grandes: A & C paga la Scotch bastante menos
+    que el precio de lista, asi que su margen es la mitad. Antes el agente
+    tenia que reconstruir esto con SQL a mano sobre `productos` — donde la
+    doble linea lo engaña — y se quedaba sin pasos."""
+    from datetime import date
+    sku = {"codigo": "SCOTCH-B30", "nombre_cerveza": "Scotch Ale",
+           "formato": "Barril 30L acero", "costo_liquido_unitario": 41841,
+           "costo_envasado_unitario": 0, "costo_total_unitario": 41841}
+
+    def linea(folio, neto, nombre, cant, total):
+        return {"folio": folio, "fecha": date(2026, 7, 1), "monto_neto": neto,
+                "nombre_producto": nombre, "cantidad": cant, "total_linea": total}
+
+    # Precio general: 20.000 + 35.370 = 55.370
+    globales = [linea(4694, 55370, "Barril 30L Scotch Ale", 1, 20000),
+                linea(4694, 55370, "Logistica Scotch Ale", 1, 35370)]
+    # Este cliente: 15.000 + 32.836 = 47.836
+    cliente = [linea(4527, 47836, "Barril 30L Scotch Ale", 1, 15000),
+               linea(4527, 47836, "Logistica Scotch Ale", 1, 32836)]
+
+    r = costos.margen_cliente(FakeCursorCliente([sku], globales, cliente),
+                              "A & C SERVICIOS")
+    assert len(r) == 1
+    m = r[0]
+    assert m["precio_cliente"] == 47836.0
+    assert m["precio_general"] == 55370.0
+    assert m["margen"] == 47836.0 - 41841.0
+    assert m["margen_pct"] < m["margen_pct_general"], "paga menos, deja menos"
+
+
+def test_margen_cliente_sin_compras_devuelve_vacio():
+    """Un cliente que no ha comprado, o un nombre que no calza: lista vacía en
+    vez de inventar un margen."""
+    sku = {"codigo": "SCOTCH-B30", "nombre_cerveza": "Scotch Ale",
+           "formato": "Barril 30L acero", "costo_liquido_unitario": 41841,
+           "costo_envasado_unitario": 0, "costo_total_unitario": 41841}
+    r = costos.margen_cliente(FakeCursorCliente([sku], [], []), "CLIENTE INEXISTENTE")
+    assert r == []
+
+
 def test_el_dashboard_no_tiene_su_propia_lista_de_precios():
     """El panel tenia PRECIOS_VENTA_NETO pegado en dashboard.py y calculaba el
     margen en JavaScript: solo cubria barriles, usaba precios de lista viejos y

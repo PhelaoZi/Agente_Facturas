@@ -191,6 +191,33 @@ def build_negocio_server():
                           f"{_pesos(m['margen'])} ({m['margen_pct']}%)" + respaldo)
         return _texto("\n".join(lineas))
 
+    @tool("margen_cliente",
+          "Margen de cada cerveza AL PRECIO QUE PAGA UN CLIENTE, comparado con "
+          "el precio general. Úsala cuando pregunten cuánto deja un cliente, a "
+          "qué precio se le vende o si tiene descuento. Nombre o RUT del "
+          "cliente; opcional filtrar por receta.",
+          {"cliente": str, "receta": str})
+    @_tool_seguro
+    async def margen_cliente(args):
+        r = _con_cursor(costos_data.margen_cliente, args["cliente"], args.get("receta"))
+        if not r:
+            return _texto(f"No hay ventas con costo cargado para "
+                          f"'{args['cliente']}' (revisa el nombre o el RUT).")
+        lineas = []
+        for m in r:
+            dif = ""
+            if m["precio_general"] and m["precio_cliente"] != m["precio_general"]:
+                delta = m["precio_cliente"] - m["precio_general"]
+                dif = (f" · general {_pesos(m['precio_general'])} "
+                       f"({'+' if delta > 0 else ''}{_pesos(delta)}, "
+                       f"margen general {m['margen_pct_general']}%)")
+            lineas.append(
+                f"- {m['cerveza']} {m['formato']}: paga "
+                f"{_pesos(m['precio_cliente'])} − costo {_pesos(m['costo'])} "
+                f"= margen {_pesos(m['margen'])} ({m['margen_pct']}%)"
+                f"{dif} [{m['n_facturas']} facturas]")
+        return _texto("\n".join(lineas))
+
     @tool("listar_gastos", "Lista los gastos pendientes (cuentas por pagar) con su id, "
                            "para ubicar uno antes de borrarlo, editarlo o marcarlo pagado. "
                            "Opcional: filtro de texto sobre la descripción.",
@@ -237,7 +264,7 @@ def build_negocio_server():
     server = create_sdk_mcp_server(name="negocio", version="1.0.0", tools=[
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
-        flujo_caja, costos_sku, margenes, listar_gastos,
+        flujo_caja, costos_sku, margenes, margen_cliente, listar_gastos,
         clientes_en_riesgo, listar_seguimiento,
     ])
     tool_names = [
@@ -246,7 +273,7 @@ def build_negocio_server():
         "mcp__negocio__ventas_total", "mcp__negocio__ranking_clientes",
         "mcp__negocio__ventas_cliente", "mcp__negocio__ventas_producto",
         "mcp__negocio__flujo_caja", "mcp__negocio__costos_sku", "mcp__negocio__margenes",
-        "mcp__negocio__listar_gastos",
+        "mcp__negocio__margen_cliente", "mcp__negocio__listar_gastos",
         "mcp__negocio__clientes_en_riesgo", "mcp__negocio__listar_seguimiento",
     ]
     return server, tool_names
