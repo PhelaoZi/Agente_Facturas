@@ -93,17 +93,26 @@ def xml_nota_credito(folio=910, folio_ref=4743):
 
 
 def doc_compra(rut_emisor="77755083-7", razon="BUCAREST SPA", item="MALTA UMA - PILSEN",
-               precio=32000, folio=8801, fecha="2026-07-20"):
-    """Un <Documento> de proveedor, sin envoltorio (para armar descargas masivas)."""
+               precio=32000, folio=8801, fecha="2026-07-20", items=None,
+               neto=320000, total=380800):
+    """Un <Documento> de proveedor, sin envoltorio (para armar descargas masivas).
+
+    `items` acepta una lista de (nombre, qty, precio, monto) para las facturas
+    que mezclan varias líneas; si no viene, arma una sola con `item`/`precio`.
+    """
+    lineas = items if items is not None else [(item, 10, precio, neto)]
+    detalle = "".join(
+        f"<Detalle><NmbItem>{n}</NmbItem><QtyItem>{q}</QtyItem>"
+        f"<PrcItem>{p}</PrcItem><MontoItem>{m}</MontoItem></Detalle>"
+        for n, q, p, m in lineas)
     return f"""<Documento ID="F{folio}T33">
 <Encabezado>
 <IdDoc><TipoDTE>33</TipoDTE><Folio>{folio}</Folio><FchEmis>{fecha}</FchEmis></IdDoc>
 <Emisor><RUTEmisor>{rut_emisor}</RUTEmisor><RznSoc>{razon}</RznSoc></Emisor>
 <Receptor><RUTRecep>{importador.RUT_EMISOR_PROPIO}</RUTRecep></Receptor>
-<Totales><MntNeto>320000</MntNeto><IVA>60800</IVA><MntTotal>380800</MntTotal></Totales>
+<Totales><MntNeto>{neto}</MntNeto><IVA>{total - neto}</IVA><MntTotal>{total}</MntTotal></Totales>
 </Encabezado>
-<Detalle><NmbItem>{item}</NmbItem><QtyItem>10</QtyItem>
-<PrcItem>{precio}</PrcItem><MontoItem>320000</MontoItem></Detalle>
+{detalle}
 </Documento>"""
 
 
@@ -411,6 +420,43 @@ def test_limpieza_usa_el_formato_de_cada_envase(item, precio, esperado):
 
     assert res["precios_actualizados"] == [esperado]
     assert res["sin_mapeo"] == []
+
+
+def _factura_mixta(folio=7702, fecha="2026-07-20"):
+    """Factura de proveedor de insumos que mezcla insumos con lo que no lo es."""
+    return envio_dte(doc_compra(
+        rut_emisor="76045387-0", razon="MUNDO CERVECERO", folio=folio, fecha=fecha,
+        neto=30000, total=35700,
+        items=[
+            ("Malta Chocolate",                2, 2400, 24000),
+            ("Llave paso plastica John Guest", 2, 2000,  4000),
+            ("Servicio Molienda",              8,  250,  2000),
+        ]))
+
+
+def test_lo_que_no_es_insumo_se_registra_como_gasto():
+    # Mundo Cervecero factura maltas junto con fittings y servicios que no son
+    # insumo de receta. Antes esas líneas se botaban: no actualizaban ningún
+    # precio y tampoco entraban a gastos, así que la plata desaparecía.
+    cur = FakeCursor()
+    res = importador.importar_compra(cur, _factura_mixta().encode("latin-1"), "mixta.xml")
+
+    assert res["precios_actualizados"] == ["Malta Chocolate -> $2400.0000/unidad"]
+    assert res["gastos_insertados"] == 1
+
+    _, params = cur.inserts("gastos_operativos")[0]
+    assert "John Guest" in params[5] and "Molienda" in params[5]
+    assert params[6] == 6000        # solo las líneas sueltas, no el total de la factura
+    assert params[7] == 7140        # total prorrateado (35.700 × 6.000/30.000)
+    assert params[8] == "insumos varios"
+
+
+def test_una_factura_solo_de_insumos_no_genera_gasto():
+    cur = FakeCursor()
+    res = importador.importar_compra(cur, xml_compra().encode("latin-1"), "solo_insumos.xml")
+
+    assert res["gastos_insertados"] == 0
+    assert cur.inserts("gastos_operativos") == []
 
 
 def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():

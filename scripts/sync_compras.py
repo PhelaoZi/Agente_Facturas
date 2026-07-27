@@ -293,6 +293,50 @@ def procesar_insumos(dte, cur):
     return actualizados, no_mapeados
 
 
+# Categoría de las líneas que factura un proveedor de insumos y no son insumo
+# de receta (servicios de molienda, fittings, ferretería).
+CATEGORIA_NO_INSUMO = "insumos varios"
+LARGO_MAX_DESCRIPCION = 300
+
+
+def procesar_lineas_no_insumo(dte, no_mapeados, cur):
+    """Registra como gasto lo que un proveedor de insumos factura y no es insumo.
+
+    Sin esto esas líneas quedaban en el aire: no actualizan ningún precio porque
+    no corresponden a un insumo del maestro, y la factura tampoco entra a
+    gastos_operativos porque su emisor está en PROVEEDORES_INSUMOS. Plata
+    gastada que no aparecía en ninguna parte.
+
+    Va una sola fila por factura —gastos_operativos es único por
+    (folio, rut_emisor)— con los ítems listados en la descripción. El monto es
+    el de esas líneas, no el de la factura completa; el total se prorratea
+    sobre el neto para no inventar impuestos.
+
+    Retorna True si insertó la fila.
+    """
+    sueltos = [i for i in dte["items"] if i["nombre"] in set(no_mapeados)]
+    neto = sum(i["monto"] for i in sueltos)
+    if not sueltos or neto <= 0:
+        return False
+
+    neto_factura = dte["monto_neto"] or 0
+    total = round(dte["monto_total"] * neto / neto_factura) if neto_factura > 0 else neto
+    descripcion = ", ".join(i["nombre"] for i in sueltos)[:LARGO_MAX_DESCRIPCION]
+
+    cur.execute(
+        """
+        INSERT INTO gastos_operativos
+            (folio, tipo_documento, fecha_emision, rut_emisor,
+             razon_social_emisor, descripcion, monto_neto, monto_total, categoria)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (folio, rut_emisor) DO NOTHING
+        """,
+        (dte["folio"], dte["tipo_dte"], dte["fecha"], dte["rut_emisor"],
+         dte["razon_social"], descripcion, neto, total, CATEGORIA_NO_INSUMO)
+    )
+    return cur.rowcount > 0
+
+
 def procesar_gasto(dte, categoria, cur):
     """Inserta el DTE como gasto operativo. Retorna True si fue insertado."""
     descripcion = dte["items"][0]["nombre"] if dte["items"] else dte["razon_social"]
@@ -362,8 +406,10 @@ def main():
                         actualizados, no_mapeados = procesar_insumos(dte, cur)
                         for msg in actualizados:
                             print(f"    Precio: {msg}")
-                        for nombre in no_mapeados:
-                            print(f"    Sin mapeo (omitido): {nombre}")
+                        if procesar_lineas_no_insumo(dte, no_mapeados, cur):
+                            print(f"    Gasto [{CATEGORIA_NO_INSUMO}]: {', '.join(no_mapeados)}")
+                        elif no_mapeados:
+                            print(f"    Sin mapeo (omitido): {', '.join(no_mapeados)}")
                         if not actualizados and not no_mapeados:
                             print(f"    Sin ítems reconocidos para {PROVEEDORES_INSUMOS[rut]}")
                     else:

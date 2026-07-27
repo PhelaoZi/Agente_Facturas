@@ -240,6 +240,9 @@ def importar_compra(cur, raw, nombre):
             actualizados, no_mapeados = sync_compras.procesar_insumos(dte, cur)
             res["precios_actualizados"] += actualizados
             res["sin_mapeo"] += no_mapeados
+            # Lo que no es insumo de receta no se bota: queda como gasto.
+            if sync_compras.procesar_lineas_no_insumo(dte, no_mapeados, cur):
+                res["gastos_insertados"] += 1
         else:
             sin_clasificar.append(f"{dte['razon_social']} ({rut})")
 
