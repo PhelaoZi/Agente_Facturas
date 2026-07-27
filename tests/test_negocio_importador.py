@@ -395,6 +395,24 @@ def test_maltas_con_otra_marca_mapean_al_mismo_insumo(rut, item, precio, esperad
     assert res["sin_mapeo"] == []
 
 
+@pytest.mark.parametrize("item, precio, esperado", [
+    # El maestro guarda el fosfórico por ml: cada formato divide por lo suyo.
+    # El caso del frasco de 250 ml es el que protege el orden de ITEM_MAP —
+    # con las claves al revés caería en "acido fosforico" y quedaría a $2,90.
+    ("Acido Fosforico",       5462, "Fosfórico -> $5.4620/unidad"),
+    ("Acido Fosforico 250ml", 2900, "Fosfórico -> $11.6000/unidad"),
+    ("Desinfectante 5 kg",   22269, "Desinfectante Peracetico -> $4453.8000/unidad"),
+])
+def test_limpieza_usa_el_formato_de_cada_envase(item, precio, esperado):
+    cur = FakeCursor()
+    xml = xml_compra(rut_emisor="76045387-0", razon="MUNDO CERVECERO",
+                     item=item, precio=precio)
+    res = importador.importar_compra(cur, xml.encode("latin-1"), "limpieza.xml")
+
+    assert res["precios_actualizados"] == [esperado]
+    assert res["sin_mapeo"] == []
+
+
 def test_el_precio_que_queda_es_el_de_la_factura_mas_nueva():
     # El UPDATE de precios no tiene condición: manda el último documento
     # procesado. Con los documentos desordenados dentro del archivo (así los

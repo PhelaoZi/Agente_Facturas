@@ -85,6 +85,11 @@ PROVEEDORES_GASTOS = {
 
 # Substring del NmbItem (lowercase) → (nombre en maestro_insumos, unidades_por_paquete)
 # precio_neto_unitario = PrcItem / unidades_por_paquete
+#
+# EL ORDEN IMPORTA: gana la primera clave que calce como substring, así que una
+# variante con formato va SIEMPRE antes que la clave corta que la contiene
+# ("acido fosforico 250ml" antes que "acido fosforico"; si no, el frasco chico
+# se guardaría al precio por ml de la botella de 1 litro, menos de la mitad).
 ITEM_MAP = {
     # ── Almacén Cervecero ──────────────────────────────────────────────────────
     "fermoale ay4":           ("Levadura AY4",                        500),   # saco 500gr
@@ -151,6 +156,9 @@ ITEM_MAP = {
 
     # ── Limpieza (Mundo Cervecero y Almacén Cervecero) ────────────────────────
     "base peracetico":        ("Desinfectante Peracetico",                 1),   # precio por litro
+    "desinfectante 5 kg":     ("Desinfectante Peracetico",                 5),   # bidón de 5 litros
+    "acido fosforico 250ml":  ("Fosfórico",                              250),   # frasco 250 ml
+    "acido fosforico":        ("Fosfórico",                             1000),   # botella de 1 litro
     "detergente alcalino 5":  ("Detergente Alcalino",                      5),   # bidón 5 kg
     "detergente alcalino 6":  ("Detergente Alcalino",                      6),   # bidón 6 kg
     "detergente alcalino 23": ("Detergente Alcalino",                     23),   # bidón 23 kg
