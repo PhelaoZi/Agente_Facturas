@@ -14,7 +14,10 @@ import os, sys, json, re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from _console import force_utf8
+try:
+    from _console import force_utf8          # ejecutado como script
+except ImportError:
+    from scripts._console import force_utf8  # importado como paquete (tests, dashboard)
 
 force_utf8()
 
@@ -208,13 +211,12 @@ def _parsear_documento(doc):
     }
 
 
-def parse_xml(filepath):
-    """Parsea DTE XML (ISO-8859-1). Retorna lista de dicts — uno por documento.
+def parse_contenido(raw, nombre="(sin nombre)"):
+    """Parsea los bytes de un DTE XML (ISO-8859-1). Retorna lista de dicts.
 
-    Un archivo puede contener varios <Documento> (ej: descarga masiva del SII).
+    Función pura (no lee disco): la comparten la CLI y el importador del
+    dashboard. Un archivo puede traer varios <Documento> (descarga masiva SII).
     """
-    with open(filepath, "rb") as f:
-        raw = f.read()
     content = raw.replace(b'encoding="ISO-8859-1"', b'encoding="UTF-8"')
     content = content.replace(b"encoding='ISO-8859-1'", b"encoding='UTF-8'")
     content_str = content.decode("iso-8859-1")
@@ -223,7 +225,7 @@ def parse_xml(filepath):
     root = ET.fromstring(content_clean.encode("utf-8"))
     documentos = root.findall(".//Documento")
     if not documentos:
-        raise ValueError(f"No se encontró <Documento> en {filepath.name}")
+        raise ValueError(f"No se encontró <Documento> en {nombre}")
 
     dtes = []
     for doc in documentos:
@@ -231,6 +233,13 @@ def parse_xml(filepath):
         if datos:
             dtes.append(datos)
     return dtes
+
+
+def parse_xml(filepath):
+    """Parsea DTE XML (ISO-8859-1). Retorna lista de dicts — uno por documento."""
+    with open(filepath, "rb") as f:
+        raw = f.read()
+    return parse_contenido(raw, filepath.name)
 
 
 def procesar_insumos(dte, cur):

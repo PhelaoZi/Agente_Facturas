@@ -47,6 +47,8 @@ PORT = int(os.environ.get("ZIGURAT_DASH_PORT", "8777"))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from app.negocio import importador  # noqa: E402  (requiere el sys.path de arriba)
+
 
 def _load_env() -> None:
     """Carga .env de la raiz sin depender de python-dotenv (patron del proyecto)."""
@@ -74,6 +76,16 @@ DB_CONFIG = {
 
 def get_conn():
     return psycopg2.connect(cursor_factory=RealDictCursor, **DB_CONFIG)
+
+
+def get_conn_tuplas():
+    """Conexión con cursores de tupla (los de psycopg2 por defecto).
+
+    Los scripts del pipeline (`sync_db`) leen las filas por índice —`row[0]`—,
+    así que un RealDictCursor los rompe con KeyError. La importación de DTEs usa
+    esta conexión; el resto del dashboard sigue con dicts.
+    """
+    return psycopg2.connect(**DB_CONFIG)
 
 
 # --------------------------------------------------------------------------- #
@@ -947,6 +959,154 @@ def run_agent(pregunta: str, model: str = MODELO_CHAT_DEFAULT) -> dict:
                 "trace": trace[-1200:]}
 
 
+# ── Importación de XMLs DTE desde el navegador ────────────────────────────────
+# Los XMLs del SII pesan decenas de KB; los topes cortan un envío absurdo antes
+# de gastar memoria o tiempo de BD.
+MAX_ARCHIVOS_IMPORT = 20
+MAX_BYTES_ARCHIVO = 5 * 1024 * 1024
+MAX_BYTES_TOTAL = 20 * 1024 * 1024
+TIMEOUT_WIKI_SEG = 180
+
+
+class _ImportacionFallida(Exception):
+    """Corta la transacción del archivo sin perder su resultado (validación fallida)."""
+
+    def __init__(self, resultado):
+        super().__init__(resultado.get("archivo", ""))
+        self.resultado = resultado
+
+
+def _actualizar_wiki(ruts: list) -> dict:
+    """Regenera las fichas wiki de los clientes tocados. Nunca bloquea la importación.
+
+    Mismo criterio que la skill /monitoreo-facturas: si falla, se avisa pero las
+    facturas ya quedaron sincronizadas.
+    """
+    if not ruts:
+        return {"ok": True, "detalle": "Sin clientes nuevos que actualizar."}
+    import subprocess
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(PROJECT_ROOT / "scripts" / "wiki_update.py"),
+             "--ruts", ",".join(ruts), "--origen", "dashboard"],
+            cwd=str(PROJECT_ROOT), capture_output=True, text=True,
+            timeout=TIMEOUT_WIKI_SEG, encoding="utf-8", errors="replace")
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "detalle": f"La wiki tardó más de {TIMEOUT_WIKI_SEG}s; se canceló."}
+    except Exception as e:
+        return {"ok": False, "detalle": f"No se pudo ejecutar wiki_update.py: {e}"}
+    if proc.returncode != 0:
+        detalle = (proc.stderr or proc.stdout or "").strip()[-400:]
+        return {"ok": False, "detalle": detalle or f"wiki_update.py salió con código {proc.returncode}"}
+    return {"ok": True, "detalle": f"{len(ruts)} ficha(s) de cliente actualizada(s)."}
+
+
+def _leer_archivos_import(body: dict) -> list:
+    """Valida y decodifica los archivos del request. Lanza ValueError si algo no cuadra."""
+    import base64
+    archivos = body.get("archivos")
+    if not isinstance(archivos, list) or not archivos:
+        raise ValueError("No llegó ningún archivo.")
+    if len(archivos) > MAX_ARCHIVOS_IMPORT:
+        raise ValueError(f"Máximo {MAX_ARCHIVOS_IMPORT} archivos por vez "
+                         f"(llegaron {len(archivos)}).")
+    total = 0
+    salida = []
+    for item in archivos:
+        if not isinstance(item, dict):
+            raise ValueError("Formato de archivo inválido.")
+        nombre = importador.nombre_seguro(item.get("nombre"))
+        try:
+            raw = base64.b64decode(item.get("contenido_b64") or "", validate=True)
+        except Exception:
+            raise ValueError(f"El contenido de {nombre} no se pudo decodificar.")
+        if not raw:
+            raise ValueError(f"El archivo {nombre} llegó vacío.")
+        if len(raw) > MAX_BYTES_ARCHIVO:
+            raise ValueError(f"{nombre} pesa más de {MAX_BYTES_ARCHIVO // (1024*1024)} MB.")
+        total += len(raw)
+        if total > MAX_BYTES_TOTAL:
+            raise ValueError(f"El envío completo supera {MAX_BYTES_TOTAL // (1024*1024)} MB.")
+        salida.append((nombre, raw))
+    return salida
+
+
+def importar_dte(archivos: list) -> dict:
+    """Procesa los XMLs ya validados y decodificados. Devuelve el resumen para la UI.
+
+    Una transacción por archivo: un XML corrupto hace rollback solo de lo suyo
+    y los demás se importan igual.
+    """
+    resultados = []
+    conn = get_conn_tuplas()
+    try:
+        for nombre, raw in archivos:
+            clase_info = importador.clasificar(importador.decodificar(raw))
+            clase = clase_info["clase"]
+
+            if clase == "desconocido":
+                res = importador._resultado_base(nombre, clase)
+                res["estado"] = "error"
+                res["errores"].append(clase_info["motivo"])
+                resultados.append(res)
+                continue
+
+            try:
+                with conn:
+                    with conn.cursor() as cur:
+                        if clase == "compra":
+                            res = importador.importar_compra(cur, raw, nombre)
+                        else:
+                            res = importador.importar_venta(
+                                cur, importador.decodificar(raw), nombre, clase)
+                        if res["estado"] == "error":
+                            # Nada que guardar: se revierte por si quedó algo a medias.
+                            raise _ImportacionFallida(res)
+            except _ImportacionFallida as e:
+                resultados.append(e.resultado)
+                continue
+            except Exception as e:
+                res = importador._resultado_base(nombre, clase)
+                res["estado"] = "error"
+                res["errores"].append(
+                    f"Error al escribir en la base: {type(e).__name__}: {e}")
+                resultados.append(res)
+                continue
+
+            # Recién con la transacción cerrada archivamos el XML.
+            try:
+                destino = importador.guardar_xml(raw, nombre, clase)
+                res["guardado_en"] = importador.ruta_relativa(destino)
+                if clase == "compra" and res.get("procesado_completo"):
+                    importador.marcar_compra_procesada(destino.name)
+            except Exception as e:
+                res["advertencias"].append(f"Se importó, pero no se pudo archivar el XML: {e}")
+            resultados.append(res)
+    finally:
+        conn.close()
+
+    resumen = {
+        "archivos": len(resultados),
+        "facturas": sum(r["facturas"] for r in resultados),
+        "notas_credito": sum(r["notas_credito"] for r in resultados),
+        "productos": sum(r["productos"] for r in resultados),
+        "duplicados": sum(len(r["duplicados"]) for r in resultados),
+        "precios": sum(len(r["precios_actualizados"]) for r in resultados),
+        "gastos": sum(r["gastos_insertados"] for r in resultados),
+        "con_error": sum(1 for r in resultados if r["estado"] == "error"),
+    }
+    duplicados = [{**d, "archivo": r["archivo"]} for r in resultados for d in r["duplicados"]]
+
+    ruts = []
+    for r in resultados:
+        for rut in r["ruts"]:
+            if rut not in ruts:
+                ruts.append(rut)
+
+    return {"ok": True, "resumen": resumen, "duplicados": duplicados,
+            "archivos": resultados, "wiki": _actualizar_wiki(ruts)}
+
+
 def _md_to_html(s: str) -> str:
     import re
     s = (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -1181,6 +1341,33 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, json.dumps({"ok": True, **result},
                                        default=_json_default, ensure_ascii=False))
+        elif path == "/api/importar-dte":
+            # Carga de XMLs del SII: clasifica, procesa con el pipeline de
+            # siempre y archiva el XML en su carpeta.
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                if length > MAX_BYTES_TOTAL * 2:   # el base64 infla ~4/3
+                    self._send(413, json.dumps({"ok": False, "error": "El envío es demasiado grande."},
+                                               ensure_ascii=False))
+                    return
+                body = json.loads(self.rfile.read(length) or b"{}") if length else {}
+            except Exception:
+                self._send(400, json.dumps({"ok": False, "error": "JSON inválido"}))
+                return
+            try:
+                archivos = _leer_archivos_import(body)
+            except ValueError as e:
+                self._send(400, json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+                return
+            try:
+                res = importar_dte(archivos)
+            except Exception as e:
+                import traceback
+                _log_agente_error("importar-dte", str(e), traceback.format_exc())
+                self._send(500, json.dumps({"ok": False, "error": "no se pudo importar",
+                                            "detalle": str(e)}, ensure_ascii=False))
+                return
+            self._send(200, json.dumps(res, default=_json_default, ensure_ascii=False))
         else:
             self._send(404, json.dumps({"ok": False, "error": "no encontrado"}))
 

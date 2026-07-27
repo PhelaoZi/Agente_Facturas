@@ -18,7 +18,10 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-from _console import force_utf8
+try:
+    from _console import force_utf8          # ejecutado como script
+except ImportError:
+    from scripts._console import force_utf8  # importado como paquete (tests, dashboard)
 
 force_utf8()
 
@@ -171,6 +174,20 @@ def parsear_documento(doc_xml):
     }
 
 
+def parsear_contenido(content):
+    """
+    Parsea el texto completo de un XML del SII y retorna la lista de documentos.
+
+    Función pura (no lee disco ni imprime): la usan tanto la CLI como el
+    importador del dashboard (`app/negocio/importador.py`).
+    Lanza ValueError si el contenido no trae ningún bloque <Documento>.
+    """
+    docs_xml = re.findall(r'<Documento ID=.*?</Documento>', content, re.DOTALL)
+    if not docs_xml:
+        raise ValueError("No se encontraron documentos DTE en el archivo.")
+    return [parsear_documento(doc_xml) for doc_xml in docs_xml]
+
+
 def parsear_xml(ruta_xml):
     """
     Lee el archivo XML del SII y retorna lista de documentos parseados.
@@ -191,22 +208,17 @@ def parsear_xml(ruta_xml):
     with open(ruta, "r", encoding="latin-1") as f:
         content = f.read()
 
-    # Extraer todos los bloques <Documento>
-    docs_xml = re.findall(r'<Documento ID=.*?</Documento>', content, re.DOTALL)
-
-    if not docs_xml:
-        print("ERROR: No se encontraron documentos DTE en el archivo.")
+    try:
+        documentos = parsear_contenido(content)
+    except ValueError as e:
+        print(f"ERROR: {e}")
         sys.exit(1)
 
     print(f"✓ Archivo leído: {ruta.name}")
-    print(f"✓ Documentos encontrados: {len(docs_xml)}")
+    print(f"✓ Documentos encontrados: {len(documentos)}")
     print()
 
-    documentos = []
-    for doc_xml in docs_xml:
-        doc = parsear_documento(doc_xml)
-        documentos.append(doc)
-
+    for doc in documentos:
         # Mostrar resumen en pantalla
         v = doc["venta"]
         ref = f" → anula folio {v['folio_referencia']}" if v.get("folio_referencia") else ""
@@ -219,9 +231,12 @@ def parsear_xml(ruta_xml):
     return documentos
 
 
-def generar_changes_json(documentos, ruta_xml):
+def armar_changes(documentos, ruta_xml):
     """
-    Genera el archivo changes.json con el plan de inserción.
+    Arma el dict del plan de inserción (metadata + documentos + resumen).
+
+    Función pura: no toca disco. `generar_changes_json` la usa y escribe el
+    archivo; el importador del dashboard la usa sin generar changes.json.
     """
     ahora = datetime.now().isoformat()
 
@@ -248,6 +263,15 @@ def generar_changes_json(documentos, ruta_xml):
         "total_impuesto_adicional": total_imp,
         "total_monto_total":        total_final,
     }
+
+    return changes
+
+
+def generar_changes_json(documentos, ruta_xml):
+    """
+    Genera el archivo changes.json con el plan de inserción.
+    """
+    changes = armar_changes(documentos, ruta_xml)
 
     # Guardar
     output = Path("changes.json")

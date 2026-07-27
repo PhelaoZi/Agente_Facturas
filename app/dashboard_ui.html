@@ -240,6 +240,41 @@
   .cobbtns .ghost:hover{border-color:var(--accent)}
   .chevron{transition:transform .2s;color:var(--muted)}
   .cobitem.open .chevron{transform:rotate(90deg)}
+
+  /* ---------- Importar DTE ---------- */
+  .drop{
+    border:2px dashed var(--border2); border-radius:14px; padding:38px 24px;
+    text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+    background:rgba(249,115,22,.03);
+  }
+  .drop:hover,.drop.over{border-color:var(--accent); background:rgba(249,115,22,.09)}
+  .drop.busy{opacity:.55; cursor:progress; pointer-events:none}
+  .drop .em{font-size:38px; display:block; margin-bottom:10px}
+  .drop .t{font-size:14.5px; font-weight:700}
+  .drop .s{font-size:12.5px; color:var(--muted); margin-top:6px; line-height:1.55}
+  .imp-chips{display:flex; flex-wrap:wrap; gap:9px; margin:16px 0 4px}
+  .imp-chip{
+    background:var(--panel2); border:1px solid var(--border2); border-radius:10px;
+    padding:9px 13px; font-size:12.5px; display:flex; gap:8px; align-items:baseline;
+  }
+  .imp-chip .v{font-size:17px; font-weight:700; font-variant-numeric:tabular-nums}
+  .imp-chip.good .v{color:var(--green)} .imp-chip.warn .v{color:var(--yellow)}
+  .imp-chip.bad .v{color:var(--red)}
+  .imp-file{
+    border:1px solid var(--border); border-radius:11px; padding:11px 14px; margin-top:9px;
+    background:var(--panel2); font-size:12.5px;
+  }
+  .imp-file .n{font-weight:700; display:flex; gap:8px; align-items:center}
+  .imp-file .tag{
+    font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--muted); border:1px solid var(--border2); border-radius:6px; padding:1px 6px;
+  }
+  .imp-file ul{margin:7px 0 0 18px; color:var(--muted); line-height:1.6}
+  .imp-file li.err{color:var(--red)}
+  .imp-file .path{color:var(--muted2); font-size:11.5px; margin-top:5px}
+  details.imp-dup{margin-top:14px; border:1px solid var(--border); border-radius:11px; padding:11px 14px; background:var(--panel2)}
+  details.imp-dup summary{cursor:pointer; font-size:12.5px; font-weight:600; color:var(--yellow)}
+  details.imp-dup table{margin-top:10px}
 </style>
 </head>
 <body>
@@ -256,6 +291,7 @@
     <button data-sec="clientes"><span class="ico">👥</span> Clientes</button>
     <button data-sec="cobranza"><span class="ico">💰</span> Cobranza</button>
     <button data-sec="costos"><span class="ico">🏭</span> Costos &amp; Márgenes</button>
+    <button data-sec="importar"><span class="ico">📥</span> Importar DTE</button>
   </nav>
   <div class="foot">
     <b>Zigurat Brewery</b><br>
@@ -409,6 +445,34 @@
         <h3><span class="ic">💵</span> Margen por barril 30L</h3>
         <div class="csub">Costo vs precio de venta neto confirmado</div>
         <div class="tbl-scroll"><table id="tbl-margen"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ IMPORTAR DTE ============ -->
+  <section class="sec hidden" id="sec-importar">
+    <div class="card hero">
+      <h3><span class="ic">📥</span> Cargar XMLs del SII</h3>
+      <div class="csub">Suelta aquí los archivos tal como los bajaste del SII. Detecto solo
+        si son facturas de venta, notas de crédito o compras a proveedores, y los proceso
+        con el mismo pipeline de siempre.</div>
+      <div class="drop" id="drop">
+        <span class="em">🗂️</span>
+        <div class="t">Arrastra tus XML aquí o haz clic para elegirlos</div>
+        <div class="s">Hasta 20 archivos por vez · las facturas repetidas se omiten solas<br>
+          Nada se escribe si un archivo no pasa la validación</div>
+        <input type="file" id="drop-input" accept=".xml,text/xml,application/xml" multiple hidden>
+      </div>
+      <div id="imp-out"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">🧭</span> Cómo funciona</h3>
+      <div class="mini-list">
+        <div class="mini-row"><span>Emitidas por Zigurat (33, 34, 39, 41)</span><span class="v">→ ventas + clientes + productos</span></div>
+        <div class="mini-row"><span>Notas de crédito (61)</span><span class="v">→ descuentan la factura referenciada</span></div>
+        <div class="mini-row"><span>Emitidas por un proveedor</span><span class="v">→ precios de insumos o gastos operativos</span></div>
+        <div class="mini-row"><span>Al terminar</span><span class="v">→ se archiva el XML, se actualiza la wiki y este panel</span></div>
       </div>
     </div>
   </section>
@@ -686,6 +750,7 @@ const SEC_META={
   clientes:['Clientes','Tu cartera: mejores compradores, estado y reactivación.'],
   cobranza:['Cobranza & caja','Lo que te deben, lo que debes y tu liquidez.'],
   costos:['Costos & márgenes','Cuánto cuesta producir y cuánto ganas por producto.'],
+  importar:['Importar DTE','Carga los XML del SII sin pasar por la consola.'],
 };
 function showSection(sec){
   document.querySelectorAll('.sec').forEach(s=>s.classList.add('hidden'));
@@ -877,6 +942,120 @@ document.getElementById('cob-list').addEventListener('click',e=>{
     if(c){ const txt=(c.asunto||'')+'\n\n'+(c.cuerpo||'');
       navigator.clipboard.writeText(txt).then(()=>{ const o=cp.textContent; cp.textContent='✓ Copiado'; setTimeout(()=>cp.textContent=o,1500); }); } }
 });
+
+// ---------- Importar DTE ----------
+let impBusy=false;
+const TIPO_DOC={'33':'Factura','34':'Factura exenta','39':'Boleta','41':'Boleta exenta','61':'Nota de crédito','52':'Guía'};
+const CLASE_TAG={venta:'Venta', nota_credito:'Nota de crédito', compra:'Compra', desconocido:'No reconocido'};
+
+// El archivo se manda como base64 dentro del JSON: evita parsear multipart en
+// el servidor (Python 3.13 ya no trae el módulo cgi) y los XML son livianos.
+function leerArchivo(file){
+  return new Promise((ok,fail)=>{
+    const r=new FileReader();
+    r.onload=()=>ok({nombre:file.name, contenido_b64:String(r.result).split(',')[1]||''});
+    r.onerror=()=>fail(new Error('No pude leer '+file.name));
+    r.readAsDataURL(file);
+  });
+}
+
+function chip(label, valor, cls){
+  return `<div class="imp-chip ${cls||''}"><span class="v">${valor}</span><span>${label}</span></div>`;
+}
+
+function renderImportacion(d){
+  const out=document.getElementById('imp-out'), r=d.resumen||{};
+  let html='<div class="imp-chips">';
+  html+=chip('facturas nuevas', num(r.facturas), r.facturas>0?'good':'');
+  if(r.notas_credito>0) html+=chip('notas de crédito', num(r.notas_credito), 'good');
+  if(r.duplicados>0)    html+=chip('duplicadas omitidas', num(r.duplicados), 'warn');
+  if(r.precios>0)       html+=chip('precios actualizados', num(r.precios), 'good');
+  if(r.gastos>0)        html+=chip('gastos registrados', num(r.gastos), 'good');
+  if(r.con_error>0)     html+=chip('archivos con error', num(r.con_error), 'bad');
+  html+='</div>';
+
+  if(!r.facturas && !r.notas_credito && !r.precios && !r.gastos && !r.con_error)
+    html+='<div class="notice">No entró nada nuevo: todo lo que soltaste ya estaba en la base.</div>';
+
+  (d.archivos||[]).forEach(a=>{
+    const ico=a.estado==='ok'?'✅':(a.estado==='omitido'?'⚠️':'❌');
+    html+=`<div class="imp-file"><div class="n">${ico} ${esc(a.archivo)}
+      <span class="tag">${esc(CLASE_TAG[a.clase]||a.clase)}</span></div><ul>`;
+    if(a.facturas)      html+=`<li>${num(a.facturas)} factura(s) insertada(s)</li>`;
+    if(a.notas_credito) html+=`<li>${num(a.notas_credito)} nota(s) de crédito aplicada(s)</li>`;
+    if(a.productos)     html+=`<li>${num(a.productos)} línea(s) de productos</li>`;
+    if(a.duplicados&&a.duplicados.length) html+=`<li>${num(a.duplicados.length)} folio(s) ya estaban en la base — se omitieron</li>`;
+    (a.precios_actualizados||[]).forEach(p=>{ html+=`<li>${esc(p)}</li>`; });
+    if(a.gastos_insertados) html+=`<li>${num(a.gastos_insertados)} gasto(s) operativo(s) registrado(s)</li>`;
+    (a.sin_mapeo||[]).forEach(x=>{ html+=`<li>Ítem sin mapeo (omitido): ${esc(x)}</li>`; });
+    (a.advertencias||[]).forEach(x=>{ html+=`<li>${esc(x)}</li>`; });
+    (a.errores||[]).forEach(x=>{ html+=`<li class="err">${esc(x)}</li>`; });
+    html+='</ul>';
+    if(a.guardado_en) html+=`<div class="path">Archivado en ${esc(a.guardado_en)}</div>`;
+    html+='</div>';
+  });
+
+  // El detalle de los duplicados solo si se pide: el resumen ya dijo cuántos.
+  const dup=d.duplicados||[];
+  if(dup.length){
+    html+=`<details class="imp-dup"><summary>Se omitieron ${num(dup.length)} factura(s) duplicada(s) — ver cuáles</summary>
+      <div class="tbl-scroll"><table><thead><tr><th>Folio</th><th>Documento</th><th>Archivo</th></tr></thead><tbody>`
+      + dup.map(x=>`<tr><td>${esc(x.folio)}</td><td>${esc(TIPO_DOC[x.tipo]||('Tipo '+x.tipo))}</td><td>${esc(x.archivo)}</td></tr>`).join('')
+      + '</tbody></table></div></details>';
+  }
+
+  const w=d.wiki||{};
+  if(w.detalle) html+=`<div class="path" style="margin-top:12px">${w.ok?'📚':'⚠️'} Wiki: ${esc(w.detalle)}</div>`;
+  out.innerHTML=html;
+}
+
+async function importarArchivos(files){
+  if(impBusy) return;
+  const out=document.getElementById('imp-out'), zona=document.getElementById('drop');
+  const xmls=Array.from(files||[]).filter(f=>/\.xml$/i.test(f.name));
+  const descartados=Array.from(files||[]).length-xmls.length;
+  if(!xmls.length){
+    out.innerHTML='<div class="errbox">Necesito archivos <b>.xml</b> del SII. No encontré ninguno entre lo que soltaste.</div>';
+    return;
+  }
+  impBusy=true; zona.classList.add('busy');
+  out.innerHTML=`<div class="notice"><span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:-2px;margin-right:8px"></span>
+    Procesando ${xmls.length} archivo(s)…</div>`;
+  try{
+    const archivos=await Promise.all(xmls.map(leerArchivo));
+    const res=await fetch('/api/importar-dte',{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({archivos})});
+    const d=await res.json();
+    if(!d.ok){
+      out.innerHTML=`<div class="errbox"><b>No se pudo importar.</b><br>${esc(d.error||'Error desconocido')}
+        ${d.detalle?'<br>'+esc(d.detalle):''}</div>`;
+      return;
+    }
+    renderImportacion(d);
+    if(descartados) out.insertAdjacentHTML('beforeend',
+      `<div class="notice">Ignoré ${descartados} archivo(s) que no eran .xml</div>`);
+    // Los KPIs, tablas y gráficos quedan al día con lo recién importado.
+    load();
+  }catch(e){
+    out.innerHTML=`<div class="errbox"><b>Error de conexión.</b><br>${esc(e.message)}</div>`;
+  }finally{
+    impBusy=false; zona.classList.remove('busy');
+  }
+}
+
+(function initDrop(){
+  const zona=document.getElementById('drop'), input=document.getElementById('drop-input');
+  zona.addEventListener('click',()=>input.click());
+  input.addEventListener('change',e=>{ importarArchivos(e.target.files); input.value=''; });
+  ['dragenter','dragover'].forEach(ev=>zona.addEventListener(ev,e=>{
+    e.preventDefault(); zona.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev=>zona.addEventListener(ev,e=>{
+    e.preventDefault(); zona.classList.remove('over'); }));
+  zona.addEventListener('drop',e=>importarArchivos(e.dataTransfer.files));
+  // Sin esto el navegador abre el XML en una pestaña si el usuario falla la puntería.
+  ['dragover','drop'].forEach(ev=>document.addEventListener(ev,e=>{
+    if(!zona.contains(e.target)) e.preventDefault(); }));
+})();
 
 // ---------- load ----------
 async function load(){

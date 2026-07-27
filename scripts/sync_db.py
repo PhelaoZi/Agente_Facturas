@@ -324,18 +324,119 @@ def insertar_productos(cur, folio, tipo_documento, productos):
 
 # ─── Lógica principal ─────────────────────────────────────────────────────────
 
+def sincronizar_en_cursor(cur, documentos):
+    """
+    Inserta los documentos usando un cursor ya abierto dentro de una transacción.
+
+    Es el núcleo del sync: lo comparten la CLI (`sincronizar`) y el importador
+    del dashboard (`app/negocio/importador.py`), para que las reglas de negocio
+    —omitir folios duplicados, aplicar notas de crédito en ambos sentidos,
+    upsert de clientes— vivan en un solo lugar.
+
+    No abre conexión, no imprime y no maneja la transacción: eso es del llamador.
+    Retorna un dict con el resumen y `detalle` (las líneas que imprime la CLI).
+    """
+    resultado = {
+        "insertados": 0,
+        "productos": 0,
+        "duplicados": [],   # [{"folio": .., "tipo": ..}]
+        "ruts": [],         # RUTs de clientes tocados (para actualizar la wiki)
+        "detalle": [],
+    }
+
+    folios_a_verificar = [
+        (doc["venta"]["folio"], doc["venta"]["tipo_documento"])
+        for doc in documentos
+    ]
+
+    # ── 0. Migración: asegurar columnas de ajuste ─────────────────────────────
+    ensure_columnas_ajuste(cur)
+
+    # ── 1. Verificar duplicados en BD ─────────────────────────────────────────
+    resultado["detalle"].append("  Verificando folios existentes en BD...")
+    existentes = obtener_folios_existentes(cur, folios_a_verificar)
+
+    duplicados = [
+        (folio, tipo)
+        for folio, tipo in folios_a_verificar
+        if (folio, tipo) in existentes
+    ]
+    resultado["duplicados"] = [{"folio": f, "tipo": str(t)} for f, t in duplicados]
+
+    if duplicados:
+        resultado["detalle"].append("")
+        resultado["detalle"].append(f"  ⚠️  Folios ya existentes en BD ({len(duplicados)}):")
+        for folio, tipo in duplicados:
+            resultado["detalle"].append(f"     Folio {folio} tipo {tipo} → se omitirá")
+        resultado["detalle"].append("")
+
+    # ── 2. Filtrar solo documentos nuevos ─────────────────────────────────────
+    docs_nuevos = [
+        doc for doc in documentos
+        if (doc["venta"]["folio"], doc["venta"]["tipo_documento"]) not in existentes
+    ]
+
+    if not docs_nuevos:
+        resultado["detalle"].append("  ℹ️  Todos los folios ya existen en la BD.")
+        resultado["detalle"].append("  No hay nada nuevo que insertar.")
+        return resultado
+
+    resultado["detalle"].append(f"  Documentos a insertar: {len(docs_nuevos)}")
+    resultado["detalle"].append("")
+
+    # ── 3. Insertar cada documento ────────────────────────────────────────────
+    for doc in docs_nuevos:
+        venta     = doc["venta"]
+        cliente   = doc["cliente"]
+        productos = doc["productos"]
+
+        folio = venta["folio"]
+
+        # Inyectar razon_social_receptor desde el objeto cliente
+        venta["razon_social_receptor"] = cliente.get("razon_social")
+
+        # Upsert cliente (puede que ya exista)
+        upsert_cliente(cur, cliente)
+
+        # Insertar venta
+        insertar_venta(cur, venta)
+
+        # Insertar líneas de productos
+        insertar_productos(cur, folio, venta["tipo_documento"], productos)
+
+        # Si es Nota de Crédito, descontar de la factura referenciada
+        if str(venta["tipo_documento"]) == "61":
+            ajustada = aplicar_nota_credito(cur, venta)
+            ref_info = f" → descuenta folio {venta.get('folio_referencia')}"
+            if not ajustada:
+                ref_info += " (factura ref. no encontrada en BD)"
+        else:
+            # Buscar NCs pendientes que referencien esta factura
+            nc_count = aplicar_nc_pendientes(cur, venta)
+            ref_info = f" → {nc_count} NC pendiente(s) aplicada(s)" if nc_count > 0 else ""
+
+        resultado["insertados"] += 1
+        resultado["productos"] += len(productos)
+        rut = cliente.get("rut_cliente")
+        if rut and rut not in resultado["ruts"]:
+            resultado["ruts"].append(rut)
+
+        resultado["detalle"].append(
+            f"  ✓ Folio {folio} | "
+            f"{cliente['razon_social']} | "
+            f"${venta['monto_total']:,} | "
+            f"{len(productos)} producto(s){ref_info}"
+        )
+
+    return resultado
+
+
 def sincronizar(changes):
     """
     Sincroniza los documentos del changes.json con PostgreSQL.
     Usa una transacción: si algo falla, revierte todo.
     """
     documentos = changes["documentos"]
-
-    # Preparar set de folios a verificar
-    folios_a_verificar = [
-        (doc["venta"]["folio"], doc["venta"]["tipo_documento"])
-        for doc in documentos
-    ]
 
     conn = conectar()
     print(f"✓ Conectado a PostgreSQL: {DB_CONFIG['dbname']}")
@@ -344,94 +445,14 @@ def sincronizar(changes):
     try:
         with conn:  # transacción automática
             cur = conn.cursor()
+            res = sincronizar_en_cursor(cur, documentos)
 
-            # ── 0. Migración: asegurar columnas de ajuste ─────────────────────
-            ensure_columnas_ajuste(cur)
+        # Se imprime tras cerrar la transacción: si algo falló, no se reporta
+        # como hecho un insert que terminó en rollback.
+        for linea in res["detalle"]:
+            print(linea)
 
-            # ── 1. Verificar duplicados en BD ─────────────────────────────────
-            print("  Verificando folios existentes en BD...")
-            existentes = obtener_folios_existentes(cur, folios_a_verificar)
-
-            duplicados = [
-                (folio, tipo)
-                for folio, tipo in folios_a_verificar
-                if (folio, tipo) in existentes
-            ]
-
-            if duplicados:
-                print()
-                print(f"  ⚠️  Folios ya existentes en BD ({len(duplicados)}):")
-                for folio, tipo in duplicados:
-                    print(f"     Folio {folio} tipo {tipo} → se omitirá")
-                print()
-
-            # ── 2. Filtrar solo documentos nuevos ─────────────────────────────
-            docs_nuevos = [
-                doc for doc in documentos
-                if (doc["venta"]["folio"], doc["venta"]["tipo_documento"])
-                not in existentes
-            ]
-
-            if not docs_nuevos:
-                print("  ℹ️  Todos los folios ya existen en la BD.")
-                print("  No hay nada nuevo que insertar.")
-                return 0, 0, len(duplicados)
-
-            print(f"  Documentos a insertar: {len(docs_nuevos)}")
-            print()
-
-            # ── 3. Insertar cada documento ────────────────────────────────────
-            insertados = 0
-            productos_insertados = 0
-
-            for doc in docs_nuevos:
-                venta    = doc["venta"]
-                cliente  = doc["cliente"]
-                productos = doc["productos"]
-
-                folio = venta["folio"]
-
-                # Inyectar razon_social_receptor desde el objeto cliente
-                venta["razon_social_receptor"] = cliente.get("razon_social")
-
-                # Upsert cliente (puede que ya exista)
-                upsert_cliente(cur, cliente)
-
-                # Insertar venta
-                insertar_venta(cur, venta)
-
-                # Insertar líneas de productos
-                insertar_productos(
-                    cur,
-                    folio,
-                    venta["tipo_documento"],
-                    productos
-                )
-
-                # Si es Nota de Crédito, descontar de la factura referenciada
-                if str(venta["tipo_documento"]) == "61":
-                    ajustada = aplicar_nota_credito(cur, venta)
-                    ref_info = f" → descuenta folio {venta.get('folio_referencia')}"
-                    if not ajustada:
-                        ref_info += " (factura ref. no encontrada en BD)"
-                else:
-                    # Buscar NCs pendientes que referencien esta factura
-                    nc_count = aplicar_nc_pendientes(cur, venta)
-                    if nc_count > 0:
-                        ref_info = f" → {nc_count} NC pendiente(s) aplicada(s)"
-                    else:
-                        ref_info = ""
-
-                insertados += 1
-                productos_insertados += len(productos)
-
-                print(f"  ✓ Folio {folio} | "
-                      f"{cliente['razon_social']} | "
-                      f"${venta['monto_total']:,} | "
-                      f"{len(productos)} producto(s){ref_info}")
-
-            # La transacción se hace commit automáticamente al salir del with
-            return insertados, productos_insertados, len(duplicados)
+        return res["insertados"], res["productos"], len(res["duplicados"])
 
     except psycopg2.Error as e:
         print()

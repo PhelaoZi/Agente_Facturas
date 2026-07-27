@@ -110,6 +110,44 @@ Endpoint: acciones.validar(tipo, params)        (ValueError → 400, sin tocar B
   (`2026-06-21-registrar-gasto-confirmacion`,
   `2026-06-22-acciones-gasto-mecanismo-generico`).
 
+### Importación de XMLs DTE (sección "📥 Importar DTE")
+
+El usuario suelta los XML del SII en el dashboard y quedan cargados sin pasar
+por la consola ni por Claude Code. `POST /api/importar-dte` recibe
+`{archivos:[{nombre, contenido_b64}]}` (base64 y no multipart: Python 3.13 ya
+no trae `cgi`) y delega en `app/negocio/importador.py`.
+
+**Reutiliza el pipeline, no lo copia.** El importador llama a las funciones
+puras que se extrajeron de `scripts/`: `parse_dte.parsear_contenido` /
+`armar_changes`, `validate_changes.validar_changes`,
+`sync_db.sincronizar_en_cursor` y `sync_compras.parse_contenido` /
+`procesar_insumos` / `procesar_gasto`. Si cambias una regla del pipeline en
+`scripts/`, la web la hereda sola.
+
+- **Clasificación automática** por RUT emisor: `76308012-9` (Zigurat) + tipo
+  33/34/39/41 → venta; + todos tipo 61 → nota de crédito; otro emisor → compra.
+  Emisores mezclados o archivo sin `<Documento>` → error explícito, sin escribir.
+- **Invariante:** validar e insertar viven dentro de `importar_venta`, en ese
+  orden y sin camino alternativo — el equivalente en proceso del flag
+  `.changes_validated` que protege a la CLI. Si la validación falla, retorna sin
+  tocar la BD y el XML no se archiva.
+- **Duplicados:** los folios que ya están en la BD se omiten (lógica de
+  `sync_db`) y se reportan; la UI avisa cuántos y muestra cuáles solo si se
+  despliega el `<details>`.
+- **Transacción por archivo:** un XML corrupto hace rollback de lo suyo y los
+  demás se importan igual. Usa `get_conn_tuplas()`, **no `get_conn()`**:
+  `sync_db` lee las filas por índice (`row[0]`) y un `RealDictCursor` lo rompe
+  con `KeyError: 0`.
+- **Post-importación:** archiva el XML en `facturas-ventas/`,
+  `Notas de Credito/` o `facturas-compras/` (sin pisar: si el nombre existe con
+  otro contenido, guarda `"… (2).xml"`), marca las compras en
+  `.procesados.json`, corre `wiki_update.py --ruts` en subprocess no bloqueante
+  y el frontend recarga `/api/data`.
+- **Barreras:** `nombre_seguro()` rechaza separadores de ruta y `..` (es lo
+  único que separa un nombre del navegador de un `write_bytes` en disco); topes
+  de 20 archivos / 5 MB por archivo / 20 MB por envío; el `origen_permitido`
+  anti-CSRF del `do_POST` aplica igual que al resto.
+
 ### Próximas acciones (roadmap)
 
 Reutilizarán este mismo mecanismo: **conciliar pagos del banco** desde el chat
