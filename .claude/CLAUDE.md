@@ -4,6 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Qué va en este archivo — y qué no
+
+**Si la respuesta vive en la base de datos o en el código, no se escribe aquí.**
+Se va a desincronizar y nadie se va a enterar. Aquí va solo lo que ningún
+`SELECT` puede contestar: por qué las cosas son como son.
+
+- **Va aquí:** reglas de negocio y el *por qué* de las decisiones — la línea
+  "Logistica" es precio y no un servicio, el envase PET es pass-through,
+  `fecha_pago` es la fuente de verdad del cobro.
+- **No va aquí:** esquema de la BD, claves primarias, listas de skills,
+  dependencias con versiones. Eso ya vive en la base, en `.claude/skills/` y en
+  `requirements.txt` — se consulta cuando hace falta.
+- **Va en `.claude/rules/`:** lo que solo importa al tocar cierta área. Carga
+  solo con esos paths, no en cada sesión.
+
+Razón: `CLAUDE.md` se carga completo en cada sesión, se use o no. Y la
+documentación duplicada es **peor que no tener documentación**. Este archivo
+tuvo una tabla de claves primarias con 3 de 6 filas falsas (declaraba PK
+compuesta en `conciliaciones` y en `productos`; hace rato ambas son `id
+serial`). Sin esa tabla el agente consulta la BD y acierta; con ella, le cree y
+se equivoca en silencio.
+
+---
+
 ## Proyecto
 
 **Zigurat ERP — Agente Facturas**
