@@ -32,13 +32,7 @@ Protocolo completo en `AGENTS.md` (raíz).
 ## Comandos frecuentes
 
 Los flujos de negocio se ejecutan con las skills del proyecto — cada una
-documenta su uso y argumentos en `.claude/skills/`:
-
-- **Pipeline DTE:** `/sync-facturas`, `/sync-nc`, `/sync-compras`, `/monitoreo-facturas`
-- **Conciliación bancaria:** `/importar-transferencias`, `/conciliar-banco`, `/flujo-caja`, `/agregar-gasto`
-- **Consultas:** `/consultar-ventas`, `/perfil-cliente`
-- **Wiki de clientes:** `/wiki-init`, `/wiki-lint`
-- **Costos:** `/actualizar-precio-insumo`, `/cargar-receta`, `/costos-sku`
+documenta su uso y argumentos en `.claude/skills/`.
 
 ```bash
 python -m pytest -q                  # Suite de tests del proyecto
@@ -72,17 +66,6 @@ facturas pendientes (ventas sin fecha_pago) ← conciliar_banco.py → conciliac
                                               flujo_caja.py → proyección 4 semanas
                                               (usa avg dias_pago por cliente + cuentas_por_pagar)
 ```
-
-### Tablas PostgreSQL principales
-
-| Tabla | Clave primaria | Propósito |
-|-------|---------------|-----------|
-| `ventas` | folio + tipo_documento | Facturas y NC emitidas |
-| `clientes` | rut_cliente | Maestro de clientes (upsert) |
-| `productos` | folio + tipo_documento + nombre | Líneas de detalle por factura |
-| `movimientos_banco` | id (serial), unique en codigo_transferencia | Transferencias del Itaú |
-| `conciliaciones` | folio_venta + movimiento_banco_id | Cruces banco↔factura |
-| `cuentas_por_pagar` | id (serial) | Gastos programados para flujo de caja |
 
 ---
 
@@ -309,20 +292,6 @@ ORDER BY v.fecha;
 
 ---
 
-## Workflow de conciliación bancaria
-
-```
-1. Descargar ConsultaTransferencia.xlsx del Itaú → transferencias/
-2. /importar-transferencias  →  movimientos_banco
-3. /conciliar-banco          →  cruza transferencias con facturas, confirmar → fecha_pago
-4. /flujo-caja               →  proyección 4 semanas (usa avg dias_pago + cuentas_por_pagar)
-5. /agregar-gasto            →  registrar gastos futuros para mejorar proyección
-```
-
-RUTs en `movimientos_banco` se normalizan al formato `77126823-4` (con guión, sin puntos).
-
----
-
 ## Reglas por área (`.claude/rules/`)
 
 Instrucciones detalladas que cargan automáticamente solo al trabajar con
@@ -331,6 +300,7 @@ archivos de cada área (frontmatter `paths:`):
 - `wiki-clientes.md` — wiki Karpathy y snapshots `raw/` (carga con `scripts/wiki_*.py`, `wiki/`, `raw/`)
 - `costos-produccion.md` — costos capa B: tablas, vista, parámetros de lote (carga con los scripts de costos/recetas/SKU)
 - `backup-y-brief.md` — backup diario de la BD y brief diario (carga con sus scripts y `app/briefing/`)
+- `conciliacion-bancaria.md` — workflow banco→factura y normalización de RUTs (carga con los scripts de banco y `transferencias/`)
 
 ---
 
@@ -357,15 +327,5 @@ propose/confirm/execute de acciones — solo se carga cuando se trabaja bajo `ap
 Fijadas en `requirements.txt` (instalar con `pip install -r requirements.txt`).
 Actualizar versiones a propósito y correr la suite después — en especial
 `claude-agent-sdk`, la dependencia más sensible a cambios del ecosistema.
-
-```
-Python 3.x
-psycopg2-binary
-pandas
-openpyxl
-claude-agent-sdk     # agente del chat del dashboard (orquestador)
-plotly + kaleido     # gráficos y export del dashboard
-pytest               # suite de tests (python -m pytest -q)
-```
 
 Config de entorno: copiar `.env.example` como `.env` y completar la clave de la BD.
