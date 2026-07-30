@@ -1,11 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python *)",
       "Bash(ls *)",
       "Bash(dir *)",
-      "Bash(type *)",
-      "Bash(psql *)"
+      "Bash(type *)"
     ]
   },
   "hooks": {
