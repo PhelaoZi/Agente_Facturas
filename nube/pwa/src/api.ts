@@ -1,8 +1,10 @@
 import { createClient } from '@insforge/sdk';
 
-// Base URL y API key obtenidas de .insforge/project.json
+// Base URL y ANON KEY. La anon key es publica por diseno: viaja en el
+// bundle. NUNCA poner aqui la api_key de .insforge/project.json, que es
+// de administrador y da acceso total a la base.
 const baseUrl = import.meta.env.VITE_INSFORGE_URL || 'https://z86cmn8g.us-west.insforge.app';
-const anonKey = import.meta.env.VITE_INSFORGE_ANON_KEY || 'ik_c331a36a51904055d3caecb30709a438';
+const anonKey = import.meta.env.VITE_INSFORGE_ANON_KEY || 'anon_12ab1f5abd06b800808d39e29be507052c56e5a217fbd833bd94ead0508fff7e';
 
 export const insforge = createClient({
   baseUrl,
