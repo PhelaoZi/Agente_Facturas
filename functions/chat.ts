@@ -7,7 +7,7 @@ import { corsHeaders } from "./_shared/cors.ts";
 import { db } from "./_shared/db.ts";
 import { requireUser } from "./_shared/auth.ts";
 import { TOOLS, ejecutarTool, type SqlCliente } from "./_shared/chat_tools.ts";
-import { correrChatOpenAi, llamarModeloGatewayInsforge, type OpenAiMessage } from "./_shared/openai_chat_loop.ts";
+import { correrChatOpenAi, llamarModeloGatewayInsforge, llamarModeloOpenRouter, type OpenAiMessage } from "./_shared/openai_chat_loop.ts";
 import { promptChat } from "./_shared/chat_prompt.ts";
 
 const MAX_LARGO_MENSAJE = 2000;
@@ -32,10 +32,15 @@ export default async function handler(req: Request): Promise<Response> {
   const rechazo = await requireUser(req);
   if (rechazo) return rechazo;
 
-  // AI Gateway de InsForge: la clave del proyecto (una sola cuenta, creditos
-  // incluidos en el plan). Ver openai_chat_loop.ts para el adaptador.
-  const apiKey = Deno.env.get("INSFORGE_AI_KEY");
-  if (!apiKey) return json({ error: "falta INSFORGE_AI_KEY en el servidor" }, 500);
+  // Proveedor del modelo. Con OPENROUTER_API_KEY se va directo a OpenRouter,
+  // contra la cuenta del negocio. El gateway de InsForge queda de respaldo:
+  // cobra sobre una credencial que este proyecto no administra y, al agotarse
+  // los creditos del plan, responde 401 AI_INVALID_API_KEY sin mas aviso.
+  const orKey = Deno.env.get("OPENROUTER_API_KEY");
+  const gatewayKey = Deno.env.get("INSFORGE_AI_KEY");
+  if (!orKey && !gatewayKey) {
+    return json({ error: "falta OPENROUTER_API_KEY o INSFORGE_AI_KEY en el servidor" }, 500);
+  }
   const aiUrl = Deno.env.get("INSFORGE_AI_URL") ?? AI_URL_DEFAULT;
 
   let cuerpo: { mensaje?: string; sesion_id?: number };
@@ -95,6 +100,10 @@ export default async function handler(req: Request): Promise<Response> {
   const ultimoSync = (meta[0]?.valor as { momento?: string } | undefined)?.momento ?? null;
   const hoy = new Date().toISOString().slice(0, 10);
   const modelo = Deno.env.get("CHAT_MODELO") ?? MODELO_DEFAULT;
+  // Validado arriba: si no hay orKey, gatewayKey existe.
+  const llamarModelo = orKey
+    ? llamarModeloOpenRouter(orKey, modelo)
+    : llamarModeloGatewayInsforge(aiUrl, gatewayKey!, modelo);
 
   const mensajesAPI: OpenAiMessage[] = [
     ...historial.slice(-MAX_HISTORIAL_API).map((h) => ({
@@ -111,7 +120,7 @@ export default async function handler(req: Request): Promise<Response> {
       system: promptChat(hoy, ultimoSync),
       mensajes: mensajesAPI,
       tools: TOOLS,
-      llamarModelo: llamarModeloGatewayInsforge(aiUrl, apiKey, modelo),
+      llamarModelo,
       // El tipo Sql del driver postgres es estructuralmente mas rico que el
       // SqlCliente minimo que declaran las tools; el cast queda acotado aqui.
       ejecutarTool: (nombre, input) => ejecutarTool(sql as unknown as SqlCliente, nombre, input, new Date()),
