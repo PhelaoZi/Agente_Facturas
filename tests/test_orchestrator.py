@@ -363,6 +363,98 @@ def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
     assert vistos[1] == orchestrator.MAX_TOKENS_CIERRE
 
 
+# ── Botón Detener ─────────────────────────────────────────────────────────────
+# Una pregunta puede costar hasta MAX_ITERACIONES llamadas al modelo. Si el
+# usuario se arrepiente, lo que ya se gastó no vuelve, pero todo lo que falta sí
+# se puede evitar. El corte va al INICIO de cada vuelta, antes de llamar.
+
+def _mock_pide_tool(registro, al_llamar=None):
+    """Modelo falso que siempre pide una herramienta inexistente: hace girar el
+    loop sin tocar la BD. `al_llamar` corre en cada llamada (para detener)."""
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+        registro.append(1)
+        if al_llamar:
+            al_llamar()
+        return {"choices": [{
+            "message": {"role": "assistant", "content": None,
+                        "tool_calls": [{"id": f"c{len(registro)}", "type": "function",
+                                        "function": {"name": "mcp__inexistente__x",
+                                                     "arguments": "{}"}}]},
+            "finish_reason": "tool_calls"}]}
+    return mock_api
+
+
+def test_detener_corta_el_loop_y_no_vuelve_a_llamar_al_modelo(monkeypatch):
+    """El ahorro real: detener en la vuelta 1 evita las 11 restantes."""
+    llamadas = []
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api",
+                        _mock_pide_tool(llamadas, al_llamar=orchestrator.detener))
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    with pytest.raises(orchestrator.EjecucionDetenida):
+        orchestrator.run("pregunta cara", Collector())
+
+    assert len(llamadas) == 1, "no debe haber ni una llamada despues de detener"
+
+
+def test_al_detener_el_historial_queda_como_antes_de_la_pregunta(monkeypatch):
+    """Lo que de verdad importa. Al cortar a media vuelta el historial queda con
+    un `tool_calls` del asistente sin su respuesta: si eso se guarda, la
+    SIGUIENTE pregunta la rechaza la API del modelo. Hay que revertirlo."""
+    def mock_ok(api_key, model, system, messages, tools=None, max_tokens=None):
+        return {"choices": [{"message": {"role": "assistant", "content": "Respuesta 1"},
+                             "finish_reason": "stop"}]}
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_ok)
+    _texto, sid = orchestrator.run("primera", Collector())
+    historial_sano = list(orchestrator.CHAT_SESSIONS[sid])
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api",
+                        _mock_pide_tool([], al_llamar=orchestrator.detener))
+    with pytest.raises(orchestrator.EjecucionDetenida):
+        orchestrator.run("segunda, me arrepenti", Collector(), session_id=sid)
+
+    assert orchestrator.CHAT_SESSIONS[sid] == historial_sano
+    assert not any(m.get("tool_calls") for m in orchestrator.CHAT_SESSIONS[sid])
+
+
+def test_una_senal_de_detencion_vieja_no_mata_la_pregunta_siguiente(monkeypatch):
+    """La señal se apaga al empezar cada pregunta. Si quedara encendida, el
+    Detener de hace un rato cancelaría la pregunta nueva apenas se escribe."""
+    def mock_ok(api_key, model, system, messages, tools=None, max_tokens=None):
+        return {"choices": [{"message": {"role": "assistant", "content": "Respondí igual"},
+                             "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_ok)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    orchestrator.detener()                      # señal vieja, sin nada corriendo
+    texto, _sid = orchestrator.run("pregunta nueva", Collector())
+
+    assert texto == "Respondí igual"
+
+
+def test_run_agent_reporta_detenido_y_no_lo_trata_como_error(monkeypatch):
+    """Detener es una salida pedida, no un fallo: no debe llegar a la UI como
+    "Tuve un problema al responder" ni ensuciar logs/agente_chat.log."""
+    from app import dashboard
+
+    def detenido(*a, **kw):
+        raise orchestrator.EjecucionDetenida()
+
+    monkeypatch.setattr(orchestrator, "run", detenido)
+    logueado = []
+    monkeypatch.setattr(dashboard, "_log_agente_error",
+                        lambda *a, **kw: logueado.append(a))
+
+    r = dashboard.run_agent("una pregunta que me arrepenti de hacer")
+
+    assert r["ok"] is True
+    assert r["detenido"] is True
+    assert logueado == [], "detener no es un error: no va al log de errores"
+
+
 def test_el_system_prompt_le_dice_al_agente_que_dia_es_hoy(monkeypatch):
     """Sin la fecha, "el margen de junio" es una moneda al aire: el modelo
     elegia el año por su cuenta y consultaba junio del año pasado sin avisar.

@@ -948,6 +948,10 @@ def run_agent(pregunta: str, model: str = MODELO_CHAT_DEFAULT) -> dict:
         CHAT_SESSION["id"] = session_id
         arts = [{"tipo": a.tipo, "titulo": a.titulo, "payload": a.payload} for a in col.items]
         return {"ok": True, "texto": texto, "artefactos": arts}
+    except orchestrator.EjecucionDetenida:
+        # El usuario apretó Detener. Es una salida pedida, no un fallo: no va al
+        # log de errores ni se muestra como problema.
+        return {"ok": True, "detenido": True, "texto": "", "artefactos": []}
     except Exception as e:
         import traceback
         trace = traceback.format_exc()
@@ -1309,6 +1313,17 @@ class Handler(BaseHTTPRequestHandler):
             # "Limpiar" en la UI: descarta la sesion para partir una conversacion nueva.
             CHAT_SESSION["id"] = None
             self._send(200, json.dumps({"ok": True}))
+        elif path == "/api/chat-stop":
+            # "Detener" en la UI: corta el turno en curso antes de que gaste otra
+            # llamada al modelo. Llega por OTRO hilo (ThreadingHTTPServer) mientras
+            # /api/ask sigue corriendo; por eso el boton sirve de algo.
+            try:
+                from app.agent import orchestrator
+                orchestrator.detener()
+                self._send(200, json.dumps({"ok": True}))
+            except Exception as e:
+                self._send(500, json.dumps({"ok": False, "error": str(e)},
+                                           ensure_ascii=False))
         elif path == "/api/ejecutar-accion":
             try:
                 length = int(self.headers.get("Content-Length", 0))

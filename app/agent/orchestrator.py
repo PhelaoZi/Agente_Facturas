@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 import urllib.request
 import uuid
@@ -39,6 +40,29 @@ CHAT_SESSIONS = {}
 
 MAX_FILAS_SQL = 200          # tope de filas devueltas al modelo
 TIMEOUT_SQL_MS = 8000        # corta consultas pesadas (statement_timeout)
+
+
+class EjecucionDetenida(Exception):
+    """El usuario apretó Detener. No es un error: es una salida pedida."""
+
+
+# Señal de cancelación del turno en curso. El servidor es mono-usuario, así que
+# basta una sola: el endpoint /api/chat-stop la enciende desde OTRO hilo
+# (ThreadingHTTPServer) mientras el loop sigue corriendo. Se apaga al empezar
+# cada pregunta, para que un Detener viejo no mate la siguiente.
+_DETENER = threading.Event()
+
+
+def detener():
+    """Pide cortar el turno en curso. Lo llama el endpoint del dashboard."""
+    _DETENER.set()
+
+
+def _abortar_si_detenido():
+    """Corta antes de gastar otra llamada al modelo. Va al inicio de cada vuelta:
+    lo que ya se pagó no vuelve, pero lo que falta sí se evita."""
+    if _DETENER.is_set():
+        raise EjecucionDetenida()
 
 
 def ejecutar_sql_local(sql_str: str) -> str:
@@ -284,6 +308,7 @@ async def correr_loop_agente(
 
     # 5. Loop de ejecución de herramientas
     for _ in range(MAX_ITERACIONES):
+        _abortar_si_detenido()      # el corte va ANTES de gastar la llamada
         # Preparar payload para la API (con tools si hay disponibles)
         body = {
             "messages": historial,
@@ -362,6 +387,7 @@ async def correr_loop_agente(
                 "content": contenido
             })
 
+    _abortar_si_detenido()      # detener tampoco paga el turno de cierre
     texto = _respuesta_de_cierre(api_key, model, system_prompt, historial)
     if texto:
         historial.append({"role": "assistant", "content": texto})
@@ -377,16 +403,26 @@ def run(
     """Punto de entrada síncrono del dashboard. Ejecuta el loop de OpenRouter."""
     if not session_id:
         session_id = str(uuid.uuid4())
-        
+
+    # Un Detener de hace un rato no debe matar esta pregunta.
+    _DETENER.clear()
+    # Punto al que se revierte el historial si el usuario detiene a media vuelta:
+    # dejarlo con un `tool_calls` del asistente sin su respuesta hace que la
+    # pregunta SIGUIENTE la rechace la API del modelo.
+    largo_previo = len(CHAT_SESSIONS.get(session_id, []))
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         texto = loop.run_until_complete(
             correr_loop_agente(pregunta, collector, session_id, model)
         )
+    except EjecucionDetenida:
+        del CHAT_SESSIONS[session_id][largo_previo:]
+        raise
     finally:
         loop.close()
-        
+
     return texto, session_id
 
 

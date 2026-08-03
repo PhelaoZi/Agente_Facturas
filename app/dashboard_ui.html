@@ -78,6 +78,9 @@
   }
   .btn:hover{filter:brightness(1.08)} .btn:active{transform:scale(.97)}
   .btn.refreshing .ico{animation:spin 1s linear infinite}
+  /* Enviar en modo Detener: gris, para que no se confunda con la accion normal */
+  .btn.stop{background:linear-gradient(135deg,#57534e,#44403c);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .btn:disabled{opacity:.6;cursor:default}
   @keyframes spin{to{transform:rotate(360deg)}}
 
   /* ---------- Cards / grid ---------- */
@@ -831,8 +834,25 @@ function renderArtefactos(cont, arts){
     }
   });
 }
+// El boton Enviar se convierte en Detener mientras hay una pregunta en curso.
+// Una pregunta puede costar hasta 12 llamadas al modelo: lo ya gastado no
+// vuelve, pero detener evita todas las que faltan.
+function modoChat(ocupado){
+  const b=document.getElementById('chat-send');
+  chatBusy=ocupado;
+  b.innerHTML = ocupado ? '<span class="ico">⏹</span> Detener'
+                        : '<span class="ico">➤</span> Enviar';
+  b.classList.toggle('stop', ocupado);
+}
+async function detenerAgente(){
+  const b=document.getElementById('chat-send');
+  b.disabled=true; b.innerHTML='<span class="ico">⏹</span> Deteniendo…';
+  try{ await fetch('/api/chat-stop',{method:'POST'}); }
+  catch(e){ /* el turno termina igual; el boton se restaura al responder */ }
+  b.disabled=false;
+}
 async function askAgent(q){
-  q=(q||'').trim(); if(chatBusy||!q)return; chatBusy=true;
+  q=(q||'').trim(); if(chatBusy||!q)return; modoChat(true);
   addBubble('user', esc(q));
   document.getElementById('chat-q').value='';
   const think=addBubble('bot think','Pensando… consultando tu base 🍺');
@@ -840,20 +860,24 @@ async function askAgent(q){
     const model = document.getElementById('chat-model-select').value;
     const res=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q, model})});
     const d=await res.json(); think.remove();
+    if(d.detenido){ addBubble('bot','⏹ Detenido. No se gastaron más llamadas al modelo.'); modoChat(false); return; }
     if(!d.ok){
       if(d.error==='asistente_no_disponible')
         addBubble('bot','El chat con IA no está disponible en este momento. Revisa la configuración de tu clave <b>OPENROUTER_API_KEY</b> en el archivo .env.');
       else
         addBubble('bot','Tuve un problema al responder: '+esc(d.detalle||d.error||'error'));
-      chatBusy=false; return;
+      modoChat(false); return;
     }
     const b=addBubble('bot', mdBot(d.texto||'(sin respuesta)'));
     renderArtefactos(b, d.artefactos);
   }catch(e){ think.remove(); addBubble('bot','Error de conexión: '+esc(e.message)); }
-  chatBusy=false;
+  modoChat(false);
 }
 document.getElementById('chat-clear').addEventListener('click', limpiarChat);
-document.getElementById('chat-send').addEventListener('click',()=>askAgent(document.getElementById('chat-q').value));
+document.getElementById('chat-send').addEventListener('click',()=>{
+  if(chatBusy) detenerAgente();
+  else askAgent(document.getElementById('chat-q').value);
+});
 document.getElementById('chat-q').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(); askAgent(e.target.value);} });
 document.getElementById('chat-suggest').addEventListener('click',e=>{ if(e.target.classList.contains('chip')) askAgent(e.target.textContent); });
 
