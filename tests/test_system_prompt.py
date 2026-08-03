@@ -46,6 +46,20 @@ def test_system_prompt_incluye_gerente_comercial():
     assert "proponer_marcar_seguimiento" in SYSTEM_PROMPT
 
 
+def test_el_prompt_prohibe_resolver_un_incobrable_marcando_la_factura_pagada():
+    """Le pasó de verdad (2026-08-02): ante 'bier bar quebró, que no figure en
+    las deudas', el agente ofreció marcar la factura como PAGADA. Eso inventa
+    plata que nunca entró, infla la cobranza histórica y ensucia el promedio de
+    días de pago con que se proyecta el flujo de caja. El agente no lee
+    CLAUDE.md: si la regla no está acá, no existe para él.
+    """
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "proponer_marcar_cliente_incobrable" in SYSTEM_PROMPT
+    assert "proponer_reactivar_cliente" in SYSTEM_PROMPT
+    assert "castigar no es cobrar" in SYSTEM_PROMPT.lower()
+    assert "contador" in SYSTEM_PROMPT.lower()
+
+
 def test_el_prompt_prohibe_calcular_precios_sobre_productos():
     """La linea `Logistica` exacta no se guarda en `productos`, asi que
     cualquier precio deducido con SQL a mano sale a la mitad. El agente del

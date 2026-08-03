@@ -137,3 +137,35 @@ def test_ejecutar_corregir_fecha_pago_devuelve_mensaje():
                           {"folio": 4686, "fecha_pago": "2026-06-30"})
     assert r["fecha_anterior"] == "2026-06-09"
     assert "corregida" in r["mensaje"]
+
+
+# --- Tests para el castigo de deuda incobrable ---
+
+CLIENTE_ACTIVO = {"rut_cliente": "76861668-K", "razon_social": "BIER BAR SPA",
+                  "estado": "activo", "deuda": 188750, "n_facturas": 1}
+
+
+def test_validar_marcar_cliente_incobrable_normaliza_el_rut():
+    assert acciones.validar("marcar_cliente_incobrable",
+                            {"rut_cliente": "76.861.668-k"}) == {"rut_cliente": "76861668-K"}
+
+
+def test_ejecutar_marcar_cliente_incobrable_devuelve_la_deuda_castigada():
+    r = acciones.ejecutar(FakeCursor(row=CLIENTE_ACTIVO), "marcar_cliente_incobrable",
+                          {"rut_cliente": "76861668-K"})
+    assert r["cliente"] == "BIER BAR SPA"
+    assert r["deuda_castigada"] == 188750.0
+    assert "incobrable" in r["mensaje"]
+
+
+def test_validar_reactivar_cliente_enruta():
+    assert acciones.validar("reactivar_cliente",
+                            {"rut_cliente": "76861668-K"}) == {"rut_cliente": "76861668-K"}
+
+
+def test_ejecutar_reactivar_cliente_devuelve_mensaje():
+    castigado = {**CLIENTE_ACTIVO, "estado": "incobrable"}
+    r = acciones.ejecutar(FakeCursor(row=castigado), "reactivar_cliente",
+                          {"rut_cliente": "76861668-K"})
+    assert r["cliente"] == "BIER BAR SPA"
+    assert "activo" in r["mensaje"]

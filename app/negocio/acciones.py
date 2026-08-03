@@ -53,6 +53,14 @@ def _ejecutar_corregir_fecha_pago(cur, clean):
     return cobranza.corregir_fecha_pago(cur, clean["folio"], clean["fecha_pago"])
 
 
+def _ejecutar_marcar_cliente_incobrable(cur, clean):
+    return cobranza.marcar_cliente_incobrable(cur, clean["rut_cliente"])
+
+
+def _ejecutar_reactivar_cliente(cur, clean):
+    return cobranza.reactivar_cliente(cur, clean["rut_cliente"])
+
+
 ACCIONES = {
     "registrar_gasto":     (_validar_registrar, _ejecutar_registrar),
     "borrar_gasto":        (gastos.validar_borrar, _ejecutar_borrar),
@@ -62,6 +70,9 @@ ACCIONES = {
     "marcar_seguimiento":  (seguimiento.validar_marcar, _ejecutar_marcar_seguimiento),
     "marcar_factura_pagada": (cobranza.validar_marcar_pagada, _ejecutar_marcar_factura_pagada),
     "corregir_fecha_pago":   (cobranza.validar_corregir_fecha_pago, _ejecutar_corregir_fecha_pago),
+    # Castigo de deuda incobrable: escribe clientes.estado, NUNCA ventas.fecha_pago.
+    "marcar_cliente_incobrable": (cobranza.validar_rut_cliente, _ejecutar_marcar_cliente_incobrable),
+    "reactivar_cliente":         (cobranza.validar_rut_cliente, _ejecutar_reactivar_cliente),
 }
 
 

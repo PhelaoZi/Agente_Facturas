@@ -1,12 +1,53 @@
-"""Capa determinista de cobranza: marcar facturas de venta como pagadas.
+"""Capa determinista de cobranza: cobrar facturas y castigar deuda incobrable.
 
-Escritura sobre `ventas.fecha_pago`, la fuente de verdad única del estado de
-cobro (NULL = pendiente). `ventas.py` se mantiene de solo lectura; por eso la
-escritura vive en este módulo aparte. Misma interfaz que gastos/seguimiento:
-`validar_marcar_pagada` es pura (gatekeeper) y `marcar_factura_pagada` recibe
-un cursor (la conexión y el commit los maneja quien llama).
+Dos escrituras, sobre dos fuentes de verdad distintas:
+
+- `ventas.fecha_pago` — estado de cobro de una factura (NULL = pendiente).
+- `clientes.estado` — 'activo' o 'incobrable'. Castigar la deuda de un cliente
+  que quebró la saca del "por cobrar" en el dashboard, el brief, la wiki y la
+  nube, y la deja en un KPI aparte. Es una decisión de cobranza, por eso vive
+  aquí y no en `clientes.py`, que se mantiene de solo lectura.
+
+**Castigar NO es cobrar.** Un incobrable jamás debe resolverse marcando la
+factura como pagada: eso inventa plata que nunca entró, infla la cobranza
+histórica y ensucia el promedio de días de pago con que se proyecta el flujo de
+caja. Por eso `fecha_pago` queda intacta en NULL.
+
+`ventas.py` se mantiene de solo lectura; por eso las escrituras viven en este
+módulo aparte. Misma interfaz que gastos/seguimiento: las funciones `validar_*`
+son puras (gatekeeper) y las de escritura reciben un cursor (la conexión y el
+commit los maneja quien llama).
 """
+import re
 from datetime import datetime, date
+
+# RUT chileno tal como se guarda en la BD: 7-8 dígitos, guión, dígito verificador.
+RE_RUT = re.compile(r"^\d{7,8}-[\dK]$")
+
+# Cliente + su deuda pendiente. El LEFT JOIN mantiene al cliente sin facturas
+# impagas (deuda 0); el FILTER aplica las reglas canónicas: sin NC, montos
+# ajustados y solo lo que sigue con fecha_pago IS NULL.
+_PENDIENTE = ("v.tipo_documento != 61 AND v.fecha_pago IS NULL "
+              "AND COALESCE(v.monto_total_ajustado, v.monto_total) > 0")
+_SQL_CLIENTE_DEUDA = f"""
+    SELECT c.rut_cliente, c.razon_social, c.estado,
+           COALESCE(SUM(COALESCE(v.monto_total_ajustado, v.monto_total))
+                    FILTER (WHERE {_PENDIENTE}), 0) AS deuda,
+           COUNT(*) FILTER (WHERE {_PENDIENTE}) AS n_facturas
+    FROM clientes c
+    LEFT JOIN ventas v ON v.rut_cliente = c.rut_cliente
+    WHERE {{filtro}}
+    GROUP BY c.rut_cliente, c.razon_social, c.estado
+    ORDER BY c.razon_social
+"""
+
+
+def _pesos(n):
+    """Formatea un monto como '$188.750' (separador de miles chileno)."""
+    try:
+        return "$" + f"{int(round(float(n))):,}".replace(",", ".")
+    except (TypeError, ValueError):
+        return "$0"
 
 
 def _validar_folio(params):
@@ -89,6 +130,86 @@ def marcar_factura_pagada(cur, folio, fecha_pago):
         "cliente": f["razon_social"],
         "total": float(f["total"]),
         "mensaje": f"Factura {folio} de {f['razon_social']} marcada como pagada el {fecha_pago}.",
+    }
+
+
+def validar_rut_cliente(params):
+    """Valida y normaliza el RUT del cliente (quita puntos y espacios, mayúsculas).
+    Gatekeeper del endpoint: sin BD, solo formato. Lanza ValueError."""
+    crudo = str(params.get("rut_cliente") or "").strip().replace(".", "").replace(" ", "")
+    rut = crudo.upper()
+    if not rut:
+        raise ValueError("Falta el RUT del cliente.")
+    if not RE_RUT.match(rut):
+        raise ValueError(
+            f"RUT inválido: {params.get('rut_cliente')!r}. Se espera formato 76861668-K.")
+    return {"rut_cliente": rut}
+
+
+def buscar_clientes(cur, texto):
+    """Clientes cuyo nombre o RUT contenga `texto`, con su estado y deuda.
+    Devuelve una lista: quien llama decide qué hacer si hay más de uno."""
+    cur.execute(_SQL_CLIENTE_DEUDA.format(filtro="c.razon_social ILIKE %s OR c.rut_cliente ILIKE %s"),
+                (f"%{texto}%", f"%{texto}%"))
+    return [dict(r) for r in cur.fetchall()]
+
+
+def obtener_cliente(cur, rut_cliente):
+    """Devuelve el cliente con su estado y su deuda pendiente, o None.
+
+    La deuda usa las reglas canónicas: excluye NC, montos ajustados, y solo
+    facturas con `fecha_pago IS NULL`.
+    """
+    cur.execute(_SQL_CLIENTE_DEUDA.format(filtro="c.rut_cliente = %s"), (rut_cliente,))
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def _cambiar_estado(cur, rut_cliente, nuevo, esperado, error_si_no_cumple):
+    """Cambia clientes.estado tras verificar el estado actual. Lanza ValueError
+    si el cliente no existe o si ya está en el estado que se pide."""
+    c = obtener_cliente(cur, rut_cliente)
+    if not c:
+        raise ValueError(f"No existe un cliente con RUT {rut_cliente}.")
+    if c["estado"] != esperado:
+        raise ValueError(error_si_no_cumple.format(cliente=c["razon_social"]))
+    cur.execute("UPDATE clientes SET estado = %s WHERE rut_cliente = %s",
+                (nuevo, rut_cliente))
+    return c
+
+
+def marcar_cliente_incobrable(cur, rut_cliente):
+    """Castiga la deuda de un cliente (quiebra, cierre): estado = 'incobrable'.
+
+    NO toca `ventas.fecha_pago`: las facturas siguen impagas, que es la verdad.
+    Solo dejan de contar como crédito cobrable.
+    """
+    c = _cambiar_estado(cur, rut_cliente, "incobrable", "activo",
+                        "El cliente {cliente} ya está marcado como incobrable.")
+    deuda, n = float(c["deuda"] or 0), int(c["n_facturas"] or 0)
+    return {
+        "rut_cliente": rut_cliente,
+        "cliente": c["razon_social"],
+        "deuda_castigada": deuda,
+        "n_facturas": n,
+        "mensaje": (f"{c['razon_social']} quedó marcado como incobrable. "
+                    f"Sus {n} factura(s) impagas por {_pesos(deuda)} salen del "
+                    "por cobrar; siguen registradas como no pagadas."),
+    }
+
+
+def reactivar_cliente(cur, rut_cliente):
+    """Deshace el castigo: el cliente vuelve a 'activo' y su deuda al por cobrar."""
+    c = _cambiar_estado(cur, rut_cliente, "activo", "incobrable",
+                        "El cliente {cliente} no está marcado como incobrable.")
+    deuda, n = float(c["deuda"] or 0), int(c["n_facturas"] or 0)
+    return {
+        "rut_cliente": rut_cliente,
+        "cliente": c["razon_social"],
+        "deuda_recuperada": deuda,
+        "n_facturas": n,
+        "mensaje": (f"{c['razon_social']} volvió a estado activo. Sus {n} factura(s) "
+                    f"impagas por {_pesos(deuda)} vuelven al por cobrar."),
     }
 
 

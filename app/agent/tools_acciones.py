@@ -51,6 +51,52 @@ def accion_gasto_artifact(params: dict) -> Artifact:
     )
 
 
+def marcar_incobrable_artifact(c: dict) -> Artifact:
+    """Tarjeta para castigar la deuda de un cliente. El resumen muestra RUT y
+    monto: es lo único que separa castigar a BIER BAR de castigar a otro
+    cliente de nombre parecido."""
+    deuda = _pesos(c.get("deuda"))
+    n = int(c.get("n_facturas") or 0)
+    return Artifact(
+        tipo="accion",
+        titulo="Confirmar cliente incobrable",
+        payload={
+            "tipo_accion": "marcar_cliente_incobrable",
+            "params": {"rut_cliente": c["rut_cliente"]},
+            "resumen": (f"Marcar INCOBRABLE a {c['razon_social']} ({c['rut_cliente']}). "
+                        f"Salen del por cobrar {n} factura(s) por {deuda}. "
+                        "Las facturas siguen registradas como NO pagadas."),
+        },
+    )
+
+
+def reactivar_cliente_artifact(c: dict) -> Artifact:
+    """Tarjeta para deshacer el castigo: el cliente vuelve a activo."""
+    deuda = _pesos(c.get("deuda"))
+    n = int(c.get("n_facturas") or 0)
+    return Artifact(
+        tipo="accion",
+        titulo="Confirmar reactivar cliente",
+        payload={
+            "tipo_accion": "reactivar_cliente",
+            "params": {"rut_cliente": c["rut_cliente"]},
+            "resumen": (f"Reactivar a {c['razon_social']} ({c['rut_cliente']}): vuelve a "
+                        f"estado activo y sus {n} factura(s) por {deuda} regresan "
+                        "al por cobrar."),
+        },
+    )
+
+
+def _buscar_clientes(texto):
+    """Busca clientes por nombre o RUT con su propia conexión de solo lectura."""
+    conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+    try:
+        with conn.cursor() as cur:
+            return cobranza.buscar_clientes(cur, texto)
+    finally:
+        conn.close()
+
+
 def _obtener_gasto(id):
     """Lee un gasto por id con su propia conexión de solo lectura."""
     conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
@@ -342,10 +388,67 @@ def build_acciones_server(collector: Collector):
                         "Quedó como tarjeta; el usuario debe apretar Confirmar. NO afirmes "
                         "que ya se corrigió."}]}
 
+    def _resolver_cliente(texto, estado_requerido, ya_esta):
+        """Resuelve un nombre o RUT a UN cliente. Devuelve (cliente, None) o
+        (None, mensaje_de_error). Un nombre ambiguo NO propone nada: castigar al
+        cliente equivocado se descubre tarde y a mano."""
+        texto = (texto or "").strip()
+        if not texto:
+            return None, "Necesito el nombre o el RUT del cliente."
+        encontrados = _buscar_clientes(texto)
+        if not encontrados:
+            return None, f"No encontré ningún cliente que calce con {texto!r}."
+        if len(encontrados) > 1:
+            nombres = ", ".join(f"{c['razon_social']} ({c['rut_cliente']})"
+                                for c in encontrados[:6])
+            return None, (f"{texto!r} calza con {len(encontrados)} clientes: {nombres}. "
+                          "Pregúntale al usuario cuál es y vuelve a intentar con el RUT.")
+        c = encontrados[0]
+        if c["estado"] != estado_requerido:
+            return None, ya_esta.format(cliente=c["razon_social"])
+        return c, None
+
+    @tool("proponer_marcar_cliente_incobrable",
+          "Propone castigar la deuda de un cliente que quebró o cerró: lo marca "
+          "como INCOBRABLE por nombre o RUT. Su deuda sale del por cobrar pero "
+          "las facturas siguen impagas. USA ESTO, NUNCA proponer_marcar_factura_pagada, "
+          "cuando una deuda no se va a cobrar. NO escribe: publica una tarjeta.",
+          {"cliente": str})
+    async def proponer_marcar_cliente_incobrable(args):
+        c, error = _resolver_cliente(
+            args.get("cliente"), "activo",
+            "El cliente {cliente} ya está marcado como incobrable. No propongo nada.")
+        if error:
+            return {"content": [{"type": "text", "text": error}]}
+        collector.add(marcar_incobrable_artifact(c))
+        return {"content": [{"type": "text",
+                "text": f"Propuesta lista para confirmar — Marcar incobrable a "
+                        f"{c['razon_social']} ({_pesos(c['deuda'])} en "
+                        f"{c['n_facturas']} factura(s)). Quedó como tarjeta; el "
+                        "usuario debe apretar Confirmar. NO afirmes que ya quedó "
+                        "castigado. Recuérdale que el efecto tributario (nota de "
+                        "crédito o castigo) lo debe ver con su contador."}]}
+
+    @tool("proponer_reactivar_cliente",
+          "Propone DESHACER el castigo de un cliente incobrable: vuelve a activo "
+          "y su deuda regresa al por cobrar. NO escribe: publica una tarjeta.",
+          {"cliente": str})
+    async def proponer_reactivar_cliente(args):
+        c, error = _resolver_cliente(
+            args.get("cliente"), "incobrable",
+            "El cliente {cliente} está activo, no incobrable. No hay nada que deshacer.")
+        if error:
+            return {"content": [{"type": "text", "text": error}]}
+        collector.add(reactivar_cliente_artifact(c))
+        return {"content": [{"type": "text",
+                "text": f"Propuesta lista para confirmar — Reactivar a {c['razon_social']}. "
+                        "Quedó como tarjeta; el usuario debe apretar Confirmar."}]}
+
     server = create_sdk_mcp_server(name="acciones", version="1.0.0", tools=[
         proponer_gasto, proponer_borrar_gasto, proponer_marcar_gasto_pagado, proponer_editar_gasto,
         proponer_agregar_seguimiento, proponer_marcar_seguimiento,
         proponer_marcar_factura_pagada, proponer_corregir_fecha_pago,
+        proponer_marcar_cliente_incobrable, proponer_reactivar_cliente,
     ])
     tool_names = [
         "mcp__acciones__proponer_gasto",
@@ -356,5 +459,7 @@ def build_acciones_server(collector: Collector):
         "mcp__acciones__proponer_marcar_seguimiento",
         "mcp__acciones__proponer_marcar_factura_pagada",
         "mcp__acciones__proponer_corregir_fecha_pago",
+        "mcp__acciones__proponer_marcar_cliente_incobrable",
+        "mcp__acciones__proponer_reactivar_cliente",
     ]
     return server, tool_names

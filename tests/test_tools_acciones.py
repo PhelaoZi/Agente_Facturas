@@ -114,6 +114,35 @@ def test_build_acciones_server_incluye_corregir_fecha_pago():
     assert "mcp__acciones__proponer_corregir_fecha_pago" in tool_names
 
 
+def test_marcar_incobrable_artifact_muestra_cuanta_deuda_sale():
+    """La tarjeta es la red de seguridad: antes de confirmar hay que ver a QUIÉN
+    se castiga y cuánta plata sale del por cobrar."""
+    c = {"rut_cliente": "76861668-K", "razon_social": "BIER BAR SPA",
+         "estado": "activo", "deuda": 188750, "n_facturas": 1}
+    art = tools_acciones.marcar_incobrable_artifact(c)
+    assert art.tipo == "accion"
+    assert art.payload["tipo_accion"] == "marcar_cliente_incobrable"
+    assert art.payload["params"] == {"rut_cliente": "76861668-K"}
+    assert "BIER BAR SPA" in art.payload["resumen"]
+    assert "76861668-K" in art.payload["resumen"]
+    assert "188.750" in art.payload["resumen"]
+
+
+def test_reactivar_cliente_artifact_arma_payload():
+    c = {"rut_cliente": "76861668-K", "razon_social": "BIER BAR SPA",
+         "estado": "incobrable", "deuda": 188750, "n_facturas": 1}
+    art = tools_acciones.reactivar_cliente_artifact(c)
+    assert art.payload["tipo_accion"] == "reactivar_cliente"
+    assert art.payload["params"] == {"rut_cliente": "76861668-K"}
+    assert "BIER BAR SPA" in art.payload["resumen"]
+
+
+def test_build_acciones_server_incluye_las_de_incobrable():
+    _server, tool_names = tools_acciones.build_acciones_server(Collector())
+    assert "mcp__acciones__proponer_marcar_cliente_incobrable" in tool_names
+    assert "mcp__acciones__proponer_reactivar_cliente" in tool_names
+
+
 def test_build_acciones_server_incluye_las_de_seguimiento():
     _server, tool_names = tools_acciones.build_acciones_server(Collector())
     assert "mcp__acciones__proponer_agregar_seguimiento" in tool_names

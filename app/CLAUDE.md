@@ -123,6 +123,17 @@ Endpoint: acciones.validar(tipo, params)        (ValueError → 400, sin tocar B
   registradas, `corregir_fecha_pago` (tool `proponer_corregir_fecha_pago`)
   exige factura ya pagada y fecha explícita; la tarjeta muestra
   `fecha anterior → nueva`.
+- **Castigo de deuda incobrable** (cliente quebrado): `marcar_cliente_incobrable`
+  escribe `clientes.estado = 'incobrable'` y `reactivar_cliente` lo deshace.
+  **Castigar no es cobrar:** `ventas.fecha_pago` queda intacta en NULL porque la
+  factura de verdad nunca se pagó — resolverlo marcándola pagada inventaría plata
+  que nunca entró, inflaría la cobranza histórica y ensuciaría el promedio de
+  días de pago con que `flujo.py` proyecta. El estado ya estaba cableado en el
+  dashboard, el brief, la wiki y la nube (sale del "por cobrar", queda en un KPI
+  aparte); lo único que faltaba era poder escribirlo sin SQL a mano. La tool
+  resuelve nombre→RUT y **no propone nada si el nombre calza con más de un
+  cliente** ("bier" calza con BIER BAR y NYD BIER). El prompt obliga a avisar que
+  el efecto tributario lo ve el contador.
 - **El endpoint nunca finge éxito:** 400 en validación o gasto inexistente, 500
   en error de BD; cierra la conexión en `finally`.
 - Diseños y planes detallados en `docs/superpowers/specs/` y `.../plans/`
