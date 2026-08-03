@@ -1,6 +1,38 @@
 """Herramientas MCP in-process que el agente usa para publicar artefactos."""
 from app.canvas.artifacts import Artifact, Collector
 
+# Los parametros que son listas van declarados con JSON Schema completo, NO con
+# el atajo `{"x": list}` del decorador @tool: ese atajo emite {"type": "array"}
+# sin `items`, y Google AI Studio (Gemini) rechaza la peticion entera con
+# HTTP 400 INVALID_ARGUMENT en vez de ignorar el campo como hacen Anthropic,
+# OpenAI y GLM. Decir que contiene cada lista tambien mejora los argumentos que
+# arma el modelo. Ver tests/test_publish_tools.py::test_todo_array_declara_items.
+SCHEMA_GRAFICO = {
+    "type": "object",
+    "properties": {
+        "titulo": {"type": "string"},
+        "chart_type": {"type": "string", "description": "bar, line o pie"},
+        "x": {"type": "array", "items": {"type": "string"},
+              "description": "Etiquetas del eje X"},
+        "y": {"type": "array", "items": {"type": "number"},
+              "description": "Valores numericos, uno por etiqueta de x"},
+    },
+    "required": ["titulo", "chart_type", "x", "y"],
+}
+
+SCHEMA_TABLA = {
+    "type": "object",
+    "properties": {
+        "titulo": {"type": "string"},
+        "columnas": {"type": "array", "items": {"type": "string"},
+                     "description": "Encabezados de las columnas"},
+        "filas": {"type": "array",
+                  "items": {"type": "array", "items": {"type": "string"}},
+                  "description": "Una lista por fila, con un valor por columna"},
+    },
+    "required": ["titulo", "columnas", "filas"],
+}
+
 
 def kpi_artifact(args: dict) -> Artifact:
     return Artifact(
@@ -57,13 +89,13 @@ def build_lienzo_server(collector: Collector):
         return {"content": [{"type": "text", "text": f"KPI '{args['etiqueta']}' publicado."}]}
 
     @tool("publicar_grafico", "Publica un gráfico (chart_type: bar|line|pie) en el lienzo.",
-          {"titulo": str, "chart_type": str, "x": list, "y": list})
+          SCHEMA_GRAFICO)
     async def publicar_grafico(args):
         collector.add(grafico_artifact(args))
         return {"content": [{"type": "text", "text": f"Gráfico '{args['titulo']}' publicado."}]}
 
     @tool("publicar_tabla", "Publica una tabla (columnas + filas) en el lienzo.",
-          {"titulo": str, "columnas": list, "filas": list})
+          SCHEMA_TABLA)
     async def publicar_tabla(args):
         collector.add(tabla_artifact(args))
         return {"content": [{"type": "text", "text": f"Tabla '{args['titulo']}' publicada."}]}
