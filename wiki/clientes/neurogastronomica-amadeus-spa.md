@@ -2,7 +2,7 @@
 rut: 77166721-K
 razon_social: "NEUROGASTRONOMICA AMADEUS SPA"
 estado: activo
-ultima_actualizacion: 2026-07-20
+ultima_actualizacion: 2026-08-02
 ---
 
 # NEUROGASTRONOMICA AMADEUS SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-07-20
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $2.309.840 |
-| Facturas emitidas | 31 |
-| Facturas pendientes | 3 ($256.365) |
+| Total vendido | $2.404.215 |
+| Facturas emitidas | 32 |
+| Facturas pendientes | 4 ($350.740) |
 | Promedio días de pago | 38 |
 | Último pago | 2026-03-29 |
 
 ## Estado de cuenta
 
-- 3 factura(s) pendiente(s) por $256.365
+- 4 factura(s) pendiente(s) por $350.740
 - Último pago registrado: 2026-03-29
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **30 días**
+- Frecuencia de compra: ~1 factura cada **29 días**
 - Comportamiento de pago: **normal** (38 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
@@ -41,10 +41,12 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Inconsistencias
 
-- Producto principal histórico = **Barril 30L Scotch Ale**, pero en las últimas 3 facturas predomina **Barril 30L APA**. Posible cambio de patrón de compra.
+- Producto principal histórico = **Barril 30L Scotch Ale**, pero en las últimas 3 facturas predomina **Barril 30L Stout Cafe**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-02: ⚠️ 3 factura(s) vencida(s) (>30 días): #4713, #4719, #4685 por $256.365.
+- 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-20.
 - 2026-07-20: ⚠️ 2 factura(s) vencida(s) (>30 días): #4713, #4685 por $161.990.
 - 2026-07-20: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4685 por $69.990.

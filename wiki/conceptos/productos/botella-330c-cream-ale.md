@@ -1,6 +1,6 @@
 # Producto: Botella 330c Cream Ale
 
-Actualizado: 2026-07-26
+Actualizado: 2026-08-02
 
 ## Clientes que lo compran
 

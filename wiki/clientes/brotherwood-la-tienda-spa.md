@@ -2,7 +2,7 @@
 rut: 77245148-2
 razon_social: "BROTHERWOOD LA TIENDA SPA"
 estado: activo
-ultima_actualizacion: 2026-07-26
+ultima_actualizacion: 2026-08-02
 ---
 
 # BROTHERWOOD LA TIENDA SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-07-26
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $1.583.973 |
-| Facturas emitidas | 14 |
-| Facturas pendientes | 1 ($139.981) |
+| Total vendido | $1.698.248 |
+| Facturas emitidas | 15 |
+| Facturas pendientes | 2 ($254.256) |
 | Promedio días de pago | 57 |
 | Último pago | 2026-06-15 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $139.981
+- 2 factura(s) pendiente(s) por $254.256
 - Último pago registrado: 2026-06-15
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **67 días**
+- Frecuencia de compra: ~1 factura cada **63 días**
 - Comportamiento de pago: **lento** (57 días promedio)
 - Producto principal: **Barril 30L Scotch Ale**
 
@@ -45,6 +45,8 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-26.
+- 2026-08-02: 📈 Deuda pendiente aumentó en $114.275.
 - 2026-07-26: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-26: 📈 Deuda pendiente aumentó en $139.981.
 - 2026-07-07: ⚠️ Cliente inactivo — 69 días sin nueva factura (última: 2026-04-29).

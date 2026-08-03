@@ -1,12 +1,12 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-02",
   "cliente_desde": "2024-01-24",
   "comuna": "MAIPU",
-  "deuda_pendiente": 124410.0,
+  "deuda_pendiente": 238685.0,
   "direccion": "CENTRAL GONZALO PÉREZ LLO 500",
   "estado": "activo",
-  "facturas_emitidas": 24,
-  "facturas_pendientes": 2,
+  "facturas_emitidas": 25,
+  "facturas_pendientes": 3,
   "promedio_dias_pago": 34,
   "razon_social": "BAR CERVECERÍA ORIGINAL SPA",
   "rut": "77042203-5",
@@ -20,10 +20,10 @@
       "nombre": "Barril 30L Black IPA"
     },
     {
-      "cantidad": 2.0,
-      "nombre": "Barril 30LStout Cafe"
+      "cantidad": 3.0,
+      "nombre": "Barril 30L Wee Heavy"
     }
   ],
-  "total_vendido": 2556685.0,
+  "total_vendido": 2670960.0,
   "ultimo_pago": "2026-05-20"
 }

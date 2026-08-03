@@ -1,6 +1,6 @@
 # Producto: Barril 30L Stout Cafe
 
-Actualizado: 2026-07-26
+Actualizado: 2026-08-02
 
 ## Clientes que lo compran
 
@@ -13,6 +13,6 @@ Actualizado: 2026-07-26
 | [[VDT SPA]] | 77220069-2 | 3 |
 | [[SOCIEDAD COMERCIAL Y TURÍSTICA UBUNTU PATAGONIA SPA]] | 77650861-6 | 2 |
 | [[SOCIEDAD GASTRONOMICA SAER SPA]] | 76337095-K | 2 |
+| [[NEUROGASTRONOMICA AMADEUS SPA]] | 77166721-K | 2 |
 | [[OPERACIÓN PIURE SPA]] | 77256711-1 | 2 |
 | [[RESTOBAR RUBIK LIMITADA]] | 76231880-6 | 2 |
-| [[BIER BAR SPA]] | 76861668-K | 2 |

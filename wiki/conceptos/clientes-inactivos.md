@@ -1,6 +1,6 @@
 # Clientes inactivos (>60 días sin compra)
 
-Actualizado: 2026-07-26 | 42 clientes inactivos
+Actualizado: 2026-08-02 | 42 clientes inactivos
 
 | Cliente | RUT | Última factura |
 | --- | --- | --- |

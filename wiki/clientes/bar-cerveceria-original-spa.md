@@ -2,7 +2,7 @@
 rut: 77042203-5
 razon_social: "BAR CERVECERÍA ORIGINAL SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-02
 ---
 
 # BAR CERVECERÍA ORIGINAL SPA
@@ -11,15 +11,15 @@ ultima_actualizacion: 2026-07-07
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $2.556.685 |
-| Facturas emitidas | 24 |
-| Facturas pendientes | 2 ($124.410) |
+| Total vendido | $2.670.960 |
+| Facturas emitidas | 25 |
+| Facturas pendientes | 3 ($238.685) |
 | Promedio días de pago | 34 |
 | Último pago | 2026-05-20 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $124.410
+- 3 factura(s) pendiente(s) por $238.685
 - Último pago registrado: 2026-05-20
 
 ## Patrón de comportamiento
@@ -45,6 +45,9 @@ Clientes que también compran **Barril 30L RIS**:
 
 ## Notas del agente
 
+- 2026-08-02: ⚠️ 2 factura(s) vencida(s) (>30 días): #4567, #4693 por $124.410.
+- 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-07.
+- 2026-08-02: 📈 Deuda pendiente aumentó en $114.275.
 - 2026-07-07: ⚠️ 2 factura(s) vencida(s) (>30 días): #4567, #4693 por $124.410.
 - 2026-06-03: ⚠️ 13 factura(s) vencida(s) (>30 días): #4644, #4188, #4210, #4212, #4267, #4051, #4296, #4332, #4352, #4377, #4501, #4577, #4567 por $1.357.663.
 - 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.
