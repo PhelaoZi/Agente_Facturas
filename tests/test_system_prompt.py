@@ -60,6 +60,17 @@ def test_el_prompt_prohibe_resolver_un_incobrable_marcando_la_factura_pagada():
     assert "contador" in SYSTEM_PROMPT.lower()
 
 
+def test_el_prompt_pide_publicar_y_responder_en_el_mismo_turno():
+    """El orquestador corta el turno cuando el modelo escribe su respuesta junto
+    con los publicar_*, ahorrando una vuelta entera (medida entre 2,8 y 11,6s).
+    Pero eso solo pasa si el modelo escribe texto junto a las tool_calls, y por
+    defecto no lo hace: hay que pedirselo aca.
+    """
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "mismo mensaje" in SYSTEM_PROMPT.lower()
+    assert "no esperes" in SYSTEM_PROMPT.lower()
+
+
 def test_el_prompt_prohibe_calcular_precios_sobre_productos():
     """La linea `Logistica` exacta no se guarda en `productos`, asi que
     cualquier precio deducido con SQL a mano sale a la mitad. El agente del

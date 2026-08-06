@@ -363,6 +363,103 @@ def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
     assert vistos[1] == orchestrator.MAX_TOKENS_CIERRE
 
 
+# ── Publicar y responder en el mismo turno ────────────────────────────────────
+# Medido el 2026-08-03: "cuanto me deben en total?" gastaba 3 vueltas — pedir el
+# dato, publicar KPI+grafico, y recien escribir. La vuelta del medio no averigua
+# NADA: las tools del lienzo no devuelven informacion al modelo. Si el modelo ya
+# escribio su respuesta junto con los publicar_*, esa vuelta extra es regalada.
+
+# Argumentos válidos por tool: las del lienzo fallarían con {} y no publicarían.
+_ARGS = {
+    "mcp__lienzo__publicar_kpi": {"etiqueta": "Deuda", "valor": "$8.883.587", "delta": ""},
+    "mcp__lienzo__publicar_grafico": {"titulo": "Deuda", "chart_type": "bar",
+                                      "x": ["a"], "y": [1]},
+    "mcp__lienzo__publicar_tabla": {"titulo": "T", "columnas": ["c"], "filas": [["v"]]},
+}
+
+
+def _turno(texto, tools, finish="tool_calls"):
+    llamadas = [{"id": f"c{i}", "type": "function",
+                 "function": {"name": n, "arguments": json.dumps(_ARGS.get(n, {}))}}
+                for i, n in enumerate(tools)]
+    msg = {"role": "assistant", "content": texto}
+    if llamadas:
+        msg["tool_calls"] = llamadas
+    return {"choices": [{"message": msg, "finish_reason": finish}]}
+
+
+def _guionizar(monkeypatch, turnos):
+    """El modelo falso responde el guion, turno por turno. Devuelve el contador."""
+    usados = []
+
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None,
+                 session_id=None):
+        usados.append(1)
+        return turnos[min(len(usados) - 1, len(turnos) - 1)]
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+    return usados
+
+
+def test_si_publica_y_ya_escribio_la_respuesta_no_gasta_otra_vuelta(monkeypatch):
+    usados = _guionizar(monkeypatch, [
+        _turno("Te deben $8.883.587 en 55 facturas.",
+               ["mcp__lienzo__publicar_kpi", "mcp__lienzo__publicar_grafico"]),
+        _turno("ESTA VUELTA NO DEBERIA OCURRIR", [], finish="stop"),
+    ])
+    col = Collector()
+
+    texto, _sid = orchestrator.run("cuanto me deben?", col)
+
+    assert texto == "Te deben $8.883.587 en 55 facturas."
+    assert len(usados) == 1, "publicar no justifica otra vuelta al modelo"
+    assert len(col.items) == 2, "los artefactos igual se publican"
+
+
+def test_si_pide_un_dato_sigue_el_ciclo_aunque_traiga_texto(monkeypatch):
+    """Barrera clave: con una tool de DATOS el texto es prematuro ('voy a
+    consultar…'). Ahi el ciclo tiene que seguir, o el usuario recibe el relato
+    en vez de la respuesta."""
+    usados = _guionizar(monkeypatch, [
+        _turno("Voy a consultar la deuda.", ["mcp__negocio__deuda_total"]),
+        _turno("Te deben $8.883.587.", [], finish="stop"),
+    ])
+
+    texto, _sid = orchestrator.run("cuanto me deben?", Collector())
+
+    assert texto == "Te deben $8.883.587."
+    assert len(usados) == 2
+
+
+def test_si_publica_sin_escribir_nada_sigue_como_siempre(monkeypatch):
+    """Los modelos que no mandan texto junto a las tool_calls no cambian de
+    comportamiento: necesitan la vuelta extra para redactar."""
+    usados = _guionizar(monkeypatch, [
+        _turno(None, ["mcp__lienzo__publicar_tabla"]),
+        _turno("Aqui va el ranking.", [], finish="stop"),
+    ])
+
+    texto, _sid = orchestrator.run("ranking de clientes", Collector())
+
+    assert texto == "Aqui va el ranking."
+    assert len(usados) == 2
+
+
+def test_mezcla_de_lienzo_y_datos_no_corta(monkeypatch):
+    """Si en la misma vuelta publica Y pide un dato, todavia falta informacion."""
+    usados = _guionizar(monkeypatch, [
+        _turno("Publico lo que tengo y sigo.",
+               ["mcp__lienzo__publicar_kpi", "mcp__negocio__ranking_clientes"]),
+        _turno("Listo, aqui esta todo.", [], finish="stop"),
+    ])
+
+    texto, _sid = orchestrator.run("resumen", Collector())
+
+    assert texto == "Listo, aqui esta todo."
+    assert len(usados) == 2
+
+
 # ── Caché de prompt: sticky routing ───────────────────────────────────────────
 # Cada vuelta reenvía ~5.400 tokens fijos idénticos (instrucciones + catálogo de
 # 32 herramientas). Los proveedores de GLM cachean solos, PERO OpenRouter enruta

@@ -401,6 +401,20 @@ async def correr_loop_agente(
                 "content": contenido
             })
 
+        # Publicar no le enseña nada al modelo: las tools del lienzo dibujan en
+        # pantalla y no devuelven datos. Si ya escribió su respuesta en ESTA
+        # vuelta, pedirle otra es regalar una llamada — medida entre 2,8 y 11,6s,
+        # 1 de cada 3 en una pregunta simple.
+        #
+        # El `all(...)` es la barrera: con una tool de DATOS en la misma vuelta,
+        # el texto todavía es prematuro ("voy a consultar la deuda…") y cortar
+        # ahí le entregaría al usuario el relato en vez de la respuesta.
+        texto_ya_escrito = (msg.get("content") or "").strip()
+        if texto_ya_escrito and all(
+                tc["function"]["name"].startswith("mcp__lienzo__")
+                for tc in msg["tool_calls"]):
+            return texto_ya_escrito
+
     _abortar_si_detenido()      # detener tampoco paga el turno de cierre
     texto = _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id)
     if texto:

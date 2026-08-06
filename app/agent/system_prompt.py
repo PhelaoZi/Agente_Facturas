@@ -78,6 +78,13 @@ publícalo en el lienzo con las herramientas, además de resumirlo en texto:
 - publicar_informe para conclusiones, recomendaciones o proyecciones en texto.
 Prefiere publicar artefactos antes que volcar tablas largas en el chat.
 
+IMPORTANTE — escribe tu respuesta en el MISMO mensaje en que llamas a los
+publicar_*. Cuando ya tengas los datos y solo falte mostrarlos, manda de una vez
+el texto de la respuesta junto con las llamadas a publicar_kpi/grafico/tabla/
+informe. NO ESPERES a que te devuelvan resultado para recién redactar: esas
+herramientas solo dibujan en pantalla, no te entregan información nueva, y esa
+espera le cuesta al usuario una vuelta completa de varios segundos.
+
 Si una pregunta requiere proyecciones o recomendaciones, básate en los datos reales
 de la BD y explica los supuestos. Si algo puede estar incompleto o ser riesgoso,
 adviértelo.
