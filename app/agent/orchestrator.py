@@ -65,6 +65,95 @@ def _abortar_si_detenido():
         raise EjecucionDetenida()
 
 
+# Tablas que el agente consulta de verdad. La BD tiene 26 objetos entre tablas y
+# vistas; meterlos todos costaría cientos de tokens en CADA llamada para nombres
+# que nunca usa.
+TABLAS_CLAVE = ("ventas", "clientes", "productos", "cuentas_por_pagar",
+                "conciliaciones", "movimientos_banco", "seguimiento_comercial")
+
+# Postgres avisa la columna que falta, pero no dice cuáles existen. En español o
+# en inglés según el locale del servidor.
+RE_COLUMNA_FALTANTE = re.compile(r"no existe la columna|column .* does not exist",
+                                 re.IGNORECASE)
+RE_TABLA_SQL = re.compile(r"\b(?:from|join)\s+([a-z_][a-z0-9_]*)", re.IGNORECASE)
+
+_ESQUEMA_CACHE = None
+
+
+def _tablas_en(consulta: str) -> list:
+    """Nombres de tabla que aparecen tras FROM o JOIN, sin repetir y en orden."""
+    vistas = []
+    for t in RE_TABLA_SQL.findall(consulta or ""):
+        if t.lower() not in vistas:
+            vistas.append(t.lower())
+    return vistas
+
+
+def _leer_columnas(tablas) -> dict:
+    """{tabla: [columnas]} desde information_schema. Conexión propia: la del
+    error quedó en transacción abortada y no acepta más consultas."""
+    if not tablas:
+        return {}
+    conn = psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+    try:
+        conn.set_session(readonly=True)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT table_name, column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = ANY(%s) "
+                "ORDER BY table_name, ordinal_position",
+                (list(tablas),))
+            out = {}
+            for fila in cur.fetchall():
+                out.setdefault(fila["table_name"], []).append(fila["column_name"])
+            return out
+    finally:
+        conn.close()
+
+
+def _pista_columnas(consulta: str, error) -> str:
+    """Ante un error de columna inexistente, adjunta las columnas REALES.
+
+    Visto el 2026-08-03: el agente consultó `fecha_emision` (es `fecha`), recibió
+    solo "no existe la columna" y volvió a adivinar, gastando una vuelta entera.
+    La BD sabe la respuesta; devolvérsela lo corrige a la primera. Solo aplica a
+    errores de columna: en un timeout o un error de sintaxis esto sería ruido.
+    """
+    if not RE_COLUMNA_FALTANTE.search(str(error)):
+        return ""
+    try:
+        columnas = _leer_columnas(_tablas_en(consulta))
+    except Exception:
+        return ""      # la pista es una ayuda; nunca debe tapar el error real
+    if not columnas:
+        return ""
+    detalle = "\n".join(f"  {t}: {', '.join(cols)}" for t, cols in columnas.items())
+    return f"\nColumnas reales de las tablas de esta consulta:\n{detalle}"
+
+
+def bloque_esquema() -> str:
+    """Columnas de las tablas clave, para el system prompt. Se lee UNA vez.
+
+    Prevenir en vez de corregir: sin esto el agente adivina los nombres de
+    columna en cada SQL improvisado. Se genera desde la BD y no se escribe a
+    mano a propósito — una lista pegada en el prompt se desincroniza en silencio
+    y el agente le cree igual.
+    """
+    global _ESQUEMA_CACHE
+    if _ESQUEMA_CACHE is None:
+        try:
+            columnas = _leer_columnas(TABLAS_CLAVE)
+            lineas = "\n".join(f"- {t}: {', '.join(cols)}"
+                               for t, cols in sorted(columnas.items()))
+            _ESQUEMA_CACHE = (
+                f"\n\nCOLUMNAS REALES (no inventes nombres; si necesitas otra "
+                f"tabla, consulta information_schema):\n{lineas}" if lineas else "")
+        except Exception as e:
+            print(f"No se pudo leer el esquema para el prompt: {e}")
+            _ESQUEMA_CACHE = ""      # sin BD el chat igual responde
+    return _ESQUEMA_CACHE
+
+
 def ejecutar_sql_local(sql_str: str) -> str:
     """Ejecuta una consulta de SOLO LECTURA en la BD local.
 
@@ -111,7 +200,7 @@ def ejecutar_sql_local(sql_str: str) -> str:
                            f"acota la consulta con LIMIT o filtros)")
             return salida
     except Exception as e:
-        return f"Error ejecutando SQL: {e}"
+        return f"Error ejecutando SQL: {e}{_pista_columnas(consulta, e)}"
     finally:
         conn.close()
 
@@ -308,7 +397,7 @@ async def correr_loop_agente(
 
     # 3. Construir system prompt
     indice = memoria.leer_indice()
-    system_prompt = SYSTEM_PROMPT + _bloque_fecha()
+    system_prompt = SYSTEM_PROMPT + _bloque_fecha() + bloque_esquema()
     if indice:
         system_prompt += "\n\nMEMORIA DEL NEGOCIO (aprendida en sesiones anteriores):\n" + indice
 

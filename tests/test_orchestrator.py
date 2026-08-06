@@ -363,6 +363,104 @@ def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
     assert vistos[1] == orchestrator.MAX_TOKENS_CIERRE
 
 
+# ── El error de columna enseña el esquema ─────────────────────────────────────
+# Visto el 2026-08-03: el agente consulto `fecha_emision` (no existe; es `fecha`)
+# y Postgres solo respondio "no existe la columna", sin decir cuales SI existen.
+# El agente adivino de nuevo y gasto una vuelta entera. La BD sabe la respuesta:
+# basta devolversela.
+
+def test_tablas_en_saca_los_nombres_del_from_y_los_join():
+    sql = ("SELECT v.folio FROM ventas v JOIN clientes c ON c.rut_cliente = "
+           "v.rut_cliente LEFT JOIN productos p ON p.id = v.folio")
+    assert orchestrator._tablas_en(sql) == ["ventas", "clientes", "productos"]
+
+
+def test_tablas_en_ignora_alias_y_no_repite():
+    assert orchestrator._tablas_en("SELECT * FROM ventas v, ventas w") == ["ventas"]
+
+
+def test_la_pista_lista_las_columnas_reales_de_la_tabla(monkeypatch):
+    monkeypatch.setattr(orchestrator, "_leer_columnas",
+                        lambda tablas: {"ventas": ["folio", "fecha", "fecha_pago"]})
+
+    pista = orchestrator._pista_columnas(
+        "SELECT * FROM ventas WHERE fecha_emision > '2026-01-01'",
+        'no existe la columna «fecha_emision»')
+
+    assert "ventas" in pista
+    assert "fecha_pago" in pista and "folio" in pista
+
+
+def test_no_agrega_pista_cuando_el_error_no_es_de_columna(monkeypatch):
+    """Un error de sintaxis o un timeout no se arreglan con la lista de
+    columnas: agregarla ahi seria ruido en el contexto del modelo."""
+    monkeypatch.setattr(orchestrator, "_leer_columnas",
+                        lambda tablas: {"ventas": ["folio"]})
+
+    assert orchestrator._pista_columnas("SELECT * FROM ventas",
+                                        "canceling statement due to statement timeout") == ""
+
+
+def test_ejecutar_sql_local_devuelve_las_columnas_al_fallar(monkeypatch):
+    """Integración: el agente recibe el error Y la salida del laberinto."""
+    class CursorQueFalla:
+        description = None
+        def execute(self, q, params=None):
+            if "statement_timeout" not in q:
+                raise RuntimeError('no existe la columna «fecha_emision»')
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    _fake_connect(monkeypatch, CursorQueFalla())
+    monkeypatch.setattr(orchestrator, "_leer_columnas",
+                        lambda tablas: {"ventas": ["folio", "fecha", "monto_total"]})
+
+    res = orchestrator.ejecutar_sql_local("SELECT * FROM ventas WHERE fecha_emision > '2026-01-01'")
+
+    assert "fecha_emision" in res          # el error original se conserva
+    assert "monto_total" in res            # y ahora sabe que columnas hay
+
+
+# ── Esquema en el prompt: prevenir en vez de corregir ─────────────────────────
+
+def test_el_bloque_de_esquema_nombra_las_columnas_de_ventas(monkeypatch):
+    """Se genera desde la BD, no se escribe a mano: una lista pegada en el
+    prompt se desincroniza y el agente le cree igual."""
+    monkeypatch.setattr(orchestrator, "_ESQUEMA_CACHE", None)
+    monkeypatch.setattr(orchestrator, "_leer_columnas",
+                        lambda tablas: {"ventas": ["folio", "fecha", "fecha_pago"],
+                                        "clientes": ["rut_cliente", "razon_social"]})
+
+    bloque = orchestrator.bloque_esquema()
+
+    assert "ventas" in bloque and "fecha_pago" in bloque
+    assert "clientes" in bloque and "razon_social" in bloque
+
+
+def test_el_esquema_se_lee_una_sola_vez(monkeypatch):
+    """Va en cada pregunta: no puede costar una consulta a la BD cada vez."""
+    lecturas = []
+    monkeypatch.setattr(orchestrator, "_ESQUEMA_CACHE", None)
+    monkeypatch.setattr(orchestrator, "_leer_columnas",
+                        lambda tablas: (lecturas.append(1), {"ventas": ["folio"]})[1])
+
+    orchestrator.bloque_esquema()
+    orchestrator.bloque_esquema()
+
+    assert len(lecturas) == 1
+
+
+def test_si_la_bd_no_responde_el_esquema_no_voltea_el_chat(monkeypatch):
+    """Sin BD el chat igual debe contestar lo que no dependa de ella."""
+    def explota(tablas):
+        raise RuntimeError("BD caida")
+
+    monkeypatch.setattr(orchestrator, "_ESQUEMA_CACHE", None)
+    monkeypatch.setattr(orchestrator, "_leer_columnas", explota)
+
+    assert orchestrator.bloque_esquema() == ""
+
+
 # ── Publicar y responder en el mismo turno ────────────────────────────────────
 # Medido el 2026-08-03: "cuanto me deben en total?" gastaba 3 vueltas — pedir el
 # dato, publicar KPI+grafico, y recien escribir. La vuelta del medio no averigua
