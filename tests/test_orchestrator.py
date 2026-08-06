@@ -208,7 +208,7 @@ def test_ejecutar_sql_local_recorta_resultados_enormes(monkeypatch):
 
 def test_run_session_persistence(monkeypatch):
     # Mock de llamar_openrouter_api para simular respuesta sin tools
-    def mock_api(api_key, model, system, messages, tools=None):
+    def mock_api(api_key, model, system, messages, tools=None, session_id=None):
         return {
             "choices": [{
                 "message": {
@@ -249,7 +249,7 @@ def test_al_agotar_los_pasos_responde_con_lo_que_alcanzo_a_reunir(monkeypatch):
     """
     llamadas = []
 
-    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         llamadas.append(tools)
         if tools:
             return {"choices": [{
@@ -278,7 +278,7 @@ def test_al_agotar_los_pasos_responde_con_lo_que_alcanzo_a_reunir(monkeypatch):
 def test_si_el_turno_de_cierre_falla_queda_el_mensaje_de_siempre(monkeypatch):
     """Red de seguridad: si la ultima llamada revienta, el usuario igual recibe
     una explicacion en vez de un string vacio."""
-    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         if tools is None:
             raise RuntimeError("OpenRouter caido")
         return {"choices": [{
@@ -306,7 +306,7 @@ def test_el_turno_de_cierre_pide_mas_tokens_que_un_turno_normal(monkeypatch):
     """
     vistos = []
 
-    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         vistos.append({"tools": tools, "max_tokens": max_tokens})
         if tools:
             return {"choices": [{
@@ -343,7 +343,7 @@ def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
     """
     vistos = []
 
-    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         vistos.append(max_tokens)
         if len(vistos) == 1:
             # Se quedo sin tokens razonando: ni texto ni herramientas.
@@ -363,6 +363,82 @@ def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
     assert vistos[1] == orchestrator.MAX_TOKENS_CIERRE
 
 
+# ── Caché de prompt: sticky routing ───────────────────────────────────────────
+# Cada vuelta reenvía ~5.400 tokens fijos idénticos (instrucciones + catálogo de
+# 32 herramientas). Los proveedores de GLM cachean solos, PERO OpenRouter enruta
+# cada llamada por su cuenta: medido el 2026-08-03, las vueltas 1 y 2 fueron a
+# CoreWeave y la 3 saltó a Fireworks, con cached_tokens=0 en las tres. Mandando
+# un session_id, OpenRouter fija el proveedor y el caché puede pegar.
+
+class _RespuestaFalsa:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def read(self):
+        return json.dumps(self._payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _capturar_peticion(monkeypatch):
+    """Intercepta urlopen y devuelve un dict que se llena con la petición."""
+    capturado = {}
+
+    def fake_urlopen(req, timeout=None):
+        capturado["headers"] = {k.lower(): v for k, v in req.headers.items()}
+        capturado["cuerpo"] = json.loads(req.data.decode("utf-8"))
+        return _RespuestaFalsa({"choices": [{"message": {"role": "assistant",
+                                                         "content": "ok"},
+                                             "finish_reason": "stop"}]})
+
+    monkeypatch.setattr(orchestrator.urllib.request, "urlopen", fake_urlopen)
+    return capturado
+
+
+def test_manda_el_session_id_para_fijar_el_proveedor(monkeypatch):
+    cap = _capturar_peticion(monkeypatch)
+
+    orchestrator.llamar_openrouter_api(
+        "clave", "z-ai/glm-5.2", "instrucciones",
+        [{"role": "user", "content": "hola"}], session_id="sesion-abc")
+
+    assert cap["headers"].get("x-session-id") == "sesion-abc"
+
+
+def test_sin_session_id_no_manda_la_cabecera(monkeypatch):
+    """Los tests y scripts que llaman sin sesión deben seguir funcionando."""
+    cap = _capturar_peticion(monkeypatch)
+
+    orchestrator.llamar_openrouter_api("clave", "m", "sys",
+                                       [{"role": "user", "content": "hola"}])
+
+    assert "x-session-id" not in cap["headers"]
+
+
+def test_el_loop_le_pasa_la_sesion_de_la_conversacion(monkeypatch):
+    """De nada sirve el parámetro si el loop no lo usa: las vueltas de una misma
+    pregunta tienen que ir todas al mismo proveedor."""
+    vistos = []
+
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None,
+                 session_id=None):
+        vistos.append(session_id)
+        return {"choices": [{"message": {"role": "assistant", "content": "listo"},
+                             "finish_reason": "stop"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    _texto, sid = orchestrator.run("una pregunta", Collector())
+
+    assert vistos and all(v == sid for v in vistos), \
+        "todas las vueltas deben ir con el mismo session_id"
+
+
 # ── Botón Detener ─────────────────────────────────────────────────────────────
 # Una pregunta puede costar hasta MAX_ITERACIONES llamadas al modelo. Si el
 # usuario se arrepiente, lo que ya se gastó no vuelve, pero todo lo que falta sí
@@ -371,7 +447,7 @@ def test_un_turno_que_vuelve_vacio_no_llega_como_burbuja_en_blanco(monkeypatch):
 def _mock_pide_tool(registro, al_llamar=None):
     """Modelo falso que siempre pide una herramienta inexistente: hace girar el
     loop sin tocar la BD. `al_llamar` corre en cada llamada (para detener)."""
-    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         registro.append(1)
         if al_llamar:
             al_llamar()
@@ -401,7 +477,7 @@ def test_al_detener_el_historial_queda_como_antes_de_la_pregunta(monkeypatch):
     """Lo que de verdad importa. Al cortar a media vuelta el historial queda con
     un `tool_calls` del asistente sin su respuesta: si eso se guarda, la
     SIGUIENTE pregunta la rechaza la API del modelo. Hay que revertirlo."""
-    def mock_ok(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_ok(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         return {"choices": [{"message": {"role": "assistant", "content": "Respuesta 1"},
                              "finish_reason": "stop"}]}
 
@@ -422,7 +498,7 @@ def test_al_detener_el_historial_queda_como_antes_de_la_pregunta(monkeypatch):
 def test_una_senal_de_detencion_vieja_no_mata_la_pregunta_siguiente(monkeypatch):
     """La señal se apaga al empezar cada pregunta. Si quedara encendida, el
     Detener de hace un rato cancelaría la pregunta nueva apenas se escribe."""
-    def mock_ok(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_ok(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         return {"choices": [{"message": {"role": "assistant", "content": "Respondí igual"},
                              "finish_reason": "stop"}]}
 
@@ -463,7 +539,7 @@ def test_el_system_prompt_le_dice_al_agente_que_dia_es_hoy(monkeypatch):
     from datetime import date
     vistos = []
 
-    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
         vistos.append(system)
         return {"choices": [{"message": {"role": "assistant", "content": "ok"},
                              "finish_reason": "stop"}]}

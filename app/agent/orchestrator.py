@@ -116,8 +116,18 @@ def ejecutar_sql_local(sql_str: str) -> str:
         conn.close()
 
 def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
-                          tools: list | None = None, max_tokens: int | None = None) -> dict:
-    """Envía peticiones de completions a OpenRouter usando urllib.request."""
+                          tools: list | None = None, max_tokens: int | None = None,
+                          session_id: str | None = None) -> dict:
+    """Envía peticiones de completions a OpenRouter usando urllib.request.
+
+    `session_id` va como cabecera `X-Session-Id` y sirve para el CACHÉ: cada
+    vuelta reenvía ~5.400 tokens fijos idénticos (instrucciones + las 32
+    herramientas). Los proveedores de GLM cachean solos, pero OpenRouter elige
+    proveedor en cada llamada y un salto rompe el caché — medido el 2026-08-03:
+    vueltas 1 y 2 a CoreWeave, la 3 a Fireworks, `cached_tokens=0` en las tres.
+    Con el session_id, OpenRouter fija el proveedor (sticky routing) y las
+    vueltas siguientes de la MISMA pregunta pueden reutilizar el prefijo.
+    """
     url = "https://openrouter.ai/api/v1/chat/completions"
 
     # Preparar el cuerpo estilo OpenAI
@@ -135,6 +145,8 @@ def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
         "HTTP-Referer": "https://insforge.dev", # Referer opcional para OpenRouter
         "X-Title": "Zigurat ERP",
     }
+    if session_id:
+        headers["X-Session-Id"] = str(session_id)[:256]   # tope que impone OpenRouter
     
     req = urllib.request.Request(
         url,
@@ -199,7 +211,7 @@ INSTRUCCION_CIERRE = (
 )
 
 
-def _respuesta_de_cierre(api_key, model, system_prompt, historial):
+def _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id=None):
     """Ultimo turno SIN tools: el modelo cierra con lo que ya reunio.
 
     Sin esto, agotar MAX_ITERACIONES botaba todo el trabajo del turno y el
@@ -210,7 +222,8 @@ def _respuesta_de_cierre(api_key, model, system_prompt, historial):
     mensajes = historial + [{"role": "user", "content": INSTRUCCION_CIERRE}]
     try:
         resp = llamar_openrouter_api(api_key, model, system_prompt, mensajes, None,
-                                     max_tokens=MAX_TOKENS_CIERRE)
+                                     max_tokens=MAX_TOKENS_CIERRE,
+                                     session_id=session_id)
         choice = resp["choices"][0]
         texto = (choice["message"].get("content") or "").strip()
         if not texto:
@@ -315,7 +328,8 @@ async def correr_loop_agente(
             "tools": openai_tools if openai_tools else None
         }
         
-        resp = llamar_openrouter_api(api_key, model, system_prompt, body["messages"], openai_tools)
+        resp = llamar_openrouter_api(api_key, model, system_prompt, body["messages"],
+                                     openai_tools, session_id=session_id)
         choice = resp["choices"][0]
         msg = choice["message"]
         
@@ -388,7 +402,7 @@ async def correr_loop_agente(
             })
 
     _abortar_si_detenido()      # detener tampoco paga el turno de cierre
-    texto = _respuesta_de_cierre(api_key, model, system_prompt, historial)
+    texto = _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id)
     if texto:
         historial.append({"role": "assistant", "content": texto})
         return texto
