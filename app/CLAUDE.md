@@ -46,6 +46,17 @@ razonamiento gastan tokens *pensando* antes de escribir, y esos
 mensajes devolvía `content=None` con `finish_reason=length` — o sea el usuario
 seguía viendo "límite de pasos" aunque el agente ya tenía la respuesta.
 
+Como es la **única llamada sin tools**, `INSTRUCCION_CIERRE` tiene que decirle
+explícitamente al modelo que ahí no tiene herramientas y que responda solo en
+prosa: el system prompt le sigue exigiendo publicar en el lienzo, y sin el array
+de tools el modelo obedece al prompt escribiendo la llamada **como texto**
+(visto el 2026-08-06: la respuesta correcta seguida de cuatro `<tool_call>` con
+nombres de parámetro inventados — `label`/`value` en vez de `etiqueta`/`valor`,
+que es justo la huella de un modelo sin schema al frente). Además,
+`_sin_sintaxis_de_tool()` limpia la salida antes de devolverla, en el cierre y
+en el loop: la instrucción es la causa raíz, el saneador es la red — un modelo
+siempre puede desobedecer y esa basura nunca debe llegar a la pantalla.
+
 **El agente del chat corre AISLADO y determinista:**
 - No lee este CLAUDE.md: todo su conocimiento vive en
   `app/agent/system_prompt.py` + su memoria persistente. Si cambias una regla de

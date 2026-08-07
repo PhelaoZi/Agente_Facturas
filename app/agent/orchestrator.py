@@ -294,10 +294,39 @@ MENSAJE_SIN_PASOS = ("No alcancé a terminar la consulta (límite de pasos del "
                      "agente). Intenta acotar tu pregunta.")
 
 INSTRUCCION_CIERRE = (
-    "Se acabaron los pasos disponibles para herramientas. Responde AHORA al "
-    "usuario con lo que ya averiguaste, sin pedir mas herramientas. Si algo "
-    "quedo incompleto, dilo explicitamente en una linea al final."
+    "Se acabaron los pasos disponibles para herramientas. En este mensaje NO "
+    "TIENES HERRAMIENTAS disponibles: no puedes publicar en el lienzo ni "
+    "consultar nada mas. Responde AHORA al usuario en PROSA, y solo en prosa, "
+    "con lo que ya averiguaste. No escribas llamadas a publicar_kpi, "
+    "publicar_grafico, publicar_tabla, publicar_informe ni a ninguna otra "
+    "herramienta: en este turno no se ejecutan y el usuario las ve crudas en "
+    "pantalla. Si algo quedo incompleto, dilo en una linea al final."
 )
+
+# El cierre es la UNICA llamada que va con tools=None, y el system prompt le
+# sigue exigiendo al modelo publicar en el lienzo. Sin el array de tools no
+# puede emitir una llamada de verdad, asi que la escribe en prosa y el usuario
+# se la come cruda en pantalla (visto el 2026-08-06: la respuesta correcta
+# seguida de cuatro <tool_call> con nombres de parametro inventados).
+#
+# La instruccion de arriba es la causa raiz; esto es la red. Un modelo siempre
+# puede desobedecer, y esta basura NUNCA debe llegar a la pantalla.
+RE_TOOL_CALL_TEXTO = re.compile(r"<tool_call>.*?(?:</tool_call>|$)", re.DOTALL | re.IGNORECASE)
+RE_ETIQUETA_SUELTA = re.compile(r"</?(?:tool_call|arg_key|arg_value|function|parameter)>",
+                                re.IGNORECASE)
+
+
+def _sin_sintaxis_de_tool(texto: str) -> str:
+    """Saca del texto las llamadas a herramientas que el modelo escribio como
+    prosa. Persigue la SINTAXIS, no las menciones: nombrar una herramienta al
+    explicar ("consulte facturas_vencidas") es legitimo y no se toca.
+
+    El ancla `|$` del regex importa: una llamada cortada por max_tokens no trae
+    `</tool_call>`, y sin eso quedaria entera en pantalla.
+    """
+    limpio = RE_TOOL_CALL_TEXTO.sub("", texto or "")
+    limpio = RE_ETIQUETA_SUELTA.sub("", limpio)
+    return re.sub(r"\n{3,}", "\n\n", limpio).strip()
 
 
 def _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id=None):
@@ -314,7 +343,7 @@ def _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id=No
                                      max_tokens=MAX_TOKENS_CIERRE,
                                      session_id=session_id)
         choice = resp["choices"][0]
-        texto = (choice["message"].get("content") or "").strip()
+        texto = _sin_sintaxis_de_tool(choice["message"].get("content"))
         if not texto:
             # Sin esto el modo de falla es invisible: el usuario ve el mensaje
             # generico y en el log no queda por que.
@@ -427,7 +456,9 @@ async def correr_loop_agente(
         
         # Si no hay llamadas de herramientas o terminó normalmente, retornamos el texto
         if choice.get("finish_reason") != "tool_calls" or not msg.get("tool_calls"):
-            texto = (msg.get("content") or "").strip()
+            # Se sanea tambien aca: un turno truncado a la mitad de una tool
+            # call deja el bloque crudo en el content y cae por este camino.
+            texto = _sin_sintaxis_de_tool(msg.get("content"))
             if texto:
                 return texto
             # Ni texto ni herramientas: tipicamente finish_reason=length, con

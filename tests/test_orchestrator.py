@@ -747,3 +747,107 @@ def test_el_system_prompt_le_dice_al_agente_que_dia_es_hoy(monkeypatch):
     hoy = date.today()
     assert str(hoy) in vistos[0], "el prompt debe traer la fecha de hoy"
     assert str(hoy.year) in vistos[0]
+
+
+# ── El turno de cierre no puede pedirle herramientas al modelo ────────────────
+# Visto el 2026-08-06 en pantalla: el usuario pregunto por sus facturas por
+# cobrar y recibio la respuesta correcta SEGUIDA de la sintaxis cruda de cuatro
+# tool calls. El cierre es la unica llamada que va con tools=None, pero el
+# system prompt le sigue exigiendo publicar en el lienzo: sin el array de tools
+# el modelo no puede emitir una llamada de verdad, asi que la escribio en prosa.
+# La prueba de que fue el cierro son los nombres de parametro inventados
+# (label/value/title/rows en vez de etiqueta/valor/titulo/filas): un modelo con
+# el schema al frente no los inventa.
+
+SALIDA_CON_TOOL_CALL_EN_TEXTO = (
+    "Tienes **$8.883.587** por cobrar en **55 facturas**.\n"
+    '<tool_call>mcp__acciones__publicar_kpi(label="Total por cobrar", '
+    'value=8883587, format="currency")</tool_call>'
+    '<tool_call>mcp__acciones__publicar_tabla(title="Facturas", '
+    'rows=[[4754, "VDT SPA"]])</arg_value></tool_call>'
+)
+
+
+def test_la_instruccion_de_cierre_avisa_que_no_hay_herramientas():
+    """La causa raiz es una contradiccion: el system prompt ordena publicar en
+    el lienzo y el cierre va sin tools. Si no se lo decimos explicitamente, el
+    modelo obedece al prompt y escribe la llamada como texto."""
+    instruccion = orchestrator.INSTRUCCION_CIERRE.lower()
+    assert "no tienes herramientas" in instruccion
+    assert "publicar" in instruccion, "debe nombrar lo que NO puede hacer"
+    assert "prosa" in instruccion
+
+
+def test_el_saneador_borra_la_sintaxis_de_tool_call_y_conserva_la_respuesta():
+    limpio = orchestrator._sin_sintaxis_de_tool(SALIDA_CON_TOOL_CALL_EN_TEXTO)
+
+    assert "$8.883.587" in limpio and "55 facturas" in limpio
+    assert "<tool_call>" not in limpio
+    assert "publicar_kpi" not in limpio and "publicar_tabla" not in limpio
+    assert "arg_value" not in limpio
+
+
+def test_el_saneador_cierra_una_tool_call_truncada_a_la_mitad():
+    """Cortada por max_tokens no trae `</tool_call>`: sin el ancla de cierre un
+    regex perezoso la dejaria entera en pantalla."""
+    limpio = orchestrator._sin_sintaxis_de_tool(
+        'La deuda es $8.883.587.\n<tool_call>mcp__lienzo__publicar_tabla(filas=[[47')
+
+    assert limpio == "La deuda es $8.883.587."
+
+
+def test_el_saneador_no_toca_una_respuesta_normal():
+    """Nombrar una herramienta en prosa es legitimo ('use facturas_vencidas'):
+    el saneador solo persigue la SINTAXIS, no las menciones."""
+    texto = "Consulté las facturas vencidas con mcp__negocio__facturas_vencidas y son 55."
+    assert orchestrator._sin_sintaxis_de_tool(texto) == texto
+
+
+def test_el_cierre_no_le_entrega_al_usuario_la_sintaxis_de_una_tool(monkeypatch):
+    """Defensa en profundidad: la instruccion es la causa raiz, pero un modelo
+    siempre puede desobedecer y esto NUNCA debe llegar a la pantalla."""
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
+        if tools is None:                      # turno de cierre
+            return {"choices": [{
+                "message": {"role": "assistant",
+                            "content": SALIDA_CON_TOOL_CALL_EN_TEXTO},
+                "finish_reason": "stop"}]}
+        return {"choices": [{                  # un turno normal que no cierra nada
+            "message": {"role": "assistant", "content": None,
+                        "tool_calls": [{"id": "c1", "type": "function",
+                                        "function": {"name": "mcp__inexistente__x",
+                                                     "arguments": "{}"}}]},
+            "finish_reason": "tool_calls"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    texto, _sid = orchestrator.run("que facturas tengo por cobrar", Collector())
+
+    assert "<tool_call>" not in texto
+    assert "publicar_kpi" not in texto
+    assert "$8.883.587" in texto, "la respuesta util sobrevive"
+
+
+def test_un_cierre_que_es_puro_tool_call_no_deja_burbuja_vacia(monkeypatch):
+    """Si al sanear no queda nada, el usuario merece el mensaje explicito, no
+    una burbuja en blanco."""
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
+        if tools is None:
+            return {"choices": [{
+                "message": {"role": "assistant",
+                            "content": '<tool_call>mcp__lienzo__publicar_kpi(x=1)</tool_call>'},
+                "finish_reason": "stop"}]}
+        return {"choices": [{
+            "message": {"role": "assistant", "content": None,
+                        "tool_calls": [{"id": "c1", "type": "function",
+                                        "function": {"name": "mcp__inexistente__x",
+                                                     "arguments": "{}"}}]},
+            "finish_reason": "tool_calls"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    texto, _sid = orchestrator.run("que facturas tengo por cobrar", Collector())
+
+    assert texto == orchestrator.MENSAJE_SIN_PASOS
