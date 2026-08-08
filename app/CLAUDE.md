@@ -95,7 +95,32 @@ de precios pegada y calculaba el margen en JavaScript, así que el panel y el
 chat mostraban cifras distintas. No reintroducir una lista de precios ahí — hay
 un test que lo impide.
 - **Publicar en el lienzo (`mcp__lienzo__*`):** `publicar_kpi`,
-  `publicar_grafico`, `publicar_tabla`, `publicar_informe`.
+  `publicar_grafico`, `publicar_tabla`, `publicar_informe`, `publicar_consulta`.
+
+**Los datos no viajan a través del modelo (regla de diseño, 2026-08-07).** Una
+lista larga no tiene por qué entrar al contexto para que el modelo la re-escriba
+y la dibuje: ese viaje de ida y vuelta reventaba el presupuesto del turno
+(`completion_tokens=1500` exacto, el techo, 2 de 2 corridas), llenaba el chat de
+tablas ilegibles y arrastraba errores de transcripción. Dos mecanismos, según
+quién sepa que el resultado *es* la respuesta:
+
+| Origen | Mecanismo | Por qué |
+|--------|-----------|---------|
+| Tools de negocio de listado (`facturas_vencidas`, `ranking_deudores`, `ranking_clientes`) | **Auto-publican** con `tabla_o_resumen()` si superan `UMBRAL_TABLA` (8 filas) | Tienen forma y título conocidos: consultarlas *es* querer mostrarlas |
+| `mcp__postgres__query` (SQL ad-hoc) | **Por referencia**: las filas se guardan en `ResultadosSQL`, el modelo recibe cabecera + muestra + `ref`, y publica con `publicar_consulta(ref, titulo)` | Consultar no es querer mostrar: el modelo hace SELECTs exploratorios (medidos: 4 en una sola pregunta) y auto-publicarlos dejaba tres tablas "Resultado de la consulta" encima |
+
+En ambos casos el modelo recibe una **muestra** de hasta 8 filas: sin eso no
+puede nombrar ningún caso concreto al redactar. Las tools que alimentan
+acciones (`deuda_cliente`, `listar_gastos`, `listar_seguimiento`,
+`clientes_en_riesgo`) **no** se tocan: el modelo necesita esos folios e ids en
+contexto para proponer escrituras. La línea es: se publica lo que es para
+*mirar*, se le entrega al modelo lo que es para *actuar*.
+
+Efecto medido en la misma pregunta ("qué facturas tengo por cobrar", detalle en
+tabla): prompt de la vuelta siguiente 15.029 → 9.215 tokens, 6 → 3 vueltas, y
+el texto del chat pasó de volcar 55 filas a 985 caracteres de interpretación.
+El prompt exige además que ese texto **responda** y no derive al lienzo: sin esa
+línea el modelo se relajó a "aquí tienes el panorama" (60 caracteres).
 - **Proponer escrituras (`mcp__acciones__proponer_*`):** ver mecanismo abajo.
 
 ### Acciones de escritura — patrón propose / confirm / execute (Fase 2b)

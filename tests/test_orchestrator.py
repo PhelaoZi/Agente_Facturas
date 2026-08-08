@@ -851,3 +851,97 @@ def test_un_cierre_que_es_puro_tool_call_no_deja_burbuja_vacia(monkeypatch):
     texto, _sid = orchestrator.run("que facturas tengo por cobrar", Collector())
 
     assert texto == orchestrator.MENSAJE_SIN_PASOS
+
+
+# ── El SQL ad-hoc tampoco inunda el contexto ──────────────────────────────────
+# Medido el 2026-08-07, DESPUES de que las tools de negocio publicaran solas su
+# tabla: el modelo esquivo la mejora yendose por mcp__postgres__query, que le
+# devolvio las 55 filas en JSON crudo. El prompt de la vuelta siguiente paso de
+# 7.029 a 15.029 tokens y el turno se corto igual. La regla tiene que vivir en
+# el borde por donde entran los datos, no en cada tool: este es el otro borde,
+# y el mas ancho (MAX_FILAS_SQL son 200 filas).
+
+def _filas_falsas(n):
+    return [{"folio": 4700 + i, "cliente": f"CLIENTE {i}", "total": 100000 + i}
+            for i in range(n)]
+
+
+def test_un_select_largo_se_guarda_y_al_modelo_le_llega_un_resumen(monkeypatch):
+    cur = FakeCursor(description=[("folio",), ("cliente",), ("total",)],
+                     rows=_filas_falsas(55))
+    _fake_connect(monkeypatch, cur)
+    resultados = orchestrator.ResultadosSQL()
+
+    res = orchestrator.ejecutar_sql_local("SELECT * FROM ventas", resultados)
+
+    guardado = resultados.obtener("q1")
+    assert guardado["columnas"] == ["folio", "cliente", "total"]
+    assert len(guardado["filas"]) == 55, "se guardan TODAS las filas"
+
+    assert "55 filas" in res
+    assert "CLIENTE 54" not in res, "el detalle no debe entrar al contexto"
+    assert "CLIENTE 0" in res, "pero si una muestra, para que pueda redactar"
+    assert "publicar_consulta" in res and 'ref="q1"' in res
+
+
+def test_publicar_automatico_no_ensucia_el_lienzo(monkeypatch):
+    """Medido el 2026-08-07: el modelo hizo 4 SELECT exploratorios para UNA
+    pregunta. Publicarlos solos dejaba tres tablas 'Resultado de la consulta'
+    encima. Consultar no es querer mostrar: publica el modelo, cuando decide."""
+    cur = FakeCursor(description=[("folio",)], rows=_filas_falsas(55))
+    _fake_connect(monkeypatch, cur)
+    col = Collector()
+
+    orchestrator.ejecutar_sql_local("SELECT * FROM ventas",
+                                    orchestrator.ResultadosSQL())
+
+    assert col.items == []
+
+
+def test_un_select_corto_sigue_llegando_entero_al_modelo(monkeypatch):
+    """Bajo el umbral el modelo necesita las filas a mano para razonar, y una
+    tabla de 3 filas en el lienzo seria ruido."""
+    cur = FakeCursor(description=[("folio",)], rows=_filas_falsas(3))
+    _fake_connect(monkeypatch, cur)
+    resultados = orchestrator.ResultadosSQL()
+
+    res = orchestrator.ejecutar_sql_local("SELECT * FROM ventas", resultados)
+
+    assert resultados.obtener("q1") is None
+    assert "CLIENTE 2" in res
+
+
+def test_sin_lienzo_el_sql_devuelve_el_json_de_siempre(monkeypatch):
+    """ejecutar_sql_local se usa tambien fuera del loop del chat."""
+    cur = FakeCursor(description=[("folio",)], rows=_filas_falsas(55))
+    _fake_connect(monkeypatch, cur)
+
+    res = orchestrator.ejecutar_sql_local("SELECT * FROM ventas")
+
+    assert "CLIENTE 54" in res
+
+
+def test_el_loop_le_pasa_el_almacen_de_resultados_a_la_tool_de_sql(monkeypatch):
+    """Sin esto el SELECT vuelve a volcar sus filas enteras en el contexto."""
+    vistos = []
+    monkeypatch.setattr(orchestrator, "ejecutar_sql_local",
+                        lambda sql, resultados=None: vistos.append(resultados) or "[]")
+
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None, session_id=None):
+        if any(m.get("role") == "tool" for m in messages):
+            return {"choices": [{"message": {"role": "assistant", "content": "Listo."},
+                                 "finish_reason": "stop"}]}
+        return {"choices": [{
+            "message": {"role": "assistant", "content": None,
+                        "tool_calls": [{"id": "c1", "type": "function",
+                                        "function": {"name": "mcp__postgres__query",
+                                                     "arguments": '{"query": "SELECT 1"}'}}]},
+            "finish_reason": "tool_calls"}]}
+
+    monkeypatch.setattr(orchestrator, "llamar_openrouter_api", mock_api)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake_key")
+
+    orchestrator.run("dame el detalle", Collector())
+
+    assert len(vistos) == 1
+    assert isinstance(vistos[0], orchestrator.ResultadosSQL)

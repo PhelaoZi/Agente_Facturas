@@ -75,8 +75,11 @@ def informe_artifact(args: dict) -> Artifact:
     )
 
 
-def build_lienzo_server(collector: Collector):
+def build_lienzo_server(collector: Collector, resultados=None):
     """Construye el servidor MCP in-process 'lienzo' ligado a un collector.
+
+    `resultados` (ResultadosSQL) habilita `publicar_consulta`: publicar por
+    REFERENCIA lo que devolvió un SELECT, sin que el modelo reescriba las filas.
 
     Devuelve (server, lista_de_nombres_de_tools).
     """
@@ -106,15 +109,37 @@ def build_lienzo_server(collector: Collector):
         collector.add(informe_artifact(args))
         return {"content": [{"type": "text", "text": f"Informe '{args['titulo']}' publicado."}]}
 
-    server = create_sdk_mcp_server(
-        name="lienzo",
-        version="1.0.0",
-        tools=[publicar_kpi, publicar_grafico, publicar_tabla, publicar_informe],
-    )
+    @tool("publicar_consulta",
+          "Publica en el lienzo el resultado COMPLETO de un SELECT que ya "
+          "ejecutaste, usando la referencia (ref) que te devolvió. Úsala en vez "
+          "de publicar_tabla cuando las filas vengan de una consulta: no tienes "
+          "que reescribirlas y salen exactas.",
+          {"ref": str, "titulo": str})
+    async def publicar_consulta(args):
+        guardado = resultados.obtener(args["ref"]) if resultados else None
+        if not guardado:
+            # Nunca inventar una tabla vacia: el modelo debe poder corregir.
+            return {"content": [{"type": "text", "text":
+                f"No existe el resultado '{args['ref']}'. Vuelve a ejecutar la "
+                f"consulta y usa la referencia que te devuelva."}],
+                "is_error": True}
+        collector.add(tabla_artifact({"titulo": args["titulo"],
+                                      "columnas": guardado["columnas"],
+                                      "filas": guardado["filas"]}))
+        return {"content": [{"type": "text", "text":
+            f"Tabla '{args['titulo']}' publicada con {len(guardado['filas'])} "
+            f"filas. NO repitas las filas en el chat: resume en prosa."}]}
+
+    tools = [publicar_kpi, publicar_grafico, publicar_tabla, publicar_informe]
     tool_names = [
         "mcp__lienzo__publicar_kpi",
         "mcp__lienzo__publicar_grafico",
         "mcp__lienzo__publicar_tabla",
         "mcp__lienzo__publicar_informe",
     ]
+    if resultados is not None:
+        tools.append(publicar_consulta)
+        tool_names.append("mcp__lienzo__publicar_consulta")
+
+    server = create_sdk_mcp_server(name="lienzo", version="1.0.0", tools=tools)
     return server, tool_names

@@ -10,6 +10,7 @@ import functools
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from app.canvas.artifacts import Artifact
 from app.config import DB_URL
 from app.briefing import data as deuda_data
 from app.negocio import ventas as ventas_data
@@ -40,6 +41,82 @@ def _texto(s):
     return {"content": [{"type": "text", "text": s}]}
 
 
+# Desde cuántas filas conviene publicar la tabla en vez de mandarle el detalle
+# al modelo. Bajo esto el detalle se lee bien en el chat, el modelo lo tiene a
+# mano para razonar y una tabla sería ruido en pantalla.
+UMBRAL_TABLA = 8
+
+
+def tabla_o_resumen(collector, titulo, columnas, filas, cabecera, lineas):
+    """Los datos van al lienzo; al modelo le llega solo el resumen. Devuelve texto.
+
+    Una lista larga NO tiene por qué pasar por el modelo: la tool ya la tiene en
+    memoria y el modelo se limitaría a re-escribirla para dibujarla. Ese viaje
+    de ida y vuelta era lo que reventaba el presupuesto de tokens del turno
+    (medido: completion_tokens=1500 exacto, el techo) y lo que llenaba el chat
+    de tablas ilegibles.
+
+    Además es más exacto: cada fila que cruza un LLM se puede transcribir mal.
+    Una tabla publicada por la tool no la vuelve a escribir nadie.
+
+    El modelo igual recibe la cabecera y una MUESTRA de hasta `UMBRAL_TABLA`
+    líneas: sin eso no puede nombrar ningún caso concreto al redactar.
+
+    Sin `collector` (o con pocas filas) devuelve el detalle entero, como antes.
+    """
+    if collector is None or len(filas) <= UMBRAL_TABLA:
+        cuerpo = "\n".join(lineas)
+        return f"{cabecera}\n{cuerpo}" if cuerpo else cabecera
+
+    collector.add(Artifact(tipo="tabla", titulo=titulo,
+                           payload={"columnas": columnas, "filas": filas}))
+    return (_cabecera_con_muestra(cabecera, lineas) + "\n"
+            f"[La tabla '{titulo}' con las {len(filas)} filas de detalle YA está "
+            f"publicada en el lienzo y el usuario la está viendo. NO la publiques "
+            f"de nuevo ni repitas las filas en el chat: resume en prosa.]")
+
+
+def publicar_tabla_si_es_larga(collector, titulo, columnas, filas, resumen, lineas):
+    """`tabla_o_resumen` envuelto como resultado de tool MCP.
+
+    Las tools MCP devuelven {"content": [...]}; el orquestador usa la versión de
+    texto directamente para el SQL ad-hoc.
+    """
+    return _texto(tabla_o_resumen(collector, titulo, columnas, filas, resumen, lineas))
+
+
+def _cabecera_con_muestra(cabecera, lineas):
+    """Resumen para el modelo: la cabecera más la punta de la lista, para que
+    pueda nombrar los casos grandes en prosa sin recibir el detalle entero."""
+    muestra = lineas[:UMBRAL_TABLA]
+    resto = len(lineas) - len(muestra)
+    if resto > 0:
+        muestra.append(f"(+ {resto} más, en la tabla del lienzo)")
+    return cabecera + "\n" + "\n".join(muestra)
+
+
+def _resumen_por_cliente(facturas):
+    """Agrupa las facturas pendientes por cliente.
+
+    Es la forma en que se pregunta la cobranza ("cuántos clientes me deben y
+    cuántas facturas cada uno"), así que el modelo la recibe ya hecha en vez de
+    tener que agregar 55 filas de cabeza — que además es donde se equivoca.
+    """
+    por_cliente = {}
+    for f in facturas:
+        acc = por_cliente.setdefault(f["cliente"], {"n": 0, "deuda": 0.0, "dias": 0})
+        acc["n"] += 1
+        acc["deuda"] += f["total"]
+        acc["dias"] = max(acc["dias"], f["dias"])
+    ordenados = sorted(por_cliente.items(), key=lambda kv: kv[1]["deuda"], reverse=True)
+    total = sum(f["total"] for f in facturas)
+    return _cabecera_con_muestra(
+        f"{len(facturas)} facturas pendientes por {_pesos(total)}, repartidas "
+        f"en {len(ordenados)} clientes. Por cliente:",
+        [f"- {nombre}: {v['n']} facturas, {_pesos(v['deuda'])} "
+         f"(la más vieja {v['dias']}d)" for nombre, v in ordenados])
+
+
 def _tool_seguro(fn):
     """Convierte un error de BD en un resultado de tool legible (is_error) en vez
     de abortar el turno completo del agente (ej: Postgres caído)."""
@@ -57,8 +134,13 @@ def _tool_seguro(fn):
     return wrapper
 
 
-def build_negocio_server():
-    """Construye el servidor MCP 'negocio'. Devuelve (server, lista_de_tool_names)."""
+def build_negocio_server(collector=None):
+    """Construye el servidor MCP 'negocio'. Devuelve (server, lista_de_tool_names).
+
+    Con `collector`, las tools de listado largo publican su tabla en el lienzo
+    y le devuelven al modelo solo el resumen (ver publicar_tabla_si_es_larga).
+    Sin él siguen devolviendo el detalle en texto.
+    """
     from claude_agent_sdk import create_sdk_mcp_server, tool
 
     @tool("deuda_total", "Deuda total pendiente de cobro con desglose por antigüedad.", {})
@@ -89,9 +171,16 @@ def build_negocio_server():
         r = _con_cursor(deuda_data.top_deudores, args.get("limite", 5))
         if not r:
             return _texto("Sin deuda pendiente.")
-        return _texto("\n".join(
-            f"{i+1}. {d['cliente']}: {_pesos(d['deuda'])} ({d['n']} facturas)"
-            for i, d in enumerate(r)))
+        lineas = [f"{i+1}. {d['cliente']}: {_pesos(d['deuda'])} ({d['n']} facturas)"
+                  for i, d in enumerate(r)]
+        total = sum(d["deuda"] for d in r)
+        return publicar_tabla_si_es_larga(
+            collector, "Deuda por cliente",
+            ["#", "Cliente", "Facturas", "Deuda"],
+            [[i + 1, d["cliente"], d["n"], _pesos(d["deuda"])] for i, d in enumerate(r)],
+            _cabecera_con_muestra(
+                f"{len(r)} clientes con deuda, {_pesos(total)} entre todos:", lineas),
+            lineas)
 
     @tool("facturas_vencidas", "Facturas pendientes con más de N días (morosos).", {"dias": int})
     @_tool_seguro
@@ -99,9 +188,13 @@ def build_negocio_server():
         r = _con_cursor(deuda_data.facturas_vencidas, args.get("dias", 30))
         if not r:
             return _texto("Ninguna factura vencida sobre el umbral.")
-        return _texto("\n".join(
-            f"- Folio {f['folio']} {f['cliente']}: {_pesos(f['total'])}, {f['dias']}d"
-            for f in r))
+        return publicar_tabla_si_es_larga(
+            collector, "Facturas pendientes de cobro",
+            ["Folio", "Cliente", "Monto", "Días"],
+            [[f["folio"], f["cliente"], _pesos(f["total"]), f["dias"]] for f in r],
+            _resumen_por_cliente(r),
+            [f"- Folio {f['folio']} {f['cliente']}: {_pesos(f['total'])}, {f['dias']}d"
+             for f in r])
 
     @tool("ventas_total", "Total vendido. Opcional: rango desde/hasta (YYYY-MM-DD).",
           {"desde": str, "hasta": str})
@@ -117,8 +210,15 @@ def build_negocio_server():
         r = _con_cursor(ventas_data.ranking, args.get("limite", 10))
         if not r:
             return _texto("Sin ventas.")
-        return _texto("\n".join(f"{i+1}. {c['cliente']}: {_pesos(c['total'])}"
-                                for i, c in enumerate(r)))
+        lineas = [f"{i+1}. {c['cliente']}: {_pesos(c['total'])}" for i, c in enumerate(r)]
+        return publicar_tabla_si_es_larga(
+            collector, "Top clientes por ventas",
+            ["#", "Cliente", "Ventas"],
+            [[i + 1, c["cliente"], _pesos(c["total"])] for i, c in enumerate(r)],
+            _cabecera_con_muestra(
+                f"Top {len(r)} clientes, {_pesos(sum(c['total'] for c in r))} "
+                f"entre todos:", lineas),
+            lineas)
 
     @tool("ventas_cliente", "Ventas de un cliente, por nombre.", {"nombre": str})
     @_tool_seguro

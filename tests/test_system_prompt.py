@@ -78,3 +78,31 @@ def test_el_prompt_prohibe_calcular_precios_sobre_productos():
     from app.agent.system_prompt import SYSTEM_PROMPT
     assert "NUNCA calcules un precio de venta con SQL" in SYSTEM_PROMPT
     assert "mcp__negocio__margenes" in SYSTEM_PROMPT
+
+
+def test_el_prompt_avisa_que_algunas_tablas_se_publican_solas():
+    """Las tools de listado largo publican su propia tabla y devuelven un
+    resumen. Sin esta instruccion el modelo la publica DE NUEVO con
+    publicar_tabla y el usuario ve la misma tabla dos veces."""
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "publican ellas mismas la tabla" in SYSTEM_PROMPT
+    assert "no la publiques de nuevo" in SYSTEM_PROMPT.lower()
+    assert "facturas_vencidas" in SYSTEM_PROMPT
+
+
+def test_el_prompt_prohibe_responder_derivando_al_lienzo():
+    """Efecto colateral medido el 2026-08-07: cuando las tablas se publican
+    solas, el modelo se relaja y contesta 'aqui tienes el panorama' (60 chars).
+    El lienzo acompana la respuesta, no la reemplaza."""
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "no derivar al lienzo" in SYSTEM_PROMPT.lower()
+    assert "aquí tienes el panorama" in SYSTEM_PROMPT.lower()
+
+
+def test_el_prompt_ensena_a_publicar_por_referencia():
+    """La tool existe, pero si el prompt no la nombra el modelo sigue usando
+    publicar_tabla y transcribiendo las filas a mano (que es justo lo caro y lo
+    que se equivoca)."""
+    from app.agent.system_prompt import SYSTEM_PROMPT
+    assert "publicar_consulta" in SYSTEM_PROMPT
+    assert "ref" in SYSTEM_PROMPT

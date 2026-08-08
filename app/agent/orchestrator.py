@@ -18,7 +18,7 @@ from psycopg2.extras import RealDictCursor
 from app.agent import memoria
 from app.agent.publish_tools import build_lienzo_server
 from app.agent.system_prompt import SYSTEM_PROMPT
-from app.agent.tools_negocio import build_negocio_server
+from app.agent.tools_negocio import UMBRAL_TABLA, build_negocio_server, tabla_o_resumen
 from app.agent.tools_acciones import build_acciones_server
 from app.canvas.artifacts import Collector
 from app.config import DB_URL, PROJECT_ROOT
@@ -154,8 +154,64 @@ def bloque_esquema() -> str:
     return _ESQUEMA_CACHE
 
 
-def ejecutar_sql_local(sql_str: str) -> str:
+class ResultadosSQL:
+    """Guarda el resultado completo de cada SELECT largo del turno, para poder
+    publicarlo por REFERENCIA.
+
+    Publicar automáticamente cada consulta no sirve: medido el 2026-08-07, el
+    modelo hizo 4 SELECT exploratorios para una sola pregunta y el lienzo quedó
+    con tres tablas "Resultado de la consulta" encima. Una tool de negocio sí
+    puede auto-publicar (tiene forma y título conocidos); un SQL cualquiera no
+    se sabe si es la respuesta o un paso intermedio.
+
+    Con esto el modelo mantiene el control editorial —elige QUÉ mostrar y con
+    qué título— sin que las filas pasen nunca por su contexto.
+    """
+
+    def __init__(self):
+        self._items = {}
+
+    def guardar(self, columnas, filas) -> str:
+        ref = f"q{len(self._items) + 1}"
+        self._items[ref] = {"columnas": columnas, "filas": filas}
+        return ref
+
+    def obtener(self, ref):
+        return self._items.get(ref)
+
+
+def _resumen_de_consulta(resultados, description, filas, total) -> str:
+    """Guarda las filas y arma el resumen que SÍ ve el modelo: cabecera, una
+    muestra y la referencia con que puede pedir que se publiquen.
+
+    Se serializa con `str` por lo mismo que el JSON: las fechas y los Decimales
+    de psycopg2 no son primitivas.
+    """
+    columnas = [d[0] for d in description]
+    ref = resultados.guardar(columnas, [[str(f[c]) for c in columnas] for f in filas])
+    aviso = (f" (de {total}; el resto quedó fuera por el tope de "
+             f"{MAX_FILAS_SQL} filas)") if total > MAX_FILAS_SQL else ""
+    muestra = ["- " + " | ".join(f"{c}={f[c]}" for c in columnas)
+               for f in filas[:UMBRAL_TABLA]]
+    return (
+        f"{len(filas)} filas{aviso}. Columnas: {', '.join(columnas)}.\n"
+        + "\n".join(muestra)
+        + f"\n[Muestra de {len(muestra)} de {len(filas)} filas: el detalle NO se "
+          f"te entrega entero a propósito. Si esta consulta es la respuesta que "
+          f"el usuario quiere ver, publícala con "
+          f"mcp__lienzo__publicar_consulta(ref=\"{ref}\", titulo=\"...\") y las "
+          f"{len(filas)} filas van al lienzo sin que las escribas.]")
+
+
+def ejecutar_sql_local(sql_str: str, resultados=None) -> str:
     """Ejecuta una consulta de SOLO LECTURA en la BD local.
+
+    Con `resultados`, un SELECT largo se guarda ahí y al modelo le vuelve solo
+    un resumen con la referencia para publicarlo. Este es el borde MÁS ANCHO por
+    donde entran datos al contexto (hasta MAX_FILAS_SQL = 200): medido el
+    2026-08-07, el modelo esquivó las tools de negocio yéndose por SQL crudo y
+    se trajo las 55 filas en JSON — el prompt de la vuelta siguiente pasó de
+    7.029 a 15.029 tokens y el turno se cortó igual.
 
     INVARIANTE: el agente NUNCA escribe en la base. Esta funcion recibe SQL
     generado por un modelo, asi que el blindaje va en capas (mismo patron que
@@ -193,6 +249,9 @@ def ejecutar_sql_local(sql_str: str) -> str:
             rows = cur.fetchall()
             total = len(rows)
             recortadas = rows[:MAX_FILAS_SQL]
+            if resultados is not None and len(recortadas) > UMBRAL_TABLA:
+                return _resumen_de_consulta(resultados, cur.description,
+                                            recortadas, total)
             # Serializar fechas y Decimales usando str por defecto
             salida = json.dumps(recortadas, default=str, ensure_ascii=False)
             if total > MAX_FILAS_SQL:
@@ -366,8 +425,11 @@ async def correr_loop_agente(
         raise RuntimeError("Falta la clave OPENROUTER_API_KEY en tu archivo .env.")
 
     # 1. Instanciar los servidores MCP locales
-    lienzo_cfg, _ = build_lienzo_server(collector)
-    negocio_cfg, _ = build_negocio_server()
+    # Los resultados de SQL viven UN turno: publicar por referencia solo tiene
+    # sentido dentro de la misma pregunta.
+    resultados = ResultadosSQL()
+    lienzo_cfg, _ = build_lienzo_server(collector, resultados)
+    negocio_cfg, _ = build_negocio_server(collector)
     acciones_cfg, _ = build_acciones_server(collector)
     memoria_cfg, _ = memoria.build_memoria_server()
 
@@ -485,7 +547,7 @@ async def correr_loop_agente(
             contenido = ""
             if nombre_tool == "mcp__postgres__query":
                 sql_q = args.get("query", "")
-                contenido = ejecutar_sql_local(sql_q)
+                contenido = ejecutar_sql_local(sql_q, resultados)
             elif nombre_tool in mcp_tools_map:
                 t_info = mcp_tools_map[nombre_tool]
                 if t_info["handler"]:
