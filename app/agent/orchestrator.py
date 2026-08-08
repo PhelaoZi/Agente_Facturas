@@ -18,7 +18,7 @@ from psycopg2.extras import RealDictCursor
 from app.agent import memoria
 from app.agent.publish_tools import build_lienzo_server
 from app.agent.system_prompt import SYSTEM_PROMPT
-from app.agent.tools_negocio import UMBRAL_TABLA, build_negocio_server, tabla_o_resumen
+from app.agent.tools_negocio import UMBRAL_TABLA, build_negocio_server
 from app.agent.tools_acciones import build_acciones_server
 from app.canvas.artifacts import Collector
 from app.config import DB_URL, PROJECT_ROOT
