@@ -272,11 +272,20 @@ pidiera al modelo por prompt, algún día se le olvida; si la escribe el código
 puede mentir. Y como queda en el resultado de la tool, el modelo la tiene delante
 al redactar.
 
+> **Corrección durante la implementación.** Este documento prometía cabeceras
+> del tipo `(de 18 clientes con deuda)`. No se pudo: el `LIMIT` lo aplica el SQL
+> de `top_deudores` y `ranking`, así que la tool **no conoce el total** y
+> saberlo exigiría una segunda consulta en cada llamada. Se usó lo que sí es
+> gratis y exacto: si el ranking llenó el cupo, avisa que puede haber más; si no
+> lo llenó, dice que son todos. Cumple el objetivo (que el usuario sepa que está
+> viendo una punta) sin costo extra. Lo mismo con los filtros de catálogo:
+> se nombra el filtro aplicado y el total devuelto, no la proporción.
+
 | Tool | Sin filtro | Con filtro |
 |---|---|---|
 | `ventas_total` | `Ventas (todo el histórico, sin filtro de fecha): …` | ya lo hace bien |
-| `ranking_deudores` | `Top N deudores (de M clientes con deuda): …` | igual |
-| `ranking_clientes` | `Top N clientes por ventas (de M con ventas): …` | igual |
+| `ranking_deudores` | `Top deudores (se muestran los N mayores, puede haber más) …` | igual |
+| `ranking_clientes` | `Top clientes por ventas (son todos los que hay) …` | igual |
 | `facturas_vencidas` | `Facturas pendientes con más de N días: …` | igual |
 | `costos_sku` | `Costos de todo el catálogo (N SKU): …` | `Costos filtrados por receta "X" (N de M SKU): …` |
 | `margenes` | `Márgenes de todo el catálogo (N SKU): …` | `Márgenes filtrados por receta "X" (N de M SKU): …` |

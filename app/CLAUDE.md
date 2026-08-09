@@ -20,16 +20,40 @@ pasan por confirmación (ver abajo).
 | Negocio | `app/negocio/{ventas,costos,flujo,gastos}.py` | Funciones puras que reciben un cursor y devuelven datos. Sin manejo de conexión. Testeadas con cursor falso. |
 | Acciones | `app/negocio/acciones.py` | Registro `tipo_accion → (validar, ejecutar)` de las escrituras confirmadas. |
 | Lienzo | `app/canvas/artifacts.py` | `Artifact` (tipo: kpi/grafico/tabla/informe/**accion**) + `Collector`. |
-| Agente | `app/agent/*` | Orquestador del Claude Agent SDK + tools MCP in-process + system prompt. |
+| Agente | `app/agent/*` | Orquestador propio + registros de tools (`tools_base.py`) + system prompt. Sin dependencias externas. |
 | Briefing | `app/briefing/{data,render}.py` | Datos y render del brief diario. |
 
 El orquestador (`app/agent/orchestrator.py`) corre un **loop propio contra el
 Model Gateway de OpenRouter** (migración de Antigravity, 2026-07-20; antes usaba
-el Claude Agent SDK) exponiendo cuatro servidores MCP in-process — `lienzo`
+el Claude Agent SDK) exponiendo cuatro **registros de tools** — `lienzo`
 (publicar artefactos), `negocio` (lecturas), `acciones` (proponer escrituras) y
-`memoria` (aprendizaje persistente) — traducidos al formato de tools de OpenAI,
-más `mcp__postgres__query` de solo lectura. `run_agent()` en `dashboard.py`
-devuelve `{texto, artefactos}` al frontend.
+`memoria` (aprendizaje persistente) — en el formato de tools de OpenAI, más
+`mcp__postgres__query` de solo lectura. `run_agent()` en `dashboard.py` devuelve
+`{texto, artefactos}` al frontend.
+
+**El agente no usa ningún framework** (2026-08-09). Las tools se declaran con
+`app/agent/tools_base.py`: el decorador `@tool(nombre, descripción, parámetros,
+opcionales=(...))` y un `Registro` que arma los schemas y despacha por nombre.
+Hasta esa fecha se usaba `claude-agent-sdk` **solo por su decorador**, y su
+atajo `{"x": str}` marcaba TODOS los parámetros como obligatorios, sin forma de
+declarar uno opcional.
+
+**`opcionales=` no es cosmético — es una regla de negocio.** Con el atajo del
+SDK, ante *"¿cuánto hemos vendido en total?"* el modelo estaba **obligado** a
+inventar un rango de fechas: respondía **$33.205.652** (2026 hasta hoy) cuando
+el histórico real es **$113.013.363**. La rama de `ventas.total()` que responde
+sin fechas estaba escrita, probada, y era inalcanzable desde el agente. Al
+agregar una tool, decidir el `required` a propósito: `tests/test_tools_required.py`
+tiene la tabla de las 33 y no deja pasar una tool nueva sin su fila.
+
+**Las tools con filtro opcional declaran su alcance** (`tests/test_tools_alcance.py`).
+La cabecera la arma Python con los argumentos que de verdad llegaron — nunca el
+modelo, que puede olvidarlo: `"Ventas (todo el histórico, sin filtro de fecha)"`,
+`"Top deudores (se muestran los 5 mayores, puede haber más)"`, `"Márgenes
+filtrados por receta X"`. Es la otra mitad del arreglo anterior: al poder
+omitirse el filtro, una cifra sin alcance explícito pasó a ser el caso normal.
+Los rankings no saben cuántos hay en total (el `LIMIT` va en el SQL), así que
+avisan si llenaron el cupo en vez de inventar un total.
 
 **Selector de modelo:** la UI ofrece varios modelos y `POST /api/ask` acepta
 `model`. La lista viva está en `MODELOS_CHAT_PERMITIDOS` (`dashboard.py`) y debe

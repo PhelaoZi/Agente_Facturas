@@ -349,7 +349,12 @@ propose/confirm/execute de acciones — solo se carga cuando se trabaja bajo `ap
 ## Dependencias
 
 Fijadas en `requirements.txt` (instalar con `pip install -r requirements.txt`).
-Actualizar versiones a propósito y correr la suite después — en especial
-`claude-agent-sdk`, la dependencia más sensible a cambios del ecosistema.
+Actualizar versiones a propósito y correr la suite después.
+
+**El agente del chat no tiene dependencias.** El loop es propio y las tools se
+declaran con `app/agent/tools_base.py` (100 líneas). Hasta el 2026-08-09 estaba
+`claude-agent-sdk`, usada solo por su decorador `@tool` — que no permitía
+declarar un parámetro opcional y por eso el agente inventaba filtros. No
+reintroducirla: hay un test que lo impide.
 
 Config de entorno: copiar `.env.example` como `.env` y completar la clave de la BD.

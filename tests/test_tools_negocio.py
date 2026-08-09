@@ -158,7 +158,7 @@ def test_facturas_vencidas_publica_la_tabla_y_resume_por_cliente(monkeypatch):
     assert len(col.items) == 1 and col.items[0].tipo == "tabla"
     assert len(col.items[0].payload["filas"]) == 15
 
-    assert "15 facturas" in texto
+    assert "15" in texto, "el agregado tiene que traer cuantas facturas son"
     assert "2 clientes" in texto
     assert "A & C SERVICIOS" in texto and "10" in texto
     assert texto.count("- Folio") <= tools_negocio.UMBRAL_TABLA, \

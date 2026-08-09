@@ -85,6 +85,25 @@ def publicar_tabla_si_es_larga(collector, titulo, columnas, filas, resumen, line
     return _texto(tabla_o_resumen(collector, titulo, columnas, filas, resumen, lineas))
 
 
+def _alcance_ranking(devueltas, limite):
+    """Avisa si el ranking viene cortado.
+
+    El LIMIT lo aplica el SQL, así que la tool no sabe cuántos hay en total —
+    pero sí sabe si llenó el cupo. Sin este aviso, el usuario ve 5 deudores y
+    cree que son todos.
+    """
+    if devueltas >= limite:
+        return f"se muestran los {devueltas} mayores, puede haber más"
+    return f"son todos los que hay"
+
+
+def _alcance_filtro(filtro, sin_filtro, con_filtro):
+    """Cabecera que dice con qué filtro se respondió. La arma el código con el
+    argumento que DE VERDAD llegó, no el modelo."""
+    filtro = (filtro or "").strip()
+    return con_filtro.format(filtro=filtro) if filtro else sin_filtro
+
+
 def _cabecera_con_muestra(cabecera, lineas):
     """Resumen para el modelo: la cabecera más la punta de la lista, para que
     pueda nombrar los casos grandes en prosa sin recibir el detalle entero."""
@@ -95,7 +114,7 @@ def _cabecera_con_muestra(cabecera, lineas):
     return cabecera + "\n" + "\n".join(muestra)
 
 
-def _resumen_por_cliente(facturas):
+def _resumen_por_cliente(facturas, dias):
     """Agrupa las facturas pendientes por cliente.
 
     Es la forma en que se pregunta la cobranza ("cuántos clientes me deben y
@@ -111,8 +130,8 @@ def _resumen_por_cliente(facturas):
     ordenados = sorted(por_cliente.items(), key=lambda kv: kv[1]["deuda"], reverse=True)
     total = sum(f["total"] for f in facturas)
     return _cabecera_con_muestra(
-        f"{len(facturas)} facturas pendientes por {_pesos(total)}, repartidas "
-        f"en {len(ordenados)} clientes. Por cliente:",
+        f"Facturas pendientes con más de {dias} días: {len(facturas)} por "
+        f"{_pesos(total)}, repartidas en {len(ordenados)} clientes. Por cliente:",
         [f"- {nombre}: {v['n']} facturas, {_pesos(v['deuda'])} "
          f"(la más vieja {v['dias']}d)" for nombre, v in ordenados])
 
@@ -169,7 +188,8 @@ def build_negocio_server(collector=None):
           {"limite": int}, opcionales=("limite",))
     @_tool_seguro
     async def ranking_deudores(args):
-        r = _con_cursor(deuda_data.top_deudores, args.get("limite", 5))
+        limite = args.get("limite", 5)
+        r = _con_cursor(deuda_data.top_deudores, limite)
         if not r:
             return _texto("Sin deuda pendiente.")
         lineas = [f"{i+1}. {d['cliente']}: {_pesos(d['deuda'])} ({d['n']} facturas)"
@@ -180,7 +200,8 @@ def build_negocio_server(collector=None):
             ["#", "Cliente", "Facturas", "Deuda"],
             [[i + 1, d["cliente"], d["n"], _pesos(d["deuda"])] for i, d in enumerate(r)],
             _cabecera_con_muestra(
-                f"{len(r)} clientes con deuda, {_pesos(total)} entre todos:", lineas),
+                f"Top deudores ({_alcance_ranking(len(r), limite)}), "
+                f"{_pesos(total)} entre los {len(r)}:", lineas),
             lineas)
 
     @tool("facturas_vencidas",
@@ -188,14 +209,15 @@ def build_negocio_server(collector=None):
           {"dias": int}, opcionales=("dias",))
     @_tool_seguro
     async def facturas_vencidas(args):
-        r = _con_cursor(deuda_data.facturas_vencidas, args.get("dias", 30))
+        dias = args.get("dias", 30)
+        r = _con_cursor(deuda_data.facturas_vencidas, dias)
         if not r:
-            return _texto("Ninguna factura vencida sobre el umbral.")
+            return _texto(f"Ninguna factura pendiente con más de {dias} días.")
         return publicar_tabla_si_es_larga(
-            collector, "Facturas pendientes de cobro",
+            collector, f"Facturas pendientes con más de {dias} días",
             ["Folio", "Cliente", "Monto", "Días"],
             [[f["folio"], f["cliente"], _pesos(f["total"]), f["dias"]] for f in r],
-            _resumen_por_cliente(r),
+            _resumen_por_cliente(r, dias),
             [f"- Folio {f['folio']} {f['cliente']}: {_pesos(f['total'])}, {f['dias']}d"
              for f in r])
 
@@ -206,14 +228,16 @@ def build_negocio_server(collector=None):
     @_tool_seguro
     async def ventas_total(args):
         r = _con_cursor(ventas_data.total, args.get("desde"), args.get("hasta"))
-        periodo = f" entre {r['desde']} y {r['hasta']}" if r["desde"] and r["hasta"] else ""
+        periodo = (f" entre {r['desde']} y {r['hasta']}" if r["desde"] and r["hasta"]
+                   else " (todo el histórico, sin filtro de fecha)")
         return _texto(f"Ventas{periodo}: {_pesos(r['total'])} en {r['n']} facturas.")
 
     @tool("ranking_clientes", "Top N clientes por ventas (por defecto 10).",
           {"limite": int}, opcionales=("limite",))
     @_tool_seguro
     async def ranking_clientes(args):
-        r = _con_cursor(ventas_data.ranking, args.get("limite", 10))
+        limite = args.get("limite", 10)
+        r = _con_cursor(ventas_data.ranking, limite)
         if not r:
             return _texto("Sin ventas.")
         lineas = [f"{i+1}. {c['cliente']}: {_pesos(c['total'])}" for i, c in enumerate(r)]
@@ -222,8 +246,8 @@ def build_negocio_server(collector=None):
             ["#", "Cliente", "Ventas"],
             [[i + 1, c["cliente"], _pesos(c["total"])] for i, c in enumerate(r)],
             _cabecera_con_muestra(
-                f"Top {len(r)} clientes, {_pesos(sum(c['total'] for c in r))} "
-                f"entre todos:", lineas),
+                f"Top clientes por ventas ({_alcance_ranking(len(r), limite)}), "
+                f"{_pesos(sum(c['total'] for c in r))} entre los {len(r)}:", lineas),
             lineas)
 
     @tool("ventas_cliente", "Ventas de un cliente, por nombre.", {"nombre": str})
@@ -267,7 +291,11 @@ def build_negocio_server(collector=None):
         r = _con_cursor(costos_data.costos_sku, args.get("receta"))
         if not r:
             return _texto("Sin SKUs cargados.")
-        return _texto("\n".join(
+        cabecera = _alcance_filtro(
+            args.get("receta"),
+            f"Costos de todo el catálogo ({len(r)} SKU):",
+            f"Costos filtrados por receta \"{{filtro}}\" ({len(r)} SKU):")
+        return _texto(cabecera + "\n" + "\n".join(
             f"- {s['codigo']} {s['cerveza']} {s['formato']}: costo {_pesos(s['costo_total'])}"
             for s in r))
 
@@ -299,7 +327,11 @@ def build_negocio_server(collector=None):
                           f"{_pesos(m['precio_venta'])} − costo "
                           f"{_pesos(m['costo_comparable'])} = margen "
                           f"{_pesos(m['margen'])} ({m['margen_pct']}%)" + respaldo)
-        return _texto("\n".join(lineas))
+        cabecera = _alcance_filtro(
+            args.get("receta"),
+            f"Márgenes de todo el catálogo ({len(r)} SKU):",
+            f"Márgenes filtrados por receta \"{{filtro}}\" ({len(r)} SKU):")
+        return _texto(cabecera + "\n" + "\n".join(lineas))
 
     @tool("margen_periodo",
           "Margen REALIZADO de un período: cuánto se ganó de verdad entre dos "
@@ -361,7 +393,15 @@ def build_negocio_server(collector=None):
                 f"{_pesos(m['precio_cliente'])} − costo {_pesos(m['costo'])} "
                 f"= margen {_pesos(m['margen'])} ({m['margen_pct']}%)"
                 f"{dif} [{m['n_facturas']} facturas]")
-        return _texto("\n".join(lineas))
+        # El cliente va SIEMPRE en la cabecera: un margen sin decir de quién es
+        # no se puede interpretar, y los descuentos por cliente son grandes.
+        cabecera = _alcance_filtro(
+            args.get("receta"),
+            f"Márgenes al precio de {args['cliente']}, todo el catálogo "
+            f"({len(r)} SKU):",
+            f"Márgenes al precio de {args['cliente']}, filtrados por receta "
+            f"\"{{filtro}}\" ({len(r)} SKU):")
+        return _texto(cabecera + "\n" + "\n".join(lineas))
 
     @tool("listar_gastos", "Lista los gastos pendientes (cuentas por pagar) con su id, "
                            "para ubicar uno antes de borrarlo, editarlo o marcarlo pagado. "
@@ -373,7 +413,11 @@ def build_negocio_server(collector=None):
         if not r:
             suf = f" que coincidan con '{args['filtro']}'." if args.get("filtro") else "."
             return _texto("No hay gastos pendientes" + suf)
-        return _texto("\n".join(
+        cabecera = _alcance_filtro(
+            args.get("filtro"),
+            f"Todos los gastos pendientes ({len(r)}):",
+            f"Gastos pendientes que calzan con \"{{filtro}}\" ({len(r)}):")
+        return _texto(cabecera + "\n" + "\n".join(
             f"- id {g['id']}: {g['descripcion']} · {_pesos(g['monto'])} · vence {g['fecha_vencimiento']}"
             + (f" · {g['proveedor']}" if g.get("proveedor") else "")
             for g in r))
@@ -401,7 +445,7 @@ def build_negocio_server(collector=None):
         r = _con_cursor(seguimiento_data.listar, estado)
         if not r:
             return _texto(f"No hay seguimientos en estado '{estado}'.")
-        return _texto("\n".join(
+        return _texto(f"Seguimientos en estado \"{estado}\" ({len(r)}):\n" + "\n".join(
             f"- id {s['id']} [{s['prioridad']}] "
             f"{s.get('razon_social') or s['rut_cliente']}: {s['motivo']}"
             for s in r))
