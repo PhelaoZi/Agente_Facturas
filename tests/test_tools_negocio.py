@@ -41,14 +41,12 @@ def test_la_tool_margenes_ya_no_dice_que_solo_cubre_barriles():
     """La descripcion es lo unico que el modelo lee antes de decidir si la usa.
     Mientras dijo 'solo barriles', ante una pregunta por botellas se iba a
     improvisar SQL sobre `productos` y agotaba sus pasos."""
-    import asyncio
-    from mcp.types import ListToolsRequest
-    cfg, _names = build_negocio_server()
-    handler = cfg["instance"].request_handlers[ListToolsRequest]
-    res = asyncio.run(handler(ListToolsRequest()))
-    descripciones = {t.name: t.description for t in res.root.tools}
-    assert "solo barriles" not in descripciones["margenes"].lower()
-    assert "botella" in descripciones["margenes"].lower()
+    registro, _names = build_negocio_server()
+    descripciones = {s["function"]["name"]: s["function"]["description"]
+                     for s in registro.schemas_openai()}
+    margenes = descripciones["mcp__negocio__margenes"].lower()
+    assert "solo barriles" not in margenes
+    assert "botella" in margenes
 
 
 # ── Artefactos por referencia ─────────────────────────────────────────────────
@@ -137,14 +135,9 @@ def test_build_negocio_server_acepta_el_lienzo_y_sigue_andando_sin_el():
     assert names == names2
 
 
-def _llamar(cfg, nombre, args=None):
-    """Invoca una tool como lo hace el orquestador: por el handler del server."""
-    from mcp.types import CallToolRequest, CallToolRequestParams
-    handler = cfg["instance"].request_handlers[CallToolRequest]
-    req = CallToolRequest(method="tools/call",
-                          params=CallToolRequestParams(name=nombre, arguments=args or {}))
-    res = asyncio.run(handler(req))
-    return "\n".join(c.text for c in res.root.content if getattr(c, "text", None))
+def _llamar(registro, nombre, args=None):
+    """Invoca una tool como lo hace el orquestador: por el registro."""
+    return asyncio.run(registro.ejecutar(f"mcp__negocio__{nombre}", args or {}))
 
 
 def test_facturas_vencidas_publica_la_tabla_y_resume_por_cliente(monkeypatch):

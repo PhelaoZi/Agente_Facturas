@@ -83,10 +83,11 @@ def build_lienzo_server(collector: Collector, resultados=None):
 
     Devuelve (server, lista_de_nombres_de_tools).
     """
-    from claude_agent_sdk import create_sdk_mcp_server, tool
+    from app.agent.tools_base import Registro, tool
 
     @tool("publicar_kpi", "Publica un indicador (KPI) en el lienzo.",
-          {"etiqueta": str, "valor": str, "delta": str})
+          {"etiqueta": str, "valor": str, "delta": str},
+          opcionales=("delta",))
     async def publicar_kpi(args):
         collector.add(kpi_artifact(args))
         return {"content": [{"type": "text", "text": f"KPI '{args['etiqueta']}' publicado."}]}
@@ -131,15 +132,8 @@ def build_lienzo_server(collector: Collector, resultados=None):
             f"filas. NO repitas las filas en el chat: resume en prosa."}]}
 
     tools = [publicar_kpi, publicar_grafico, publicar_tabla, publicar_informe]
-    tool_names = [
-        "mcp__lienzo__publicar_kpi",
-        "mcp__lienzo__publicar_grafico",
-        "mcp__lienzo__publicar_tabla",
-        "mcp__lienzo__publicar_informe",
-    ]
     if resultados is not None:
         tools.append(publicar_consulta)
-        tool_names.append("mcp__lienzo__publicar_consulta")
 
-    server = create_sdk_mcp_server(name="lienzo", version="1.0.0", tools=tools)
-    return server, tool_names
+    registro = Registro("lienzo", tools)
+    return registro, registro.nombres()

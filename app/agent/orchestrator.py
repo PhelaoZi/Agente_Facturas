@@ -41,6 +41,23 @@ CHAT_SESSIONS = {}
 MAX_FILAS_SQL = 200          # tope de filas devueltas al modelo
 TIMEOUT_SQL_MS = 8000        # corta consultas pesadas (statement_timeout)
 
+# La única tool que no sale de un registro: la ejecuta `ejecutar_sql_local`, que
+# vive en este módulo con su propio blindaje de solo lectura.
+SCHEMA_POSTGRES_QUERY = {
+    "type": "function",
+    "function": {
+        "name": "mcp__postgres__query",
+        "description": "Ejecuta una consulta SQL de solo lectura en la base de datos.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Consulta SQL SELECT"},
+            },
+            "required": ["query"],
+        },
+    },
+}
+
 
 class EjecucionDetenida(Exception):
     """El usuario apretó Detener. No es un error: es una salida pedida."""
@@ -424,67 +441,24 @@ async def correr_loop_agente(
     if not api_key:
         raise RuntimeError("Falta la clave OPENROUTER_API_KEY en tu archivo .env.")
 
-    # 1. Instanciar los servidores MCP locales
+    # 1. Instanciar los registros de tools
     # Los resultados de SQL viven UN turno: publicar por referencia solo tiene
     # sentido dentro de la misma pregunta.
     resultados = ResultadosSQL()
-    lienzo_cfg, _ = build_lienzo_server(collector, resultados)
-    negocio_cfg, _ = build_negocio_server(collector)
-    acciones_cfg, _ = build_acciones_server(collector)
-    memoria_cfg, _ = memoria.build_memoria_server()
+    registros = [
+        build_lienzo_server(collector, resultados)[0],
+        build_negocio_server(collector)[0],
+        build_acciones_server(collector)[0],
+        memoria.build_memoria_server()[0],
+    ]
 
-    servidores = {
-        "lienzo": lienzo_cfg["instance"],
-        "negocio": negocio_cfg["instance"],
-        "acciones": acciones_cfg["instance"],
-        "memoria": memoria_cfg["instance"]
-    }
-
-    # 2. Mapear herramientas en memoria
-    # Recorremos cada servidor e invocamos su list_tools handler
-    from mcp.types import ListToolsRequest, CallToolRequest, CallToolRequestParams
-    
-    mcp_tools_map = {}
-    openai_tools = []
-
-    for name, server in servidores.items():
-        list_handler = server.request_handlers.get(ListToolsRequest)
-        if list_handler:
-            req = ListToolsRequest()
-            res = await list_handler(req)
-            for t in getattr(res.root, "tools", []):
-                # El agente busca el formato mcp__nombreServer__nombreTool
-                mcp_name = f"mcp__{name}__{t.name}"
-                mcp_tools_map[mcp_name] = {
-                    "server": name,
-                    "tool_name": t.name,
-                    "handler": server.request_handlers.get(CallToolRequest)
-                }
-                
-                openai_tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": mcp_name,
-                        "description": t.description,
-                        "parameters": t.inputSchema,
-                    }
-                })
-
-    # Añadir tool de postgres query
-    openai_tools.append({
-        "type": "function",
-        "function": {
-            "name": "mcp__postgres__query",
-            "description": "Ejecuta una consulta SQL de solo lectura en la réplica de base de datos.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string", "description": "Consulta SQL SELECT"}
-                },
-                "required": ["query"]
-            }
-        }
-    })
+    # 2. Índice nombre_completo → registro que la resuelve. El despacho no
+    # necesita saber a qué grupo pertenece cada tool: le basta el nombre que
+    # eligió el modelo. (Ojo con el nombre de esta variable: `indice` ya está
+    # tomado más abajo por el índice de la memoria persistente.)
+    tools_por_nombre = {nombre: r for r in registros for nombre in r.nombres()}
+    openai_tools = [s for r in registros for s in r.schemas_openai()]
+    openai_tools.append(SCHEMA_POSTGRES_QUERY)
 
     # 3. Construir system prompt
     indice = memoria.leer_indice()
@@ -544,34 +518,10 @@ async def correr_loop_agente(
 
             print(f"Agente llama a tool: {nombre_tool}({args})")
             
-            contenido = ""
             if nombre_tool == "mcp__postgres__query":
-                sql_q = args.get("query", "")
-                contenido = ejecutar_sql_local(sql_q, resultados)
-            elif nombre_tool in mcp_tools_map:
-                t_info = mcp_tools_map[nombre_tool]
-                if t_info["handler"]:
-                    req_call = CallToolRequest(
-                        method="tools/call",
-                        params=CallToolRequestParams(
-                            name=t_info["tool_name"],
-                            arguments=args
-                        )
-                    )
-                    try:
-                        res_call = await t_info["handler"](req_call)
-                        # Extraer texto de la lista de contenidos
-                        items = getattr(res_call.root, "content", [])
-                        text_parts = []
-                        for item in items:
-                            t_val = getattr(item, "text", None)
-                            if isinstance(t_val, str):
-                                text_parts.append(t_val)
-                        contenido = "\n".join(text_parts) if text_parts else "Ejecutada con éxito."
-                    except Exception as e:
-                        contenido = f"Error ejecutando tool {nombre_tool}: {e}"
-                else:
-                    contenido = f"Error: herramienta {nombre_tool} no tiene manejador registrado."
+                contenido = ejecutar_sql_local(args.get("query", ""), resultados)
+            elif nombre_tool in tools_por_nombre:
+                contenido = await tools_por_nombre[nombre_tool].ejecutar(nombre_tool, args)
             else:
                 contenido = f"Error: herramienta '{nombre_tool}' desconocida."
 

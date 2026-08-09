@@ -49,12 +49,8 @@ import asyncio
 from app.agent.orchestrator import ResultadosSQL
 
 
-def _llamar_lienzo(cfg, nombre, args):
-    from mcp.types import CallToolRequest, CallToolRequestParams
-    handler = cfg["instance"].request_handlers[CallToolRequest]
-    req = CallToolRequest(method="tools/call",
-                          params=CallToolRequestParams(name=nombre, arguments=args))
-    return asyncio.run(handler(req))
+def _llamar_lienzo(registro, nombre, args):
+    return asyncio.run(registro.ejecutar(f"mcp__lienzo__{nombre}", args))
 
 
 def test_publicar_consulta_saca_las_filas_del_almacen():
@@ -83,7 +79,7 @@ def test_publicar_consulta_con_ref_desconocida_no_publica_nada():
     res = _llamar_lienzo(cfg, "publicar_consulta", {"ref": "q9", "titulo": "X"})
 
     assert col.items == []
-    assert res.root.isError is True
+    assert "q9" in res and "No existe" in res
 
 
 def test_sin_almacen_la_tool_de_referencia_ni_se_ofrece():

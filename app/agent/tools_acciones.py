@@ -204,7 +204,7 @@ def build_acciones_server(collector: Collector):
 
     Devuelve (server, lista_de_nombres_de_tools).
     """
-    from claude_agent_sdk import create_sdk_mcp_server, tool
+    from app.agent.tools_base import Registro, tool
 
     @tool(
         "proponer_gasto",
@@ -212,6 +212,7 @@ def build_acciones_server(collector: Collector):
         "confirme con un botón. NO escribe en la base de datos: solo publica una "
         "tarjeta de confirmación. Úsala cuando el usuario pida anotar/registrar un gasto.",
         {"descripcion": str, "monto": str, "fecha": str, "proveedor": str, "categoria": str},
+        opcionales=("proveedor", "categoria"),
     )
     async def proponer_gasto(args):
         try:
@@ -244,7 +245,7 @@ def build_acciones_server(collector: Collector):
     @tool("proponer_marcar_gasto_pagado",
           "Propone marcar un gasto como PAGADO por su id (fecha opcional, por defecto hoy). "
           "NO escribe: publica una tarjeta. Usa listar_gastos primero.",
-          {"id": int, "fecha": str})
+          {"id": int, "fecha": str}, opcionales=("fecha",))
     async def proponer_marcar_gasto_pagado(args):
         g = _obtener_gasto(args.get("id"))
         if not g:
@@ -260,7 +261,9 @@ def build_acciones_server(collector: Collector):
     @tool("proponer_editar_gasto",
           "Propone EDITAR campos de un gasto por su id (descripcion/monto/fecha/proveedor/categoria). "
           "NO escribe: publica una tarjeta. Usa listar_gastos primero. Pasa solo los campos a cambiar.",
-          {"id": int, "descripcion": str, "monto": str, "fecha": str, "proveedor": str, "categoria": str})
+          {"id": int, "descripcion": str, "monto": str, "fecha": str,
+           "proveedor": str, "categoria": str},
+          opcionales=("descripcion", "monto", "fecha", "proveedor", "categoria"))
     async def proponer_editar_gasto(args):
         g = _obtener_gasto(args.get("id"))
         if not g:
@@ -286,7 +289,8 @@ def build_acciones_server(collector: Collector):
           "cliente (razón social, para mostrar), motivo, prioridad (alta/media) y "
           "senales (texto opcional). Úsala tras diagnosticar con clientes_en_riesgo.",
           {"rut_cliente": str, "cliente": str, "motivo": str,
-           "prioridad": str, "senales": str})
+           "prioridad": str, "senales": str},
+          opcionales=("cliente", "prioridad", "senales"))
     async def proponer_agregar_seguimiento(args):
         params = {"rut_cliente": args.get("rut_cliente"), "motivo": args.get("motivo"),
                   "prioridad": (args.get("prioridad") or "media"),
@@ -330,7 +334,7 @@ def build_acciones_server(collector: Collector):
           "fecha de pago (opcional, por defecto hoy, formato YYYY-MM-DD). NO "
           "escribe: publica una tarjeta de confirmación. Ubica primero el folio "
           "con deuda_cliente o facturas_vencidas.",
-          {"folio": int, "fecha": str})
+          {"folio": int, "fecha": str}, opcionales=("fecha",))
     async def proponer_marcar_factura_pagada(args):
         try:
             limpio = cobranza.validar_marcar_pagada(
@@ -444,22 +448,10 @@ def build_acciones_server(collector: Collector):
                 "text": f"Propuesta lista para confirmar — Reactivar a {c['razon_social']}. "
                         "Quedó como tarjeta; el usuario debe apretar Confirmar."}]}
 
-    server = create_sdk_mcp_server(name="acciones", version="1.0.0", tools=[
+    registro = Registro("acciones", [
         proponer_gasto, proponer_borrar_gasto, proponer_marcar_gasto_pagado, proponer_editar_gasto,
         proponer_agregar_seguimiento, proponer_marcar_seguimiento,
         proponer_marcar_factura_pagada, proponer_corregir_fecha_pago,
         proponer_marcar_cliente_incobrable, proponer_reactivar_cliente,
     ])
-    tool_names = [
-        "mcp__acciones__proponer_gasto",
-        "mcp__acciones__proponer_borrar_gasto",
-        "mcp__acciones__proponer_marcar_gasto_pagado",
-        "mcp__acciones__proponer_editar_gasto",
-        "mcp__acciones__proponer_agregar_seguimiento",
-        "mcp__acciones__proponer_marcar_seguimiento",
-        "mcp__acciones__proponer_marcar_factura_pagada",
-        "mcp__acciones__proponer_corregir_fecha_pago",
-        "mcp__acciones__proponer_marcar_cliente_incobrable",
-        "mcp__acciones__proponer_reactivar_cliente",
-    ]
-    return server, tool_names
+    return registro, registro.nombres()

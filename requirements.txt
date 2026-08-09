@@ -7,9 +7,11 @@ psycopg2-binary==2.9.11
 pandas==2.3.3
 openpyxl==3.1.5
 
-# Agente del chat del dashboard (orquestador). El ecosistema Anthropic se mueve
-# rápido: esta es la dependencia más sensible a cambios de versión.
-claude-agent-sdk==0.2.93
+# El agente del chat NO tiene dependencias: el loop es propio (contra
+# OpenRouter) y las tools se declaran con app/agent/tools_base.py. Hasta el
+# 2026-08-09 estaba `claude-agent-sdk`, usada solo por su decorador @tool — que
+# marcaba TODOS los parámetros como obligatorios y obligaba al modelo a inventar
+# filtros. Ver docs/superpowers/specs/2026-08-09-sacar-sdk-anthropic-design.md.
 
 # Gráficos y export del dashboard
 plotly==6.3.0

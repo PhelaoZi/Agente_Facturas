@@ -159,40 +159,29 @@ def test_selector_de_modelos_coincide_ui_y_servidor():
 def test_ningun_parametro_array_se_manda_sin_items():
     """Root cause del HTTP 400 con Gemini (2026-08-02).
 
-    El atajo `{"x": list}` del decorador @tool emite {"type": "array"} SIN
-    `items`, y el orquestador manda ese inputSchema tal cual a OpenRouter.
-    Anthropic, OpenAI y GLM lo toleran; Google AI Studio rechaza la peticion
-    ENTERA con INVALID_ARGUMENT ("properties[x].items: missing field"), asi que
-    el chat moria apenas se elegia Gemini en el selector, con cualquier
-    pregunta. Recorre los 4 servidores MCP para que una tool nueva declarada con
-    `list` falle aqui y no en produccion.
+    Un parametro de tipo lista declarado sin `items` se manda tal cual a
+    OpenRouter. Anthropic, OpenAI y GLM lo toleran; Google AI Studio rechaza la
+    peticion ENTERA con INVALID_ARGUMENT ("properties[x].items: missing field"),
+    asi que el chat moria apenas se elegia Gemini en el selector, con cualquier
+    pregunta. Recorre los 4 registros para que una tool nueva mal declarada
+    falle aqui y no en produccion.
     """
-    import asyncio
-    from mcp.types import ListToolsRequest
     from app.agent import memoria
     from app.agent.publish_tools import build_lienzo_server
     from app.agent.tools_acciones import build_acciones_server
     from app.agent.tools_negocio import build_negocio_server
 
     col = Collector()
-    servidores = {
-        "lienzo": build_lienzo_server(col)[0]["instance"],
-        "negocio": build_negocio_server()[0]["instance"],
-        "acciones": build_acciones_server(col)[0]["instance"],
-        "memoria": memoria.build_memoria_server()[0]["instance"],
-    }
+    registros = [build_lienzo_server(col)[0], build_negocio_server()[0],
+                 build_acciones_server(col)[0], memoria.build_memoria_server()[0]]
 
-    async def sin_items():
-        faltantes = []
-        for nombre, srv in servidores.items():
-            res = await srv.request_handlers[ListToolsRequest](ListToolsRequest())
-            for t in res.root.tools:
-                for prop, spec in t.inputSchema.get("properties", {}).items():
-                    if spec.get("type") == "array" and "items" not in spec:
-                        faltantes.append(f"mcp__{nombre}__{t.name}.{prop}")
-        return faltantes
+    faltantes = [
+        f"{s['function']['name']}.{prop}"
+        for r in registros for s in r.schemas_openai()
+        for prop, spec in s["function"]["parameters"].get("properties", {}).items()
+        if spec.get("type") == "array" and "items" not in spec
+    ]
 
-    faltantes = asyncio.run(sin_items())
     assert faltantes == [], f"arrays sin `items` (Gemini los rechaza): {faltantes}"
 
 

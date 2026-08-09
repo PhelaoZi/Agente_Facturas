@@ -95,8 +95,8 @@ def leer_nota(nombre: str) -> str | None:
 
 
 def build_memoria_server():
-    """Servidor MCP 'memoria'. Devuelve (server, lista_de_tool_names)."""
-    from claude_agent_sdk import create_sdk_mcp_server, tool
+    """Registro de tools 'memoria'. Devuelve (registro, lista_de_tool_names)."""
+    from app.agent.tools_base import Registro, tool
 
     def _texto(s):
         return {"content": [{"type": "text", "text": s}]}
@@ -106,7 +106,8 @@ def build_memoria_server():
           "sesiones). Úsala cuando el usuario te corrija, te enseñe una regla "
           "del negocio, o descubras algo no obvio de la BD o de un error tuyo. "
           "tipo: negocio | correccion | dato-bd | preferencia.",
-          {"titulo": str, "contenido": str, "tipo": str})
+          {"titulo": str, "contenido": str, "tipo": str},
+          opcionales=("tipo",))
     async def guardar_nota_tool(args):
         try:
             msg = guardar_nota(args.get("titulo", ""), args.get("contenido", ""),
@@ -126,6 +127,5 @@ def build_memoria_server():
             return _texto(f"No existe una nota '{args.get('nombre', '')}' en la memoria.")
         return _texto(detalle)
 
-    server = create_sdk_mcp_server(name="memoria", version="1.0.0",
-                                   tools=[guardar_nota_tool, leer_nota_tool])
-    return server, ["mcp__memoria__guardar_nota", "mcp__memoria__leer_nota"]
+    registro = Registro("memoria", [guardar_nota_tool, leer_nota_tool])
+    return registro, registro.nombres()

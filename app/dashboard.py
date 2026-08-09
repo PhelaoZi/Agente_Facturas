@@ -1393,29 +1393,6 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, json.dumps({"ok": False, "error": "no encontrado"}))
 
 
-def precalentar_sdk():
-    """Carga `claude_agent_sdk` de una vez, al abrir el dashboard.
-
-    Ese import tarda ~6s: arrastra `mcp`, que a su vez arrastra un servidor
-    completo (fastmcp) y `jsonschema`, nada de lo cual usa este chat. Y está
-    escrito DENTRO de los `build_*_server`, así que Python lo ejecutaba recién
-    en la PRIMERA pregunta — con el usuario mirando "Pensando…". Traerlo acá
-    mueve esos segundos al arranque, donde no molestan a nadie.
-
-    Es un parche al síntoma: del SDK solo se usan `tool` y
-    `create_sdk_mcp_server` para declarar las herramientas (el motor del agente
-    es propio, contra OpenRouter). Si algún día se saca la dependencia, esta
-    función sobra.
-
-    Nunca debe voltear el dashboard: si falla, la primera pregunta reintenta el
-    import como antes.
-    """
-    try:
-        import claude_agent_sdk  # noqa: F401
-    except Exception as e:
-        print(f"  (aviso) no se pudo precargar el SDK de agentes: {e}")
-
-
 def main():
     url = f"http://localhost:{PORT}"
     print("=" * 60)
@@ -1426,9 +1403,6 @@ def main():
     print("  Para cerrar   : Ctrl + C en esta ventana")
     print("=" * 60)
     threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-    # En paralelo, mientras el usuario mira el panel: así la primera pregunta
-    # no paga los ~6s del import (ver precalentar_sdk).
-    threading.Thread(target=precalentar_sdk, daemon=True).start()
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     try:
         server.serve_forever()

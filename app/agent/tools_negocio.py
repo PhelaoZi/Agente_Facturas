@@ -141,7 +141,7 @@ def build_negocio_server(collector=None):
     y le devuelven al modelo solo el resumen (ver publicar_tabla_si_es_larga).
     Sin él siguen devolviendo el detalle en texto.
     """
-    from claude_agent_sdk import create_sdk_mcp_server, tool
+    from app.agent.tools_base import Registro, tool
 
     @tool("deuda_total", "Deuda total pendiente de cobro con desglose por antigüedad.", {})
     @_tool_seguro
@@ -165,7 +165,8 @@ def build_negocio_server(collector=None):
         return _texto(f"{args['nombre']}: {_pesos(r['total'])} en {r['n_facturas']} facturas.\n"
                       + "\n".join(lineas))
 
-    @tool("ranking_deudores", "Top N clientes por deuda pendiente.", {"limite": int})
+    @tool("ranking_deudores", "Top N clientes por deuda pendiente (por defecto 5).",
+          {"limite": int}, opcionales=("limite",))
     @_tool_seguro
     async def ranking_deudores(args):
         r = _con_cursor(deuda_data.top_deudores, args.get("limite", 5))
@@ -182,7 +183,9 @@ def build_negocio_server(collector=None):
                 f"{len(r)} clientes con deuda, {_pesos(total)} entre todos:", lineas),
             lineas)
 
-    @tool("facturas_vencidas", "Facturas pendientes con más de N días (morosos).", {"dias": int})
+    @tool("facturas_vencidas",
+          "Facturas pendientes con más de N días (morosos; por defecto 30).",
+          {"dias": int}, opcionales=("dias",))
     @_tool_seguro
     async def facturas_vencidas(args):
         r = _con_cursor(deuda_data.facturas_vencidas, args.get("dias", 30))
@@ -196,15 +199,18 @@ def build_negocio_server(collector=None):
             [f"- Folio {f['folio']} {f['cliente']}: {_pesos(f['total'])}, {f['dias']}d"
              for f in r])
 
-    @tool("ventas_total", "Total vendido. Opcional: rango desde/hasta (YYYY-MM-DD).",
-          {"desde": str, "hasta": str})
+    @tool("ventas_total",
+          "Total vendido. SIN fechas devuelve el total histórico completo; con "
+          "desde y hasta (YYYY-MM-DD, los dos), el de ese rango.",
+          {"desde": str, "hasta": str}, opcionales=("desde", "hasta"))
     @_tool_seguro
     async def ventas_total(args):
         r = _con_cursor(ventas_data.total, args.get("desde"), args.get("hasta"))
         periodo = f" entre {r['desde']} y {r['hasta']}" if r["desde"] and r["hasta"] else ""
         return _texto(f"Ventas{periodo}: {_pesos(r['total'])} en {r['n']} facturas.")
 
-    @tool("ranking_clientes", "Top N clientes por ventas.", {"limite": int})
+    @tool("ranking_clientes", "Top N clientes por ventas (por defecto 10).",
+          {"limite": int}, opcionales=("limite",))
     @_tool_seguro
     async def ranking_clientes(args):
         r = _con_cursor(ventas_data.ranking, args.get("limite", 10))
@@ -237,7 +243,8 @@ def build_negocio_server(collector=None):
         return _texto(f"'{args['nombre']}': {len(r)} líneas de venta, {unidades} unidades en total.")
 
     @tool("flujo_caja", "Proyección de caja a 4 semanas (ingresos esperados − gastos). "
-                        "Opcional: saldo_inicial.", {"saldo_inicial": float})
+                        "Opcional: saldo_inicial.", {"saldo_inicial": float},
+          opcionales=("saldo_inicial",))
     @_tool_seguro
     async def flujo_caja(args):
         r = _con_cursor(flujo_data.proyectar_flujo, args.get("saldo_inicial"))
@@ -252,7 +259,9 @@ def build_negocio_server(collector=None):
             + f"\nTotales: ingresos {_pesos(r['total_ingresos'])}, "
               f"egresos {_pesos(r['total_egresos'])}.")
 
-    @tool("costos_sku", "Costo unitario por SKU. Opcional: filtrar por receta.", {"receta": str})
+    @tool("costos_sku",
+          "Costo unitario por SKU. SIN receta devuelve todo el catálogo; con "
+          "receta, solo esa cerveza.", {"receta": str}, opcionales=("receta",))
     @_tool_seguro
     async def costos_sku(args):
         r = _con_cursor(costos_data.costos_sku, args.get("receta"))
@@ -264,8 +273,9 @@ def build_negocio_server(collector=None):
 
     @tool("margenes", "Margen por cerveza y formato: precio de venta real menos "
                       "costo unitario. Cubre barriles Y botellas. El precio se "
-                      "deduce de las facturas emitidas. Opcional: filtrar por "
-                      "receta.", {"receta": str})
+                      "deduce de las facturas emitidas. SIN receta devuelve todo "
+                      "el catálogo; con receta, solo esa cerveza.",
+          {"receta": str}, opcionales=("receta",))
     @_tool_seguro
     async def margenes(args):
         r = _con_cursor(costos_data.margenes, args.get("receta"))
@@ -331,7 +341,7 @@ def build_negocio_server(collector=None):
           "el precio general. Úsala cuando pregunten cuánto deja un cliente, a "
           "qué precio se le vende o si tiene descuento. Nombre o RUT del "
           "cliente; opcional filtrar por receta.",
-          {"cliente": str, "receta": str})
+          {"cliente": str, "receta": str}, opcionales=("receta",))
     @_tool_seguro
     async def margen_cliente(args):
         r = _con_cursor(costos_data.margen_cliente, args["cliente"], args.get("receta"))
@@ -356,7 +366,7 @@ def build_negocio_server(collector=None):
     @tool("listar_gastos", "Lista los gastos pendientes (cuentas por pagar) con su id, "
                            "para ubicar uno antes de borrarlo, editarlo o marcarlo pagado. "
                            "Opcional: filtro de texto sobre la descripción.",
-          {"filtro": str})
+          {"filtro": str}, opcionales=("filtro",))
     @_tool_seguro
     async def listar_gastos(args):
         r = _con_cursor(gastos_data.listar, args.get("filtro"))
@@ -384,7 +394,7 @@ def build_negocio_server(collector=None):
     @tool("listar_seguimiento",
           "Lista la lista de seguimiento comercial con su id y estado, para ubicar "
           "uno antes de marcarlo. Opcional: estado (pendiente/contactado/descartado; "
-          "por defecto pendiente).", {"estado": str})
+          "por defecto pendiente).", {"estado": str}, opcionales=("estado",))
     @_tool_seguro
     async def listar_seguimiento(args):
         estado = (args.get("estado") or "pendiente").strip() or "pendiente"
@@ -396,21 +406,13 @@ def build_negocio_server(collector=None):
             f"{s.get('razon_social') or s['rut_cliente']}: {s['motivo']}"
             for s in r))
 
-    server = create_sdk_mcp_server(name="negocio", version="1.0.0", tools=[
+    # Los nombres salen del propio registro: mantener una lista a mano al lado
+    # de las tools es una copia que se desincroniza en silencio.
+    registro = Registro("negocio", [
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
         flujo_caja, costos_sku, margenes, margen_periodo, margen_cliente,
         listar_gastos,
         clientes_en_riesgo, listar_seguimiento,
     ])
-    tool_names = [
-        "mcp__negocio__deuda_total", "mcp__negocio__deuda_cliente",
-        "mcp__negocio__ranking_deudores", "mcp__negocio__facturas_vencidas",
-        "mcp__negocio__ventas_total", "mcp__negocio__ranking_clientes",
-        "mcp__negocio__ventas_cliente", "mcp__negocio__ventas_producto",
-        "mcp__negocio__flujo_caja", "mcp__negocio__costos_sku", "mcp__negocio__margenes",
-        "mcp__negocio__margen_periodo", "mcp__negocio__margen_cliente",
-        "mcp__negocio__listar_gastos",
-        "mcp__negocio__clientes_en_riesgo", "mcp__negocio__listar_seguimiento",
-    ]
-    return server, tool_names
+    return registro, registro.nombres()
