@@ -20,11 +20,21 @@ del registro está en poder ver dónde falló cada razonamiento y quién lo dete
 
 ## Los participantes
 
-| Quién | Rol |
-|---|---|
-| **ChatGPT 5.6** | Propuso la mejora arquitectónica inicial (docs 01, 03, 05) |
-| **Claude Opus 5** (Claude Code) | Contrainforme, réplica y propuesta de reparación (docs 02, 04, 06) |
-| **Codex, GPT-5.6** | Auditoría externa de la propuesta de reparación (doc 07) |
+| Quién | Rol | Documentos |
+|---|---|---|
+| **ChatGPT 5.6** (variante "Luna", según el dueño del proyecto — no confirmado) | Propuesta arquitectónica inicial y sus dos revisiones | 01, 03, 05 |
+| **Claude Opus 5** (Claude Code) | Contrainforme, réplica y propuesta de reparación de datos | 02, 04, 06 |
+| **ChatGPT 5.6 "Sol"**, vía Codex, **a máximo esfuerzo** | Auditoría externa de la propuesta de reparación | 07 |
+
+**Por qué se anota la variante del modelo.** El documento 07 es el único que
+encontró un contraejemplo verificable —un XML real que refuta el supuesto
+central del documento 06— y lo hizo revisando el formato oficial del SII y
+abriendo el archivo, no razonando sobre lo que el sistema debería contener. Fue
+también el que corrió a máximo esfuerzo.
+
+Es una sola observación y no prueba una regla, pero queda registrada porque es
+justo el tipo de dato que una auditoría posterior querría tener: **qué modelo,
+con cuánto esfuerzo, produjo cuál calidad de hallazgo.**
 
 ---
 
@@ -47,7 +57,22 @@ del registro está en poder ver dónde falló cada razonamiento y quién lo dete
 | # | Autor | Documento | Resultado |
 |---|---|---|---|
 | 06 | Claude | Propuesta de reparar las líneas de logística | Migración sobre datos históricos de producción |
-| 07 | Codex | Auditoría externa | **NO-GO.** Encontró un contraejemplo que refuta el supuesto central |
+| 07 | ChatGPT "Sol" | Auditoría externa | **NO-GO.** Encontró un contraejemplo que refuta el supuesto central |
+
+El contraejemplo, verificado después de forma independiente:
+
+```
+Folio 4746 — MntNeto: $81.000
+  Detalle: Barril 30L Wee Heavy   $35.000
+  Detalle: Logistica              $55.000
+  DscRcgGlobal  DESCUENTO GLOBAL  D  $9.000
+```
+
+La fórmula del documento 06 (`residual = MntNeto − líneas guardadas`) habría
+reconstruido una logística de **$46.000** donde la real era de **$55.000**. El
+filtro de "precio plausible" que proponía como control tampoco lo habría
+detectado: un descuento puede correr el residual justo encima de otro precio
+válido.
 
 ---
 
@@ -120,22 +145,12 @@ fue un dato concreto, no un argumento.
 
 ---
 
-## FALTAN LOS TRES DOCUMENTOS DE ChatGPT
+## Integridad del registro
 
-Los documentos **01, 03 y 05** los escribió ChatGPT 5.6 y **no están en este
-repositorio**: llegaron pegados en la conversación y nunca se guardaron a disco.
+Los siete documentos son **los originales**, tal como los escribió cada modelo.
+Ninguno fue reconstruido desde la conversación ni editado después: solo se les
+cambió el nombre de archivo para numerarlos en orden.
 
-Sin ellos el registro tiene solo un lado del debate, que es justo lo que este
-historial existe para evitar.
-
-Guardar los originales con estos nombres exactos:
-
-```
-01-2026-08-09-chatgpt-especificacion-mejora.md
-03-2026-08-09-chatgpt-informe-revision.md
-05-2026-08-09-chatgpt-respuesta-preguntas-abiertas.md
-```
-
-Se dejan pendientes a propósito en vez de reconstruirlos desde la conversación:
-en un registro destinado a auditoría, una transcripción de segunda mano no vale
-lo mismo que el original.
+Los tres de ChatGPT (01, 03, 05) los aportó el dueño del proyecto desde su
+conversación original, precisamente para que el registro no quedara con un solo
+lado del debate.
