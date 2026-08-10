@@ -197,7 +197,8 @@ def test_ejecutar_sql_local_recorta_resultados_enormes(monkeypatch):
 
 def test_run_session_persistence(monkeypatch):
     # Mock de llamar_openrouter_api para simular respuesta sin tools
-    def mock_api(api_key, model, system, messages, tools=None, session_id=None):
+    def mock_api(api_key, model, system, messages, tools=None, max_tokens=None,
+                 session_id=None):
         return {
             "choices": [{
                 "message": {
@@ -934,3 +935,72 @@ def test_el_loop_le_pasa_el_almacen_de_resultados_a_la_tool_de_sql(monkeypatch):
 
     assert len(vistos) == 1
     assert isinstance(vistos[0], orchestrator.ResultadosSQL)
+
+
+# ── Telemetria ────────────────────────────────────────────────────────────────
+# Hasta el 2026-08-09 el orquestador recibia el bloque `usage` de cada llamada y
+# lo tiraba: no habia forma de contestar cuanto cuesta el chat ni si el cache de
+# prefijo esta pegando (justo lo que el X-Session-Id intenta proteger).
+
+def test_registra_una_fila_de_telemetria_por_llamada_al_modelo(monkeypatch):
+    _guionizar(monkeypatch, [
+        _turno("", ["mcp__lienzo__publicar_kpi"]),
+        _turno("Te deben $8.883.587.", [], finish="stop"),
+    ])
+    filas = []
+    monkeypatch.setattr(orchestrator.telemetria, "registrar",
+                        lambda resp, **kw: filas.append(kw))
+
+    orchestrator.run("cuanto me deben?", Collector())
+
+    assert len(filas) == 2, "una fila por llamada al modelo, no una por turno"
+    assert [f["iteracion"] for f in filas] == [1, 2]
+    assert len({f["turno_id"] for f in filas}) == 1, "las vueltas comparten turno_id"
+    assert filas[0]["pregunta"] == "cuanto me deben?"
+    assert filas[0]["modelo"]
+
+
+def test_la_telemetria_anota_que_tools_pidio_cada_vuelta(monkeypatch):
+    """Sin esto no se puede responder que tools son caras ni cuales se usan de
+    verdad, que es la mitad del benchmark."""
+    _guionizar(monkeypatch, [
+        _turno("", ["mcp__lienzo__publicar_kpi", "mcp__lienzo__publicar_tabla"]),
+        _turno("listo", [], finish="stop"),
+    ])
+    filas = []
+    monkeypatch.setattr(orchestrator.telemetria, "registrar",
+                        lambda resp, **kw: filas.append(kw))
+
+    orchestrator.run("x", Collector())
+
+    assert filas[0]["tools_llamadas"] == ["mcp__lienzo__publicar_kpi",
+                                          "mcp__lienzo__publicar_tabla"]
+    assert filas[1]["tools_llamadas"] == []
+
+
+def test_la_telemetria_mide_lo_que_espera_el_usuario(monkeypatch):
+    """La latencia se mide alrededor de la llamada completa, reintentos
+    incluidos: lo que importa es el tiempo que el usuario mira 'Pensando...'."""
+    _guionizar(monkeypatch, [_turno("listo", [], finish="stop")])
+    filas = []
+    monkeypatch.setattr(orchestrator.telemetria, "registrar",
+                        lambda resp, **kw: filas.append(kw))
+
+    orchestrator.run("x", Collector())
+
+    assert filas[0]["latencia_ms"] >= 0
+
+
+def test_el_turno_de_cierre_tambien_se_registra(monkeypatch):
+    """Es una llamada al modelo mas, con presupuesto AMPLIADO (4000 tokens).
+    Dejarla fuera subestimaria el costo justo de los turnos mas caros."""
+    monkeypatch.setattr(orchestrator, "MAX_ITERACIONES", 1)
+    _guionizar(monkeypatch, [_turno("", ["mcp__lienzo__publicar_kpi"])])
+    filas = []
+    monkeypatch.setattr(orchestrator.telemetria, "registrar",
+                        lambda resp, **kw: filas.append(kw))
+
+    orchestrator.run("x", Collector())
+
+    assert len(filas) == 2, "la vuelta del loop y el turno de cierre"
+    assert filas[-1]["iteracion"] == 0, "el cierre se marca con iteracion 0"

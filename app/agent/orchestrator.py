@@ -16,6 +16,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from app.agent import memoria
+from app.agent import telemetria
 from app.agent.publish_tools import build_lienzo_server
 from app.agent.system_prompt import SYSTEM_PROMPT
 from app.agent.tools_negocio import UMBRAL_TABLA, build_negocio_server
@@ -300,6 +301,10 @@ def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
         "model": model,
         "messages": [{"role": "system", "content": system}] + messages,
         "max_tokens": max_tokens or MAX_TOKENS,
+        # Pide el desglose de uso Y el costo real cobrado. Es lo que evita
+        # mantener una tabla de precios propia, que se desincroniza en silencio
+        # cada vez que un proveedor cambia sus tarifas.
+        "usage": {"include": True},
     }
     if tools:
         cuerpo["tools"] = tools
@@ -338,6 +343,34 @@ def llamar_openrouter_api(api_key: str, model: str, system: str, messages: list,
             ultimo_error = str(e)
             
     raise RuntimeError(f"OpenRouter falló: {ultimo_error}")
+
+def _tools_pedidas(respuesta) -> list:
+    """Nombres de las tools que el modelo pidió en esta respuesta."""
+    try:
+        msg = respuesta["choices"][0]["message"]
+        return [tc["function"]["name"] for tc in (msg.get("tool_calls") or [])]
+    except Exception:
+        return []
+
+
+def _llamar_y_medir(api_key, model, system, mensajes, tools, *, turno_id,
+                    session_id, iteracion, pregunta, max_tokens=None):
+    """Llama al modelo y deja una fila de telemetría.
+
+    El reloj arranca acá y no dentro de `llamar_openrouter_api` a propósito: lo
+    que importa medir es lo que el usuario espera mirando "Pensando…",
+    reintentos por 429 incluidos.
+    """
+    inicio = time.monotonic()
+    resp = llamar_openrouter_api(api_key, model, system, mensajes, tools,
+                                 max_tokens=max_tokens, session_id=session_id)
+    telemetria.registrar(
+        resp, session_id=session_id, turno_id=turno_id, iteracion=iteracion,
+        modelo=model, pregunta=pregunta,
+        latencia_ms=int((time.monotonic() - inicio) * 1000),
+        tools_llamadas=_tools_pedidas(resp))
+    return resp
+
 
 MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
             "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
@@ -405,19 +438,25 @@ def _sin_sintaxis_de_tool(texto: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", limpio).strip()
 
 
-def _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id=None):
+def _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id=None,
+                         turno_id=None, pregunta=None):
     """Ultimo turno SIN tools: el modelo cierra con lo que ya reunio.
 
     Sin esto, agotar MAX_ITERACIONES botaba todo el trabajo del turno y el
     usuario recibia una disculpa vacia. Una respuesta parcial y honesta le
     sirve; la disculpa no. La instruccion de cierre NO se guarda en el
     historial: es andamiaje de este turno, no parte de la conversacion.
+
+    Se registra con `iteracion=0` para distinguirlo del loop: es una llamada mas
+    y con presupuesto AMPLIADO (MAX_TOKENS_CIERRE), asi que dejarla fuera de la
+    telemetria subestimaria el costo justo de los turnos mas caros.
     """
     mensajes = historial + [{"role": "user", "content": INSTRUCCION_CIERRE}]
     try:
-        resp = llamar_openrouter_api(api_key, model, system_prompt, mensajes, None,
-                                     max_tokens=MAX_TOKENS_CIERRE,
-                                     session_id=session_id)
+        resp = _llamar_y_medir(api_key, model, system_prompt, mensajes, None,
+                               turno_id=turno_id, session_id=session_id,
+                               iteracion=0, pregunta=pregunta,
+                               max_tokens=MAX_TOKENS_CIERRE)
         choice = resp["choices"][0]
         texto = _sin_sintaxis_de_tool(choice["message"].get("content"))
         if not texto:
@@ -440,6 +479,10 @@ async def correr_loop_agente(
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         raise RuntimeError("Falta la clave OPENROUTER_API_KEY en tu archivo .env.")
+
+    # Agrupa en la telemetría todas las vueltas de ESTA pregunta: el costo de
+    # una tarea es la suma de sus filas, no una fila.
+    turno_id = str(uuid.uuid4())
 
     # 1. Instanciar los registros de tools
     # Los resultados de SQL viven UN turno: publicar por referencia solo tiene
@@ -474,16 +517,12 @@ async def correr_loop_agente(
     historial.append({"role": "user", "content": pregunta})
 
     # 5. Loop de ejecución de herramientas
-    for _ in range(MAX_ITERACIONES):
+    for iteracion in range(1, MAX_ITERACIONES + 1):
         _abortar_si_detenido()      # el corte va ANTES de gastar la llamada
-        # Preparar payload para la API (con tools si hay disponibles)
-        body = {
-            "messages": historial,
-            "tools": openai_tools if openai_tools else None
-        }
-        
-        resp = llamar_openrouter_api(api_key, model, system_prompt, body["messages"],
-                                     openai_tools, session_id=session_id)
+        resp = _llamar_y_medir(api_key, model, system_prompt, historial,
+                               openai_tools, turno_id=turno_id,
+                               session_id=session_id, iteracion=iteracion,
+                               pregunta=pregunta)
         choice = resp["choices"][0]
         msg = choice["message"]
         
@@ -548,7 +587,8 @@ async def correr_loop_agente(
             return texto_ya_escrito
 
     _abortar_si_detenido()      # detener tampoco paga el turno de cierre
-    texto = _respuesta_de_cierre(api_key, model, system_prompt, historial, session_id)
+    texto = _respuesta_de_cierre(api_key, model, system_prompt, historial,
+                                 session_id, turno_id, pregunta)
     if texto:
         historial.append({"role": "assistant", "content": texto})
         return texto
