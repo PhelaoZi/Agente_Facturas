@@ -9,6 +9,9 @@ changes.json
 __pycache__/
 *.pyc
 
+# Audio temporal generado para correos diarios
+*.mp3
+
 # Logs
 logs/
 
