@@ -98,6 +98,31 @@ def test_main_es_no_fatal(monkeypatch):
     assert sync_nube.main([]) == 1                  # informa error, no lanza
 
 
+def test_los_tests_no_escriben_en_el_log_de_produccion(monkeypatch):
+    """logs/sync_nube.log es la señal de monitoreo del sync a la nube: dice si
+    el celular tiene datos frescos.
+
+    Hasta el 2026-08-09 este archivo de tests le escribia errores FALSOS: el
+    test de arriba llama a main() con las conexiones rotas a proposito, main()
+    loguea el error, y log() abre LOG_FILE — la ruta real — porque ningun test
+    la redirigia. Resultado medido: 95 de 141 lineas del log de produccion eran
+    "sin internet" inventados por pytest, contra 26 syncs de verdad. El log
+    dejo de servir para lo unico que existe: distinguir una caida real de una
+    corrida de tests.
+    """
+    real = Path(__file__).resolve().parent.parent / "logs" / "sync_nube.log"
+    antes = real.stat().st_size if real.exists() else 0
+
+    def explota():
+        raise RuntimeError("error de mentira, de un test")
+    monkeypatch.setattr(sync_nube, "conectar_nube", explota)
+    monkeypatch.setattr(sync_nube, "conectar_local", explota)
+    sync_nube.main([])
+
+    despues = real.stat().st_size if real.exists() else 0
+    assert despues == antes, "un test escribio en el log de produccion"
+
+
 def test_limpiar_meta_comandos_quita_lineas_backslash():
     crudo = "\\restrict abc123\nCREATE TABLE x (id int);\n  \\unrestrict abc123\nSELECT 1;"
     limpio = sync_nube.limpiar_meta_comandos(crudo)
