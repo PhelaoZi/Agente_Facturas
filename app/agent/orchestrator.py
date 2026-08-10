@@ -26,7 +26,23 @@ from app.config import DB_URL, PROJECT_ROOT
 
 # Límite de turns e historial
 MAX_ITERACIONES = 12
-MAX_TOKENS = 1500
+
+# Presupuesto de salida por vuelta del loop. Tiene que alcanzar para que un
+# modelo de razonamiento PIENSE y ADEMÁS emita la llamada a la herramienta.
+#
+# Estuvo en 1500 y no alcanzaba. Medido el 2026-08-09, primera pregunta real con
+# telemetría ("los 5 mejores clientes de barril 30L Cream Ale en 2026"):
+#   completion_tokens = 1500   ← el techo EXACTO
+#   reasoning_tokens  = 1499   ← gastó todo el presupuesto pensando
+#   finish_reason     = length
+#   tools_llamadas    = []     ← no alcanzó a pedir ni una
+# La vuelta se perdió entera y el usuario recibió el turno de cierre ("no tengo
+# herramientas disponibles"), que es justo lo que INSTRUCCION_CIERRE le dice.
+#
+# `max_tokens` es un TECHO, no un objetivo: subirlo no gasta más cuando el
+# modelo no lo necesita. Truncar sí costaba — 1500 tokens de salida pagados por
+# cero resultado, más el turno de cierre encima.
+MAX_TOKENS = 4000
 
 # Presupuesto aparte para el turno de cierre. Los modelos de razonamiento
 # (GLM 5.2, el default) gastan tokens PENSANDO antes de escribir, y esos

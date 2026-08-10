@@ -286,13 +286,21 @@ def test_si_el_turno_de_cierre_falla_queda_el_mensaje_de_siempre(monkeypatch):
     assert "límite de pasos" in texto
 
 
-def test_el_turno_de_cierre_pide_mas_tokens_que_un_turno_normal(monkeypatch):
+def test_el_turno_de_cierre_lleva_su_propio_presupuesto(monkeypatch):
     """Root cause del bug del 2026-07-27: los modelos de razonamiento (GLM 5.2)
     gastan tokens PENSANDO antes de escribir, y esos reasoning_tokens cuentan
     contra max_tokens. Con un historial largo, los 1500 del loop se consumian
     razonando y la respuesta llegaba vacia (finish_reason=length, content=None),
     asi que el usuario veia el mensaje de limite de pasos aunque el agente si
     tenia los datos. El turno de cierre necesita su propio presupuesto.
+
+    Este test pedia MAX_TOKENS_CIERRE > MAX_TOKENS. Dejo de pedirlo el
+    2026-08-09: la telemetria mostro que el turno MAS exigente es el del loop,
+    no el del cierre — la vuelta del loop tiene que razonar Y emitir la llamada
+    a la herramienta, mientras el cierre solo redacta prosa (midio 425 tokens de
+    4000 disponibles). Subir el loop a 4000 dejo la desigualdad estricta sin
+    sustento, pero la leccion original sigue en pie y es la que se verifica
+    aqui: el cierre lleva presupuesto EXPLICITO y nunca hereda un default.
     """
     vistos = []
 
@@ -316,7 +324,10 @@ def test_el_turno_de_cierre_pide_mas_tokens_que_un_turno_normal(monkeypatch):
     texto, _sid = orchestrator.run("pregunta larga", Collector())
 
     assert texto == "Cierro con lo que tengo."
-    assert orchestrator.MAX_TOKENS_CIERRE > orchestrator.MAX_TOKENS
+    cierre = vistos[-1]
+    assert cierre["tools"] is None, "el cierre va sin herramientas"
+    assert cierre["max_tokens"] == orchestrator.MAX_TOKENS_CIERRE, \
+        "el cierre lleva presupuesto explicito, no el default del loop"
     assert vistos[-1]["tools"] is None, "el cierre va sin herramientas"
     assert vistos[-1]["max_tokens"] == orchestrator.MAX_TOKENS_CIERRE
     # Los turnos del loop siguen con el presupuesto normal.
@@ -1004,3 +1015,29 @@ def test_el_turno_de_cierre_tambien_se_registra(monkeypatch):
 
     assert len(filas) == 2, "la vuelta del loop y el turno de cierre"
     assert filas[-1]["iteracion"] == 0, "el cierre se marca con iteracion 0"
+
+
+def test_el_presupuesto_del_loop_alcanza_para_razonar_y_ademas_llamar_tools():
+    """Medido el 2026-08-09 con GLM 5.2, la primera pregunta real con telemetria:
+
+        pregunta: "los 5 mejores clientes de barril 30L Cream Ale en 2026"
+        completion_tokens = 1500   <- el techo EXACTO
+        reasoning_tokens  = 1499   <- gasto TODO el presupuesto pensando
+        finish_reason     = length
+        tools_llamadas    = []     <- no alcanzo a pedir ni una
+
+    La vuelta se perdio entera y el usuario recibio el turno de cierre ("no
+    tengo herramientas disponibles en este momento"), que es lo que
+    INSTRUCCION_CIERRE le dice al modelo que responda.
+
+    El proyecto ya conocia este modo de falla y lo habia arreglado para el turno
+    de cierre (MAX_TOKENS_CIERRE = 4000), pero dejo el loop en 1500. Mismo bug,
+    otro lugar.
+
+    `max_tokens` es un TECHO, no un objetivo: subirlo no gasta mas cuando el
+    modelo no lo necesita. Lo que si costaba plata era truncar — 1500 tokens de
+    salida pagados por cero resultado, mas el turno de cierre encima.
+    """
+    assert orchestrator.MAX_TOKENS >= orchestrator.MAX_TOKENS_CIERRE, (
+        "la vuelta del loop tiene que poder razonar Y emitir la tool call; el "
+        "cierre solo tiene que redactar, asi que nunca puede tener mas holgura")
