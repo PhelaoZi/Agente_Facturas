@@ -4,10 +4,14 @@
 Aísla los efectos secundarios que los tests podrían dejar en recursos reales
 del proyecto: archivos de log y tablas de producción.
 
-Los dos casos de acá salieron del mismo error, el mismo día (2026-08-09): un
+Los dos primeros casos salieron del mismo error, el mismo día (2026-08-09): un
 módulo escribe en un recurso compartido y los tests lo alcanzan sin querer. El
 daño no es que fallen — es que **contaminan en silencio el dato con el que
 después se toma una decisión**.
+
+El tercero (2026-08-10, `dte-archivo/`) se cerró antes de que ocurriera. A esta
+altura la regla del proyecto es: **si un módulo escribe en un recurso
+compartido, la ruta se inyecta y la puerta se cierra acá el mismo día**.
 """
 import sys
 
@@ -57,3 +61,21 @@ def _telemetria_no_toca_la_base(monkeypatch):
             "test necesita verificar la escritura, falsea telemetria._conectar.")
 
     monkeypatch.setattr(telemetria, "_conectar", _sin_base)
+
+
+@pytest.fixture(autouse=True)
+def _archivo_dte_no_toca_la_carpeta_real(monkeypatch, tmp_path):
+    """Ningún test deja XMLs en `dte-archivo/`.
+
+    Esa carpeta es el respaldo de los DTE originales: es la evidencia con la que
+    se va a poder auditar una factura dentro de tres años. Un XML inventado por
+    la suite conviviendo ahí con los reales la vuelve inservible como evidencia,
+    que es exactamente para lo que existe.
+
+    Se cierra antes de que pase, no después. Es el tercer módulo del proyecto
+    que escribe en un recurso compartido, y los dos anteriores se descubrieron
+    cuando ya habían contaminado el dato.
+    """
+    from scripts import archivo_dte
+
+    monkeypatch.setattr(archivo_dte, "DIRECTORIO", tmp_path / "dte-archivo")

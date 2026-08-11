@@ -24,6 +24,11 @@ facturas-ventas/
 transferencias/
 facturas-compras/*.xml
 Notas de Credito/*.xml
+# Respaldo de los XML originales del SII. NO es transitorio: es la evidencia
+# con la que se audita una factura años después. Fuera del repo porque son
+# datos de clientes (RUT, razón social, direcciones) y el respaldo va por la
+# tarea de backup, no por git.
+dte-archivo/
 # Planilla de seguimiento manual de pagos (datos locales)
 Pagos_Inv_Serv_Gas.xlsx
 

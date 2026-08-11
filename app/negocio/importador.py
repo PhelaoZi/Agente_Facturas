@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 from app.config import PROJECT_ROOT
-from scripts import parse_dte, sync_compras, sync_db, validate_changes
+from scripts import archivo_dte, parse_dte, sync_compras, sync_db, validate_changes
 
 # RUT del emisor propio: si el XML lo trae como emisor, es una venta nuestra.
 RUT_EMISOR_PROPIO = "76308012-9"   # Elaboradora y Comercializadora Vintage SPA
@@ -168,7 +168,13 @@ def importar_venta(cur, contenido, nombre, clase="venta"):
         res["errores"] = errores
         return res
 
-    sync = sync_db.sincronizar_en_cursor(cur, changes["documentos"])
+    # Archivar el XML original ANTES de escribir en la base: si la transacción
+    # revierte, sobra un archivo (inofensivo); al revés quedarían filas en
+    # dte_archivos apuntando a nada. Nunca levanta: perder el respaldo es malo,
+    # perder la venta es peor.
+    archivo = archivo_dte.archivar_contenido(contenido, nombre)
+
+    sync = sync_db.sincronizar_en_cursor(cur, changes["documentos"], archivo=archivo)
     res["duplicados"] = sync["duplicados"]
     res["productos"] = sync["productos"]
     res["ruts"] = sync["ruts"]

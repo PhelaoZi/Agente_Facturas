@@ -80,6 +80,39 @@ XML del SII (ISO-8859-1) → parse_dte.py → changes.json → validate_changes.
 
 Los 3 scripts en `scripts/` son secuenciales y obligatorios. `sync_db.py` se bloquea si no existe el flag `.changes_validated` que deja `validate_changes.py`. Nunca ejecutar `sync_db.py` sin validación previa.
 
+#### Evidencia (`dte_*`) vs. datos de trabajo (`ventas`, `productos`)
+
+Desde el 2026-08-10 conviven dos capas, y **mezclarlas es el error que hay que
+evitar**:
+
+| Capa | Tablas | Regla |
+|---|---|---|
+| **Evidencia** | `dte_lineas`, `dte_ajustes_globales`, `dte_impuestos`, `dte_archivos` | El DTE tal como lo emitió el SII. Se escribe una vez y **nadie la corrige**. Signos y montos tal cual vienen del XML |
+| **Trabajo** | `ventas`, `productos` | Lo de siempre. `productos` sigue sin la línea `"Logistica"` a secas y con las mismas columnas, porque de ahí dependen la vista local, el sync a la nube y todos los filtros ya escritos |
+
+Existe porque el pipeline descartaba en silencio cuatro cosas irrecuperables: la
+línea `"Logistica"` (≈ mitad del precio del barril), los descuentos globales
+`<DscRcgGlobal>`, el `<CodImpAdic>` de cada línea y la tasa de los impuestos.
+Sin eso, el ingreso por producto salía a un tercio de lo real y no había forma
+de notarlo. Del histórico no hay nada que hacer: sobreviven 2 XML de 876
+documentos, y por eso el archivado de `dte-archivo/` es automático.
+
+Dos cosas que valen al consultar:
+
+- **`cod_imp_adic = 26` es el SII declarando que esa línea es cerveza** (ILA
+  20,5%). Es mejor que cualquier match por nombre: en `productos` hay 123
+  descripciones distintas, con erratas (`Baril`, `Balck IPA`, `Scoth Ale`).
+- **El monto de una línea NO es su neto** cuando el documento trae descuento
+  global. El impuesto declarado sirve de verificación independiente: repartido
+  el descuento a prorrata, `base_cerveza × tasa` tiene que dar el
+  `impuesto_adicional` de la cabecera. Cuadra en 815 de 822 facturas, y los 7
+  que no son exactamente los que traen descuento.
+
+> Estado: la atribución de ingreso por producto **todavía no existe**. Hasta que
+> exista, ni el agente ni el dashboard entregan dinero por producto desde
+> `productos` (unidades sí). Plan completo en
+> `docs/debate-arquitectura/10-2026-08-10-cierre-y-decision.md`.
+
 ### Pipeline de conciliación bancaria
 
 ```

@@ -22,8 +22,10 @@ from datetime import datetime
 
 try:
     from _console import force_utf8          # ejecutado como script
+    import archivo_dte
 except ImportError:
     from scripts._console import force_utf8  # importado como paquete (tests)
+    from scripts import archivo_dte
 
 force_utf8()
 
@@ -322,11 +324,149 @@ def insertar_productos(cur, folio, tipo_documento, productos):
     """, rows)
 
 
+# ─── Insertar evidencia del DTE ───────────────────────────────────────────────
+# Las tablas dte_* guardan el documento tal como lo emitió el SII, sin filtrar ni
+# normalizar signos. Se escriben una vez y nadie las corrige después: los
+# cálculos derivados viven en otro lado y se recalculan de cero.
+#
+# Existen porque el pipeline venía descartando la línea "Logistica" (media mitad
+# del precio del barril), los descuentos globales, el código de impuesto por
+# línea y la tasa. Ver scripts/migrate_evidencia_dte.py.
+
+def insertar_lineas_dte(cur, folio, tipo_documento, lineas):
+    """Guarda TODAS las líneas del detalle, incluida la logística."""
+    if not lineas:
+        return
+
+    rows = [
+        (
+            tipo_documento,
+            folio,
+            linea.get("nro_linea"),
+            linea.get("nombre_producto"),
+            linea.get("descripcion"),
+            linea.get("cantidad"),
+            linea.get("precio_unitario"),
+            linea.get("total_linea"),
+            linea.get("cod_imp_adic"),
+        )
+        for linea in lineas
+    ]
+
+    execute_values(cur, """
+        INSERT INTO dte_lineas (
+            tipo_documento,
+            folio,
+            nro_linea,
+            nombre_producto,
+            descripcion,
+            cantidad,
+            precio_unitario,
+            total_linea,
+            cod_imp_adic
+        ) VALUES %s
+    """, rows)
+
+
+def insertar_ajustes_globales(cur, folio, tipo_documento, ajustes):
+    """Guarda los <DscRcgGlobal>: sin ellos, el monto de una línea se confunde
+    con su neto."""
+    if not ajustes:
+        return
+
+    rows = [
+        (
+            tipo_documento,
+            folio,
+            ajuste.get("nro_linea"),
+            ajuste.get("tipo_movimiento"),
+            ajuste.get("glosa"),
+            ajuste.get("tipo_valor"),
+            ajuste.get("valor"),
+            ajuste.get("indicador_exento"),
+        )
+        for ajuste in ajustes
+    ]
+
+    execute_values(cur, """
+        INSERT INTO dte_ajustes_globales (
+            tipo_documento,
+            folio,
+            nro_linea,
+            tipo_movimiento,
+            glosa,
+            tipo_valor,
+            valor,
+            indicador_exento
+        ) VALUES %s
+    """, rows)
+
+
+def insertar_impuestos_dte(cur, folio, tipo_documento, impuestos):
+    """Guarda todos los <ImptoReten> con su tipo y su tasa, no solo el primer
+    monto como hace `ventas.impuesto_adicional`."""
+    if not impuestos:
+        return
+
+    rows = [
+        (
+            tipo_documento,
+            folio,
+            impuesto.get("tipo"),
+            impuesto.get("tasa"),
+            impuesto.get("monto"),
+        )
+        for impuesto in impuestos
+    ]
+
+    execute_values(cur, """
+        INSERT INTO dte_impuestos (
+            tipo_documento,
+            folio,
+            tipo,
+            tasa,
+            monto
+        ) VALUES %s
+    """, rows)
+
+
+def registrar_archivo_dte(cur, folio, tipo_documento, archivo):
+    """Deja constancia del XML del que salió este documento.
+
+    Un XML trae varios documentos, así que el hash y la ruta se repiten: una
+    fila por documento. Sin esto no hay forma de volver a auditar un DTE, que es
+    justo lo que dejó el histórico irrecuperable.
+    """
+    if not archivo:
+        return
+
+    execute_values(cur, """
+        INSERT INTO dte_archivos (
+            tipo_documento,
+            folio,
+            hash_sha256,
+            archivo_origen,
+            ruta_archivo
+        ) VALUES %s
+        ON CONFLICT (tipo_documento, folio) DO NOTHING
+    """, [(
+        tipo_documento,
+        folio,
+        archivo.get("hash_sha256"),
+        archivo.get("nombre"),
+        archivo.get("ruta"),
+    )])
+
+
 # ─── Lógica principal ─────────────────────────────────────────────────────────
 
-def sincronizar_en_cursor(cur, documentos):
+def sincronizar_en_cursor(cur, documentos, archivo=None):
     """
     Inserta los documentos usando un cursor ya abierto dentro de una transacción.
+
+    `archivo` es opcional: {"nombre", "hash_sha256", "ruta"} del XML de origen,
+    para dejar registro de dónde salió cada documento. El importador del
+    dashboard puede no tenerlo; la evidencia del detalle no depende de él.
 
     Es el núcleo del sync: lo comparten la CLI (`sincronizar`) y el importador
     del dashboard (`app/negocio/importador.py`), para que las reglas de negocio
@@ -404,6 +544,14 @@ def sincronizar_en_cursor(cur, documentos):
         # Insertar líneas de productos
         insertar_productos(cur, folio, venta["tipo_documento"], productos)
 
+        # Evidencia completa del DTE (tablas dte_*): todo lo que trae el XML,
+        # incluida la logística que `productos` descarta a propósito.
+        tipo = venta["tipo_documento"]
+        insertar_lineas_dte(cur, folio, tipo, doc.get("lineas", []))
+        insertar_ajustes_globales(cur, folio, tipo, doc.get("ajustes_globales", []))
+        insertar_impuestos_dte(cur, folio, tipo, doc.get("impuestos", []))
+        registrar_archivo_dte(cur, folio, tipo, archivo)
+
         # Si es Nota de Crédito, descontar de la factura referenciada
         if str(venta["tipo_documento"]) == "61":
             ajustada = aplicar_nota_credito(cur, venta)
@@ -438,6 +586,15 @@ def sincronizar(changes):
     """
     documentos = changes["documentos"]
 
+    # Archivar el XML original antes de escribir. Si la transacción revierte,
+    # sobra un archivo (inofensivo); al revés quedarían filas apuntando a nada.
+    ruta_origen = changes.get("metadata", {}).get("ruta_origen")
+    archivo = archivo_dte.archivar(ruta_origen) if ruta_origen else None
+    if archivo:
+        print(f"✓ XML archivado: {archivo['ruta']}")
+    elif ruta_origen:
+        print(f"⚠️  No se pudo archivar el XML de origen: {ruta_origen}")
+
     conn = conectar()
     print(f"✓ Conectado a PostgreSQL: {DB_CONFIG['dbname']}")
     print()
@@ -445,7 +602,7 @@ def sincronizar(changes):
     try:
         with conn:  # transacción automática
             cur = conn.cursor()
-            res = sincronizar_en_cursor(cur, documentos)
+            res = sincronizar_en_cursor(cur, documentos, archivo=archivo)
 
         # Se imprime tras cerrar la transacción: si algo falló, no se reporta
         # como hecho un insert que terminó en rollback.

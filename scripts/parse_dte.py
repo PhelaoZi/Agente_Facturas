@@ -84,6 +84,87 @@ def extraer_float(patron, texto, default=0.0):
         return default
 
 
+def extraer_int_opcional(patron, texto):
+    """Como extraer_int, pero devuelve None si la etiqueta no viene.
+
+    Para campos donde "ausente" y "cero" significan cosas distintas: una línea
+    sin <CodImpAdic> no está afecta a impuesto adicional, que no es lo mismo que
+    estar afecta con monto 0.
+    """
+    valor = extraer(patron, texto)
+    if valor in (None, ""):
+        return None
+    try:
+        return int(valor)
+    except (ValueError, TypeError):
+        return None
+
+
+def extraer_lineas(doc_xml):
+    """Devuelve TODAS las líneas <Detalle> del documento, sin filtrar ninguna.
+
+    Fiel al XML tal como lo emitió el SII: los montos van con el signo del
+    documento original (las notas de crédito traen <MontoItem> positivo). El
+    signo económico se deriva de `tipo_documento` al atribuir, nunca del valor
+    guardado — la cabecera y el detalle no lo declaran igual y confiar en el
+    almacenado es lo que produce dobles conteos.
+
+    Es la capa de evidencia: lo que se descarte acá no se puede recuperar
+    después. Del histórico solo sobreviven 2 XML de 876 documentos.
+    """
+    lineas = []
+    for det in re.findall(r'<Detalle>(.*?)</Detalle>', doc_xml, re.DOTALL):
+        lineas.append({
+            "nro_linea":       extraer_int_opcional(r'<NroLinDet>(.*?)</NroLinDet>', det),
+            "nombre_producto": extraer(r'<NmbItem>(.*?)</NmbItem>', det),
+            "descripcion":     extraer(r'<DscItem>(.*?)</DscItem>', det),
+            "cantidad":        extraer_float(r'<QtyItem>(.*?)</QtyItem>', det, 1.0),
+            "precio_unitario": extraer_float(r'<PrcItem>(.*?)</PrcItem>', det, 0.0),
+            "total_linea":     extraer_int(r'<MontoItem>(.*?)</MontoItem>', det, 0),
+            # El SII declarando qué grava cada línea: en Zigurat el 26 (ILA de
+            # cervezas, 20,5%) marca la cerveza y la logística no lo lleva. Es
+            # evidencia, no una heurística sobre el nombre del ítem.
+            "cod_imp_adic":    extraer_int_opcional(r'<CodImpAdic>(.*?)</CodImpAdic>', det),
+        })
+    return lineas
+
+
+def extraer_ajustes_globales(doc_xml):
+    """Devuelve los <DscRcgGlobal>: descuentos y recargos sobre el documento.
+
+    Sin esto, el monto de una línea se confunde con su neto. El folio 4746 trae
+    un descuento global de $9.000 sobre $90.000 en líneas: es el contraejemplo
+    que refutó dos propuestas de reparación seguidas.
+    """
+    ajustes = []
+    for aj in re.findall(r'<DscRcgGlobal>(.*?)</DscRcgGlobal>', doc_xml, re.DOTALL):
+        ajustes.append({
+            "nro_linea":        extraer_int_opcional(r'<NroLinDR>(.*?)</NroLinDR>', aj),
+            "tipo_movimiento":  extraer(r'<TpoMov>(.*?)</TpoMov>', aj),      # D o R
+            "glosa":            extraer(r'<GlosaDR>(.*?)</GlosaDR>', aj),
+            "tipo_valor":       extraer(r'<TpoValor>(.*?)</TpoValor>', aj),  # $ o %
+            "valor":            extraer_float(r'<ValorDR>(.*?)</ValorDR>', aj, 0.0),
+            "indicador_exento": extraer_int_opcional(r'<IndExeDR>(.*?)</IndExeDR>', aj),
+        })
+    return ajustes
+
+
+def extraer_impuestos(doc_xml):
+    """Devuelve todos los <ImptoReten> con su tipo y su tasa.
+
+    La cabecera guardaba solo el primer <MontoImp> y daba por supuesta una tasa
+    de 20,5%. Un DTE puede traer varios impuestos, y la tasa hay que leerla.
+    """
+    impuestos = []
+    for imp in re.findall(r'<ImptoReten>(.*?)</ImptoReten>', doc_xml, re.DOTALL):
+        impuestos.append({
+            "tipo":  extraer_int_opcional(r'<TipoImp>(.*?)</TipoImp>', imp),
+            "tasa":  extraer_float(r'<TasaImp>(.*?)</TasaImp>', imp, 0.0),
+            "monto": extraer_int(r'<MontoImp>(.*?)</MontoImp>', imp, 0),
+        })
+    return impuestos
+
+
 def parsear_documento(doc_xml):
     """
     Parsea un bloque <Documento> del XML y retorna un dict
@@ -122,25 +203,27 @@ def parsear_documento(doc_xml):
     tipo_ref    = extraer(r'<TpoDocRef>(.*?)</TpoDocRef>', doc_xml)
     razon_ref   = extraer(r'<RazonRef>(.*?)</RazonRef>', doc_xml)
 
-    # ── Detalle (líneas de productos) ─────────────────────────────────────────
-    detalles_xml = re.findall(r'<Detalle>(.*?)</Detalle>', doc_xml, re.DOTALL)
-    productos = []
-    for det in detalles_xml:
-        nombre   = extraer(r'<NmbItem>(.*?)</NmbItem>', det)
-        cantidad = extraer_float(r'<QtyItem>(.*?)</QtyItem>', det, 1.0)
-        precio   = extraer_float(r'<PrcItem>(.*?)</PrcItem>', det, 0.0)
-        total    = extraer_int(r'<MontoItem>(.*?)</MontoItem>', det, 0)
+    # ── Evidencia completa del documento ──────────────────────────────────────
+    # Todo lo que trae el XML, sin filtrar. De acá sale la atribución de ingreso
+    # por producto; lo que no se guarde acá se pierde para siempre.
+    lineas           = extraer_lineas(doc_xml)
+    ajustes_globales = extraer_ajustes_globales(doc_xml)
+    impuestos        = extraer_impuestos(doc_xml)
 
-        # Excluir items que son costos operativos, no productos del catálogo
-        if (nombre or "").lower().strip() in ITEMS_NO_CATALOGO:
-            continue
-
-        productos.append({
-            "nombre_producto": nombre,
-            "cantidad":        cantidad,
-            "precio_unitario": precio,
-            "total_linea":     total,
-        })
+    # ── Detalle para la tabla `productos` (compatibilidad) ────────────────────
+    # Vista recortada de `lineas`: sin la logística y sin las columnas nuevas.
+    # De esta tabla dependen la vista local, el sync a la nube y sus filtros, así
+    # que su forma no cambia.
+    productos = [
+        {
+            "nombre_producto": l["nombre_producto"],
+            "cantidad":        l["cantidad"],
+            "precio_unitario": l["precio_unitario"],
+            "total_linea":     l["total_linea"],
+        }
+        for l in lineas
+        if (l["nombre_producto"] or "").lower().strip() not in ITEMS_NO_CATALOGO
+    ]
 
     return {
         # ── Para tabla: ventas ─────────────────────────────────────────────
@@ -171,6 +254,12 @@ def parsear_documento(doc_xml):
 
         # ── Para tabla: productos ──────────────────────────────────────────
         "productos": productos,
+
+        # ── Capa de evidencia (tablas dte_*) ───────────────────────────────
+        # Fiel al XML, sin filtrar ni normalizar signos.
+        "lineas":           lineas,
+        "ajustes_globales": ajustes_globales,
+        "impuestos":        impuestos,
     }
 
 
@@ -243,6 +332,10 @@ def armar_changes(documentos, ruta_xml):
     changes = {
         "metadata": {
             "archivo_origen":   Path(ruta_xml).name,
+            # Ruta completa para que `sync_db` pueda archivar el XML original.
+            # El importador del dashboard no la usa: ahí el contenido llega en
+            # memoria y se archiva directo.
+            "ruta_origen":      str(ruta_xml),
             "fecha_proceso":    ahora,
             "total_documentos": len(documentos),
             "total_clientes":   len({d["cliente"]["rut_cliente"] for d in documentos}),
