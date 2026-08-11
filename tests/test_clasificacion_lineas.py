@@ -20,6 +20,7 @@ nombre nuevo tiene que caer en `desconocida` y esperar, no colarse.
 import pytest
 
 from app.negocio import clasificacion_lineas as cl
+from app.negocio.clasificacion_lineas import LITROS_BARRIL_ESTANDAR
 
 
 def _clase(nombre):
@@ -125,11 +126,31 @@ def test_lo_ambiguo_o_nuevo_no_se_convierte_en_cerveza(nombre):
     assert _clase(nombre) == "desconocida"
 
 
-def test_una_cerveza_conocida_sin_formato_reconocible_no_se_da_por_barril():
-    """'Barril Wee Heavy' no dice litros. Suponer 30L parece inofensivo, pero el
-    precio y la logística escalan con los litros: la suposición se propaga al
-    margen."""
-    resultado = cl.clasificar("Barril Wee Heavy")
+@pytest.mark.parametrize("nombre, cerveza", [
+    ("Barril Wee Heavy", "Wee Heavy"),
+    ("Barril W.C IPA",   "West Coast IPA"),
+    ("Barril Mincay",    "Mincay"),
+])
+def test_un_barril_sin_litros_es_de_30l(nombre, cerveza):
+    """Confirmado por el productor el 2026-08-11: todos los barriles son de 30L.
+    Los de 20 o 25 litros son el mismo barril con menos adentro, cuando el
+    fermentador no alcanza a llenarlo, y ESOS sí lo dicen en la factura.
+
+    Son 3 líneas de $90.000 en total. Se resuelven acá y no suponiendo litros
+    dentro del motor de atribución, donde la suposición quedaría invisible.
+    """
+    resultado = cl.clasificar(nombre)
+
+    assert resultado["clase"] == "cerveza"
+    assert resultado["cerveza"] == cerveza
+    assert resultado["formato"] == "barril"
+    assert resultado["litros"] == LITROS_BARRIL_ESTANDAR
+
+
+def test_una_cerveza_sin_formato_alguno_no_se_da_por_barril():
+    """La regla de arriba vale para "Barril X", no para cualquier texto: sin la
+    palabra que declare el envase no hay de dónde deducirlo."""
+    resultado = cl.clasificar("Wee Heavy")
 
     assert resultado["clase"] == "desconocida"
     assert resultado["cerveza"] == "Wee Heavy"     # lo que sí se sabe, se dice

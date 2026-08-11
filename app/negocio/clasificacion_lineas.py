@@ -106,6 +106,11 @@ INSUMOS = ("malta", "lupulo", "levadura")
 # Sin límite de palabra tras la "l": el productor escribe "Barril 30LStout Cafe"
 # pegado. El límite va antes de los dígitos, para no morder el "30" de "330cc".
 RE_BARRIL = re.compile(r'\b(?:bar+il(?:es)?\s*)?(\d{2})\s*l', re.IGNORECASE)
+
+# "Barril Wee Heavy", sin litros. Confirmado por el productor (2026-08-11): son
+# todos de 30L, y los que van con menos SÍ lo dicen en la factura.
+RE_BARRIL_SIN_LITROS = re.compile(r'\bbar+il(?:es)?\b', re.IGNORECASE)
+LITROS_BARRIL_ESTANDAR = 30
 RE_BOTELLA = re.compile(r'\bbotella\b', re.IGNORECASE)
 RE_LATA = re.compile(r'\blata\b', re.IGNORECASE)
 
@@ -208,6 +213,9 @@ def clasificar(nombre):
     if barril:
         formato, litros = "barril", int(barril.group(1))
         resto = texto[barril.end():]
+    elif RE_BARRIL_SIN_LITROS.search(texto):
+        formato, litros = "barril", LITROS_BARRIL_ESTANDAR
+        resto = RE_BARRIL_SIN_LITROS.sub("", texto)
     elif RE_BOTELLA.search(texto):
         formato = "botella"
         # "330cc", "330c" y la errata "33cc": no existe una botella de 33cc.
