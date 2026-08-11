@@ -132,6 +132,11 @@ RE_PET = re.compile(r'\bpet\b', re.IGNORECASE)
 RE_CO2 = re.compile(r'\bco\s*2\b', re.IGNORECASE)
 RE_LOGISTICA = re.compile(r'^\s*log[ií]stic', re.IGNORECASE)
 
+# Para recortar la palabra COMPLETA y quedarse con lo que la acompaña
+# ("Logistica Stout" → "stout"). Con RE_LOGISTICA quedaba una "a" suelta, que
+# está contenida en casi cualquier nombre de cerveza.
+RE_LOGISTICA_PALABRA = re.compile(r'^\s*log[ií]stica?s?\b\.?', re.IGNORECASE)
+
 # Carácter de reemplazo de Unicode: marca dónde había una tilde que se perdió al
 # cargar el dato. Ver _alias_que_calzan.
 REEMPLAZO = "�"
@@ -141,7 +146,7 @@ REEMPLAZO = "�"
 MINIMO_LEGIBLE = 4
 
 
-def _normalizar(texto):
+def normalizar(texto):
     """Minúsculas, sin tildes y con los espacios colapsados."""
     sin_tildes = "".join(
         c for c in unicodedata.normalize("NFD", texto)
@@ -222,12 +227,17 @@ def clasificar(nombre, fecha=None):
     if not nombre or not str(nombre).strip():
         return _resultado("desconocida")
 
-    texto = _normalizar(str(nombre))
+    texto = normalizar(str(nombre))
 
     # El orden importa: "Logistica Cream Ale" contiene "Cream Ale". Si la
     # logística no se descarta primero, media factura se cuenta dos veces.
     if RE_LOGISTICA.search(texto):
-        return _resultado("logistica")
+        # Cuando los costos de despacho difieren, el productor desglosa la
+        # logística por estilo ("Logistica Scotch" + "Logistica Stout"). Ese
+        # desglose es evidencia suya, así que se conserva a qué cerveza apunta:
+        # repartir a prorrata encima sería descartar lo que él mismo declaró.
+        return _resultado("logistica",
+                          cerveza=_buscar_cerveza(RE_LOGISTICA_PALABRA.sub("", texto)))
     if RE_CO2.search(texto):
         return _resultado("co2")
     if RE_PET.search(texto):
