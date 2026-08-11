@@ -24,6 +24,7 @@ es cerveza. Este mapa es sobre todo para el histórico, donde ese dato no existe
 """
 import re
 import unicodedata
+from datetime import date
 
 CLASES = frozenset({
     "cerveza",      # venta de cerveza: es lo único que genera ingreso de producto
@@ -92,8 +93,20 @@ CERVEZAS = {
     "sour f/l": "Sour Frambuesa/Lima",
     "sour fl": "Sour Frambuesa/Lima",
     # OJO: "sour" a secas NO está mapeado a propósito. Hay seis sours distintos
-    # y la factura no dice cuál: atribuirlo a una sería inventar.
+    # y la factura no dice cuál: atribuirlo a una sería inventar. Ver
+    # RESOLUCIONES_HISTORICAS, que lo resuelve solo donde hay certeza.
 }
+
+# ─── Ambigüedades que resolvió el productor, acotadas en el tiempo ───────────
+# (alias, desde, hasta, cerveza). Van acá y no en CERVEZAS porque valen para un
+# período concreto: meter "sour" en el mapa general asignaría a Frambuesa/Lima
+# cualquier "Sour" futuro, que puede ser otra.
+RESOLUCIONES_HISTORICAS = (
+    # Las 5 líneas que dicen solo "Sour" son de feb-mar 2025 (folios 4232, 4233,
+    # 4235, 4236 y 4254). En esa ventana no se vendió ninguna otra sour, y el
+    # productor lo confirmó el 2026-08-11.
+    ("sour", date(2025, 1, 1), date(2025, 6, 30), "Sour Frambuesa/Lima"),
+)
 
 # ─── Servicios e insumos: no son productos del catálogo ───────────────────────
 SERVICIOS = ("arriendo",)
@@ -181,11 +194,30 @@ def _buscar_cerveza(resto):
     return CERVEZAS[max(candidatos, key=len)]
 
 
-def clasificar(nombre):
+def _resolver_por_fecha(resto, fecha):
+    """Resuelve una ambigüedad histórica declarada, si la fecha cae en su rango.
+
+    Solo actúa sobre los alias listados en RESOLUCIONES_HISTORICAS: no es una
+    puerta trasera para que cualquier nombre pase a ser cerveza.
+    """
+    if fecha is None:
+        return None
+
+    limpio = resto.strip(" .-–")
+    for alias, desde, hasta, cerveza in RESOLUCIONES_HISTORICAS:
+        if limpio == alias and desde <= fecha <= hasta:
+            return cerveza
+    return None
+
+
+def clasificar(nombre, fecha=None):
     """Clasifica el nombre de una línea de factura.
 
     Devuelve {"clase", "cerveza", "formato", "litros"}. `clase` siempre es una
     de CLASES; el resto puede ser None.
+
+    `fecha` es la del documento. Se usa solo para resolver las ambigüedades de
+    RESOLUCIONES_HISTORICAS; sin ella, esas líneas quedan `desconocida`.
     """
     if not nombre or not str(nombre).strip():
         return _resultado("desconocida")
@@ -224,7 +256,7 @@ def clasificar(nombre):
         formato = "lata"
         resto = re.sub(r'\blata\b\s*\d{3}\s*c*c\b', "", texto)
 
-    cerveza = _buscar_cerveza(resto)
+    cerveza = _buscar_cerveza(resto) or _resolver_por_fecha(resto, fecha)
 
     # Cerveza reconocida Y formato reconocido: recién ahí es una venta de
     # cerveza atribuible. Con uno solo de los dos no alcanza — suponer los

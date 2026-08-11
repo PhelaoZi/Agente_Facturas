@@ -17,6 +17,8 @@ del productor al escribir la factura a mano (`Baril`, `Balck IPA`, `Scoth Ale`,
 un mapa explícito de alias y no contra una expresión regular ingeniosa: un
 nombre nuevo tiene que caer en `desconocida` y esperar, no colarse.
 """
+from datetime import date
+
 import pytest
 
 from app.negocio import clasificacion_lineas as cl
@@ -124,6 +126,38 @@ def test_lo_ambiguo_o_nuevo_no_se_convierte_en_cerveza(nombre):
     """Es preferible no atribuir una línea a atribuirla mal: una cifra faltante
     se nota, una equivocada no."""
     assert _clase(nombre) == "desconocida"
+
+
+# ─── Ambigüedades resueltas por el productor, acotadas en el tiempo ──────────
+
+def test_la_sour_de_febrero_2025_se_resuelve_con_la_fecha():
+    """Las 5 líneas que dicen solo "Sour" son de feb-mar 2025. En esa ventana la
+    única sour vendida fue la Frambuesa/Lima, y el productor lo confirmó
+    (2026-08-11).
+
+    Se resuelve con la FECHA y no agregando "sour" al mapa de alias: eso
+    asignaría a Frambuesa/Lima cualquier "Sour" futuro, que puede ser otra.
+    """
+    resultado = cl.clasificar("Barril 20L Sour", fecha=date(2025, 2, 19))
+
+    assert resultado["clase"] == "cerveza"
+    assert resultado["cerveza"] == "Sour Frambuesa/Lima"
+    assert resultado["litros"] == 20
+
+
+def test_fuera_de_esa_ventana_la_sour_sigue_siendo_ambigua():
+    """Para abril de 2026 la sour del catálogo era la Guayaba. La resolución
+    vale para el período confirmado, no para siempre."""
+    assert _clase("Barril 30L Sour") == "desconocida"                      # sin fecha
+    assert cl.clasificar("Barril 30L Sour",
+                         fecha=date(2026, 4, 1))["clase"] == "desconocida"
+
+
+def test_la_fecha_no_convierte_en_cerveza_un_nombre_cualquiera():
+    """La resolución por fecha aplica a las ambigüedades declaradas, no es una
+    puerta trasera para que cualquier texto pase."""
+    assert cl.clasificar("Servicio de flete",
+                         fecha=date(2025, 2, 19))["clase"] == "desconocida"
 
 
 @pytest.mark.parametrize("nombre, cerveza", [
