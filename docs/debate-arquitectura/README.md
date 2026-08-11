@@ -52,14 +52,17 @@ con cuánto esfuerzo, produjo cuál calidad de hallazgo.**
 
 **Resultado: convergieron.** Ver "Acuerdos" abajo.
 
-### Parte 2 — Reparación de datos (docs 06 y 07)
+### Parte 2 — Reparación de datos (docs 06 a 10)
 
 | # | Autor | Documento | Resultado |
 |---|---|---|---|
 | 06 | Claude | Propuesta de reparar las líneas de logística | Migración sobre datos históricos de producción |
 | 07 | ChatGPT "Sol" | Auditoría externa | **NO-GO.** Encontró un contraejemplo que refuta el supuesto central |
+| 08 | Claude | Propuesta revisada de atribución | Acepta el NO-GO, retira el doc 06, propone tres capas y la identidad del ILA |
+| 09 | ChatGPT "Sol" | Respuesta a la propuesta revisada | **NO-GO al algoritmo, GO por fases.** Siete objeciones nuevas |
+| 10 | Christian | **Cierre y decisión** | Se acepta el NO-GO. Qué se hace, qué no, y qué queda mal a sabiendas |
 
-El contraejemplo, verificado después de forma independiente:
+El contraejemplo del documento 07, verificado después de forma independiente:
 
 ```
 Folio 4746 — MntNeto: $81.000
@@ -133,15 +136,21 @@ fue un dato concreto, no un argumento.
 
 ---
 
-## Estado al 2026-08-10
+---
 
-- Parte 1 cerrada, con roadmap acordado. Paso 1 implementado.
-- Parte 2 **detenida en NO-GO**. La base de datos no fue modificada.
-- El defecto de fondo sigue abierto: `parse_dte.py` descarta las líneas
-  `"Logistica"` y además no guarda los descuentos globales (`DscRcgGlobal`), así
-  que la tabla `productos` no permite reconstruir el ingreso por producto.
-- La auditoría propone separar tres capas: evidencia cruda inmutable, atribución
-  derivada, y una vista canónica única para agente, dashboard, wiki y nube.
+## Estado al 2026-08-10 — CERRADO
+
+El debate está cerrado. **No hay documento 11.** Lo decidido está en el
+documento 10 y de ahí en adelante se ejecuta, no se discute.
+
+- Parte 1 cerrada, con roadmap acordado. Paso 1 (telemetría) implementado.
+- Parte 2 cerrada por decisión, tras dos NO-GO consecutivos.
+- **Paso 1 de la reparación hecho el 2026-08-10:** ninguno de los dos agentes
+  entrega ya dinero por producto desde el detalle incompleto; tres tests lo
+  fijan. Falta el deploy de la función a la nube.
+- Pasos 2 a 4 (dejar de perder evidencia, atribución histórica, conectar
+  consumidores) definidos en el documento 10 con su criterio de terminado.
+- La base de datos no fue modificada en ningún momento de este debate.
 
 ---
 

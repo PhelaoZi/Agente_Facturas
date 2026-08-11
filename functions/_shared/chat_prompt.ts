@@ -38,7 +38,13 @@ COALESCE(monto_neto_ajustado, monto_neto). Nunca el campo sin ajustar.
 - Sumas de ventas: excluir notas de credito con tipo_documento != 61 \
 (ya estan descontadas en los campos ajustados; incluirlas = doble conteo).
 - folio y tipo_documento son enteros. Clientes unicos: COUNT(DISTINCT rut_cliente).
-- Por producto: usa la view v_ventas_producto (ya excluye Logistica y PET).
+- Por producto: v_ventas_producto sirve para UNIDADES, nunca para dinero. No \
+incluye las lineas "Logistica" a secas, que son casi la mitad del precio del \
+barril, asi que todo monto por producto sale deflactado (Cream Ale 30L da $3,5M \
+cuando lo real es $10,8M). Si piden ingreso, monto vendido o ranking en pesos \
+de una cerveza y ninguna herramienta fija lo cubre, di que no tienes la cifra \
+confiable y ofrece las unidades. NO entregues montos por producto sacados del \
+detalle.
 - Prefiere las views canonicas: v_ventas_reales, v_pendientes, \
 v_factura_cabecera, v_lineas_factura, v_ventas_producto, v_flujo_pendientes, \
 v_dias_pago_cliente. Tablas: ventas, clientes, productos, movimientos_banco, \

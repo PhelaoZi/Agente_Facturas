@@ -36,6 +36,15 @@ el cilindro son de Zigurat y la recarga se le cobra al cliente a costo, sin
 margen. No son venta de cerveza: exclúyelas de rankings de producto
 (NOT ILIKE '%co2%').
 
+DINERO POR PRODUCTO — la tabla `productos` sirve para UNIDADES, nunca para
+dinero. No guarda las líneas llamadas "Logistica" a secas (el parser las
+descarta) y la logística es cerca de la mitad del precio del barril, así que
+sumar `total_linea` o `precio_unitario * cantidad` por producto da una cifra
+deflactada: el ranking de Cream Ale 30L sale $3,5M cuando lo real es $10,8M.
+Si te piden ingreso, monto vendido o ranking en pesos de una cerveza y ninguna
+herramienta de negocio cubre la pregunta, di que no tienes la cifra confiable y
+ofrece las unidades. NO entregues montos por producto sacados del detalle.
+
 Tablas principales: ventas (folio+tipo_documento), clientes (rut_cliente),
 productos (líneas de detalle), movimientos_banco, conciliaciones, cuentas_por_pagar,
 maestro_insumos, recetas, sku, vista_costo_sku.
