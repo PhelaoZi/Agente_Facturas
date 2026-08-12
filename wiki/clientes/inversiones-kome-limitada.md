@@ -2,7 +2,7 @@
 rut: 76720168-0
 razon_social: "INVERSIONES KOME LIMITADA"
 estado: incobrable
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # INVERSIONES KOME LIMITADA
@@ -26,18 +26,18 @@ ultima_actualizacion: 2026-07-07
 - Cliente desde **2025-01-08**
 - Solo 1 compra registrada
 - Comportamiento de pago: **lento** (54 días promedio)
-- Producto principal: **Barril 30L West Coast IPA**
+- Producto principal: **West Coast IPA**
 - ⚠ **Cliente marcado como incobrable**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L West Coast IPA**:
+Clientes que también compran **West Coast IPA**:
 
-- [[SOCIEDAD COMERCIAL Y TURÍSTICA UBUNTU PATAGONIA SPA]] (77650861-6)
-- [[RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.]] (76524621-0)
-- [[COMERCIAL MONKEY SPA]] (76420926-5)
-- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
 - [[VDT SPA]] (77220069-2)
+- [[INVERSIONES BARDOS SPA]] (76922048-8)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
+- [[BAR CERVECERÍA ORIGINAL SPA]] (77042203-5)
 
 ## Inconsistencias
 

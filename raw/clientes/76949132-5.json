@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-10",
   "comuna": "PROVIDENCIA",
   "deuda_pendiente": 0,
@@ -13,15 +13,11 @@
   "top_productos": [
     {
       "cantidad": 51.0,
-      "nombre": "Barril 30L Cream Ale"
+      "nombre": "Cream Ale"
     },
     {
-      "cantidad": 3.0,
-      "nombre": "Barril 30L Scotch Ale"
-    },
-    {
-      "cantidad": 2.0,
-      "nombre": "Barril 30L Scoth Ale"
+      "cantidad": 5.0,
+      "nombre": "Scotch Ale"
     }
   ],
   "total_vendido": 4187526.0,

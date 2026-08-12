@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
   "deuda_pendiente": 0,
@@ -12,16 +12,16 @@
   "rut": "76296603-4",
   "top_productos": [
     {
-      "cantidad": 13.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "cantidad": 14.0,
+      "nombre": "Scotch Ale"
+    },
+    {
+      "cantidad": 5.0,
+      "nombre": "Session IPA"
     },
     {
       "cantidad": 4.0,
-      "nombre": "Barril 30L Session IPA"
-    },
-    {
-      "cantidad": 3.0,
-      "nombre": "Barril 30L Cream Ale"
+      "nombre": "Cream Ale"
     }
   ],
   "total_vendido": 1573220.0,

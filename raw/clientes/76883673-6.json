@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-02-15",
   "comuna": "SANTIAGO",
   "deuda_pendiente": 0,
@@ -12,8 +12,8 @@
   "rut": "76883673-6",
   "top_productos": [
     {
-      "cantidad": 1.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "cantidad": 2.0,
+      "nombre": "Scotch Ale"
     }
   ],
   "total_vendido": 0,

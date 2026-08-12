@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-12",
   "comuna": "VITACURA",
   "deuda_pendiente": 0,
@@ -12,16 +12,12 @@
   "rut": "77568635-9",
   "top_productos": [
     {
-      "cantidad": 13.0,
-      "nombre": "Barril 30L Cream Ale"
+      "cantidad": 14.0,
+      "nombre": "Cream Ale"
     },
     {
       "cantidad": 2.0,
-      "nombre": "Barril 30L Scotch Ale"
-    },
-    {
-      "cantidad": 1.0,
-      "nombre": "Barril 26L Cream Ale"
+      "nombre": "Scotch Ale"
     }
   ],
   "total_vendido": 1313167.0,

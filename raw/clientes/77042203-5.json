@@ -1,29 +1,29 @@
 {
-  "_snapshot_fecha": "2026-08-02",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-24",
   "comuna": "MAIPU",
-  "deuda_pendiente": 238685.0,
+  "deuda_pendiente": 114275.0,
   "direccion": "CENTRAL GONZALO PÉREZ LLO 500",
   "estado": "activo",
   "facturas_emitidas": 25,
-  "facturas_pendientes": 3,
+  "facturas_pendientes": 2,
   "promedio_dias_pago": 34,
   "razon_social": "BAR CERVECERÍA ORIGINAL SPA",
   "rut": "77042203-5",
   "top_productos": [
     {
-      "cantidad": 3.0,
-      "nombre": "Barril 30L RIS"
+      "cantidad": 4.0,
+      "nombre": "Stout Café"
+    },
+    {
+      "cantidad": 4.0,
+      "nombre": "West Coast IPA"
     },
     {
       "cantidad": 3.0,
-      "nombre": "Barril 30L Black IPA"
-    },
-    {
-      "cantidad": 3.0,
-      "nombre": "Barril 30L Wee Heavy"
+      "nombre": "Paint it Black"
     }
   ],
   "total_vendido": 2670960.0,
-  "ultimo_pago": "2026-05-20"
+  "ultimo_pago": "2026-07-07"
 }

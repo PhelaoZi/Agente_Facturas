@@ -1,0 +1,17 @@
+# Producto: Sour Piña/Lima
+
+Actualizado: 2026-08-11
+
+## Clientes que lo compran
+
+| Cliente | RUT | Cantidad total |
+| --- | --- | --- |
+| [[RESTAURANTE MARINA SPA]] | 77126823-4 | 6 |
+| [[JARDIN CERVECERO SPA]] | 78121649-6 | 3 |
+| [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] | 76364354-9 | 2 |
+| [[INVERSIONES GASTRONÓMICAS CUATRO Y MEDIO LIMITADA]] | 77113872-1 | 1 |
+| [[BIER BAR SPA]] | 76861668-K | 1 |
+| [[MAZACCONE SPA]] | 76177121-3 | 1 |
+| [[BAR CERVECERÍA ORIGINAL SPA]] | 77042203-5 | 1 |
+| [[RESTOBAR RUBIK LIMITADA]] | 76231880-6 | 1 |
+| [[VDT SPA]] | 77220069-2 | 1 |

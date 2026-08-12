@@ -2,7 +2,7 @@
 rut: 76730367-K
 razon_social: "GASTRONOMICA SUR SPA."
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # GASTRONOMICA SUR SPA.
@@ -24,19 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-02-13**
-- Frecuencia de compra: ~1 factura cada **44 días**
+- Frecuencia de compra: ~1 factura cada **46 días**
 - Comportamiento de pago: **bueno** (25 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
@@ -44,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 208 días sin nueva factura (última: 2026-01-15).
 - 2026-07-07: ⚠️ Cliente inactivo — 173 días sin nueva factura (última: 2026-01-15).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4561 por $64.990.
 - 2026-04-12: ⚠️ 12 factura(s) vencida(s) (>30 días): #4218, #4256, #4309, #4337, #4363, #4407, #4430, #4475, #4502, #4521, #4545, #4561 por $794.880.

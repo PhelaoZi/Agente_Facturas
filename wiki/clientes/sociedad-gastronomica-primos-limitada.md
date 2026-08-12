@@ -2,7 +2,7 @@
 rut: 76011055-8
 razon_social: "SOCIEDAD GASTRONOMICA PRIMOS LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # SOCIEDAD GASTRONOMICA PRIMOS LIMITADA
@@ -25,19 +25,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2026-02-04**
-- Frecuencia de compra: ~1 factura cada **31 días**
+- Frecuencia de compra: ~1 factura cada **38 días**
 - Comportamiento de pago: **rápido** (10 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
@@ -45,6 +45,8 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4582 por $0.
+- 2026-08-11: ⚠️ Cliente inactivo — 61 días sin nueva factura (última: 2026-06-11).
 - 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4582 por $0.
 - 2026-07-07: 📄 1 factura(s) nueva(s) desde 2026-06-03.
 - 2026-06-03: ⚠️ 4 factura(s) vencida(s) (>30 días): #4661, #4625, #4583, #4582 por $279.961.

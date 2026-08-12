@@ -1,0 +1,17 @@
+# Producto: Session IPA
+
+Actualizado: 2026-08-11
+
+## Clientes que lo compran
+
+| Cliente | RUT | Cantidad total |
+| --- | --- | --- |
+| [[CERVEZAS DEL MUNDO SPA]] | 77098935-3 | 24 |
+| [[UNCLE FLETCH CHILE SPA]] | 76296603-4 | 5 |
+| [[INVERSIONES VALENZUELA SPA]] | 76767175-K | 1 |
+| [[NEUROGASTRONOMICA AMADEUS SPA]] | 77166721-K | 1 |
+| [[RESTOBAR RUBIK LIMITADA]] | 76231880-6 | 1 |
+| [[SOC COMERCIAL EBANO LIMITADA]] | 77352780-6 | 1 |
+| [[BEBIDA SOCIAL SPA]] | 77391728-0 | 1 |
+| [[VDT SPA]] | 77220069-2 | 1 |
+| [[COMERCIAL PEUMAYEN LIMITADA]] | 76157936-3 | 1 |

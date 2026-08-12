@@ -2,7 +2,7 @@
 rut: 77605437-2
 razon_social: "ALPINO LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # ALPINO LIMITADA
@@ -25,17 +25,17 @@ ultima_actualizacion: 2026-07-07
 
 - Cliente desde **2025-02-19**
 - Solo 1 compra registrada
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
-- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -43,6 +43,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 538 días sin nueva factura (última: 2025-02-19).
 - 2026-07-07: ⚠️ Cliente inactivo — 503 días sin nueva factura (última: 2025-02-19).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4237 por $139.981.
 - 2026-04-12: ⚠️ Cliente inactivo — 417 días sin nueva factura (última: 2025-02-19).

@@ -2,7 +2,7 @@
 rut: 77854791-0
 razon_social: "CAFETERIA FYLGJA LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # CAFETERIA FYLGJA LIMITADA
@@ -24,19 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2025-03-19**
-- Frecuencia de compra: ~1 factura cada **53 días**
+- Frecuencia de compra: ~1 factura cada **57 días**
 - Comportamiento de pago: **rápido** (7 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
@@ -44,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 110 días sin nueva factura (última: 2026-04-23).
 - 2026-07-07: ⚠️ Cliente inactivo — 75 días sin nueva factura (última: 2026-04-23).
 - 2026-06-03: ⚠️ 9 factura(s) vencida(s) (>30 días): #4656, #4266, #4272, #4274, #4283, #4301, #4306, #4387, #4437 por $824.450.
 - 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.

@@ -2,7 +2,7 @@
 rut: 78130985-0
 razon_social: "INVERSIONES GASTRONÓMICAS LOS PUTAMADRE LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # INVERSIONES GASTRONÓMICAS LOS PUTAMADRE LIMITADA
@@ -24,16 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2025-08-13**
-- Frecuencia de compra: ~1 factura cada **82 días**
+- Frecuencia de compra: ~1 factura cada **91 días**
 - Comportamiento de pago: **bueno** (30 días promedio)
-- Producto principal: **Barril 30L Scotch**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch**:
+Clientes que también compran **Scotch Ale**:
 
-- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
-- [[NEUROGASTRONOMICA AMADEUS SPA]] (77166721-K)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
+- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -41,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 253 días sin nueva factura (última: 2025-12-01).
 - 2026-07-07: ⚠️ Cliente inactivo — 218 días sin nueva factura (última: 2025-12-01).
 - 2026-04-12: ⚠️ 4 factura(s) vencida(s) (>30 días): #4409, #4431, #4463, #4536 por $342.952.
 - 2026-04-12: ⚠️ Cliente inactivo — 132 días sin nueva factura (última: 2025-12-01).

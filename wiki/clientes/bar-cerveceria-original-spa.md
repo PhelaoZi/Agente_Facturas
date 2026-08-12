@@ -2,7 +2,7 @@
 rut: 77042203-5
 razon_social: "BAR CERVECERÍA ORIGINAL SPA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # BAR CERVECERÍA ORIGINAL SPA
@@ -13,38 +13,39 @@ ultima_actualizacion: 2026-08-02
 | --- | --- |
 | Total vendido | $2.670.960 |
 | Facturas emitidas | 25 |
-| Facturas pendientes | 3 ($238.685) |
+| Facturas pendientes | 2 ($114.275) |
 | Promedio días de pago | 34 |
-| Último pago | 2026-05-20 |
+| Último pago | 2026-07-07 |
 
 ## Estado de cuenta
 
-- 3 factura(s) pendiente(s) por $238.685
-- Último pago registrado: 2026-05-20
+- 2 factura(s) pendiente(s) por $114.275
+- Último pago registrado: 2026-07-07
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-24**
 - Frecuencia de compra: ~1 factura cada **37 días**
 - Comportamiento de pago: **normal** (34 días promedio)
-- Producto principal: **Barril 30L RIS**
+- Producto principal: **Stout Café**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L RIS**:
+Clientes que también compran **Stout Café**:
 
-- [[INVERSIONES BARDOS SPA]] (76922048-8)
-- [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[COMERCIAL BACO SPA]] (76407717-2)
+- [[L ART D MANGARE BENE DA NOI SPA]] (76080129-1)
 - [[CAUR BAR SPA]] (78019027-2)
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[BROTHERS SPA]] (76573828-8)
 
 ## Inconsistencias
 
-- Producto principal histórico = **Barril 30L RIS**, pero en las últimas 3 facturas predomina **Barril 30L IPA W.C**. Posible cambio de patrón de compra.
+- Producto principal histórico = **Stout Café**, pero en las últimas 3 facturas predomina **RIS**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4567 por $0.
 - 2026-08-02: ⚠️ 2 factura(s) vencida(s) (>30 días): #4567, #4693 por $124.410.
 - 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-08-02: 📈 Deuda pendiente aumentó en $114.275.

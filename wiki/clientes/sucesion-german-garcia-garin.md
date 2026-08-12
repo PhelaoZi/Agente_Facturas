@@ -2,7 +2,7 @@
 rut: 53310722-2
 razon_social: "SUCESION GERMAN GARCIA GARIN"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # SUCESION GERMAN GARCIA GARIN
@@ -24,17 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-17**
-- Frecuencia de compra: ~1 factura cada **451 días**
+- Frecuencia de compra: ~1 factura cada **468 días**
 - Comportamiento de pago: **bueno** (30 días promedio)
-- Producto principal: **Lata 470cc Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Lata 470cc Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
-- [[MAS PUNTO PAIS SPA]] (77303179-7)
-- [[IMPORTADORA LES DIX VINS SPA]] (76358171-3)
-- [[CERVEZAS DEL MUNDO SPA]] (77098935-3)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
+- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -42,6 +44,7 @@ Clientes que también compran **Lata 470cc Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 910 días sin nueva factura (última: 2024-02-13).
 - 2026-07-07: ⚠️ Cliente inactivo — 875 días sin nueva factura (última: 2024-02-13).
 - 2026-04-12: ⚠️ 2 factura(s) vencida(s) (>30 días): #3938, #3969 por $111.033.
 - 2026-04-12: ⚠️ Cliente inactivo — 789 días sin nueva factura (última: 2024-02-13).

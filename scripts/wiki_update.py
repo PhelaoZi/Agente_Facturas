@@ -19,7 +19,10 @@ import unicodedata
 from datetime import date, datetime
 from pathlib import Path
 
-from _console import force_utf8
+try:
+    from _console import force_utf8          # ejecutado como script
+except ImportError:
+    from scripts._console import force_utf8  # importado como paquete (tests)
 
 force_utf8()
 
@@ -139,6 +142,111 @@ def fmt_fecha(d):
 
 # ─── Queries de datos de cliente ──────────────────────────────────────────────
 
+# ─── Productos: agrupados por cerveza, no por como se escribio el item ────────
+# El productor escribe el nombre a mano en cada factura, asi que la misma
+# cerveza aparece con 123 descripciones distintas. Agrupando por el texto crudo,
+# "Barril 30L Stout Cafe" y "Barril 30L Sout Cafe" generan DOS paginas de
+# producto para la misma cerveza, y el top de un cliente se reparte entre
+# variantes.
+#
+# La fuente canonica es `v_ingreso_producto`, que ya trae el nombre normalizado
+# (ver CLAUDE.md). Si la atribucion todavia no esta calculada, se cae al camino
+# anterior: es preferible una agrupacion imperfecta a no generar la wiki.
+
+# Lineas que no son producto del catalogo, para el camino de respaldo.
+FILTRO_NO_CATALOGO = (
+    "AND p.nombre_producto NOT ILIKE '%%logist%%' "
+    r"AND p.nombre_producto !~* '^(barril(es)?\s+)?pet\y' "
+    "AND p.nombre_producto NOT ILIKE '%%co2%%' "
+)
+
+
+def hay_atribucion(cur):
+    """Si la capa de atribucion esta calculada y tiene datos."""
+    try:
+        cur.execute("SELECT COUNT(*) FROM v_ingreso_producto")
+        return bool(cur.fetchone()[0])
+    except Exception:
+        return False
+
+
+def top_productos_cliente(cur, rut, limite=3):
+    """Cervezas mas compradas por un cliente, en unidades."""
+    if hay_atribucion(cur):
+        cur.execute(
+            "SELECT cerveza, SUM(unidades) AS cant "
+            "FROM v_ingreso_producto WHERE rut_cliente = %s "
+            "GROUP BY cerveza HAVING SUM(unidades) > 0 "
+            "ORDER BY cant DESC LIMIT %s",
+            (rut, limite),
+        )
+    else:
+        cur.execute(
+            "SELECT p.nombre_producto, SUM(p.cantidad) "
+            "FROM productos p "
+            "JOIN ventas v ON v.folio::text = p.folio::text "
+            "  AND v.tipo_documento = p.tipo_documento "
+            "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
+            + FILTRO_NO_CATALOGO +
+            "GROUP BY p.nombre_producto ORDER BY SUM(p.cantidad) DESC LIMIT %s",
+            (rut, limite),
+        )
+    return [{"nombre": r[0], "cantidad": float(r[1]) if r[1] else 0}
+            for r in cur.fetchall()]
+
+
+def productos_destacados(cur, limite=15):
+    """Cervezas con pagina propia en la wiki."""
+    if hay_atribucion(cur):
+        cur.execute(
+            "SELECT cerveza, SUM(unidades) AS cant FROM v_ingreso_producto "
+            "GROUP BY cerveza HAVING SUM(unidades) > 0 "
+            "ORDER BY cant DESC LIMIT %s",
+            (limite,),
+        )
+    else:
+        cur.execute(
+            "SELECT p.nombre_producto, SUM(p.cantidad) AS cant "
+            "FROM productos p "
+            "JOIN ventas v ON v.folio::text = p.folio::text "
+            "  AND v.tipo_documento = p.tipo_documento "
+            "WHERE v.tipo_documento != '61' "
+            + FILTRO_NO_CATALOGO +
+            "GROUP BY p.nombre_producto ORDER BY cant DESC LIMIT %s",
+            (limite,),
+        )
+    return [r[0] for r in cur.fetchall()]
+
+
+def compradores_de(cur, producto, limite=10, excluir_rut=None):
+    """Quienes compran una cerveza, en unidades. Devuelve (razon, rut, cant)."""
+    if hay_atribucion(cur):
+        sql = ("SELECT razon_social, rut_cliente, SUM(unidades) AS cant "
+               "FROM v_ingreso_producto WHERE cerveza = %s ")
+        params = [producto]
+        if excluir_rut:
+            sql += "AND rut_cliente != %s "
+            params.append(excluir_rut)
+        sql += ("GROUP BY razon_social, rut_cliente HAVING SUM(unidades) > 0 "
+                "ORDER BY cant DESC LIMIT %s")
+        cur.execute(sql, params + [limite])
+    else:
+        sql = ("SELECT c.razon_social, v.rut_cliente, SUM(p.cantidad) AS cant "
+               "FROM productos p "
+               "JOIN ventas v ON v.folio::text = p.folio::text "
+               "  AND v.tipo_documento = p.tipo_documento "
+               "JOIN clientes c ON c.rut_cliente = v.rut_cliente "
+               "WHERE p.nombre_producto = %s AND v.tipo_documento != '61' ")
+        params = [producto]
+        if excluir_rut:
+            sql += "AND v.rut_cliente != %s "
+            params.append(excluir_rut)
+        sql += "GROUP BY c.razon_social, v.rut_cliente ORDER BY cant DESC LIMIT %s"
+        cur.execute(sql, params + [limite])
+    return list(cur.fetchall())
+
+
+
 def obtener_datos_cliente(cur, rut):
     """Ejecuta 6 queries y retorna un dict con toda la info del cliente."""
 
@@ -177,25 +285,8 @@ def obtener_datos_cliente(cur, rut):
     )
     promedio_dias_pago, ultimo_pago = cur.fetchone()
 
-    # 5. Top 3 productos más comprados
-    cur.execute(
-        "SELECT p.nombre_producto, SUM(p.cantidad) "
-        "FROM productos p "
-        "JOIN ventas v ON v.folio::text = p.folio::text AND v.tipo_documento = p.tipo_documento "
-        "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
-        # Excluir lineas que no son producto (ver CLAUDE.md): Logistica, envase
-        # PET y carga de CO2
-        "AND p.nombre_producto NOT ILIKE '%%logist%%' "
-        "AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y' "
-        "AND p.nombre_producto NOT ILIKE '%%co2%%' "
-        "GROUP BY p.nombre_producto "
-        "ORDER BY SUM(cantidad) DESC LIMIT 3",
-        (rut,)
-    )
-    top_productos = [
-        {"nombre": row[0], "cantidad": float(row[1]) if row[1] else 0}
-        for row in cur.fetchall()
-    ]
+    # 5. Top 3 cervezas más compradas (agrupadas por nombre canónico)
+    top_productos = top_productos_cliente(cur, rut, limite=3)
 
     # 6. Cliente desde (primera factura)
     cur.execute(
@@ -445,22 +536,10 @@ def obtener_relacionados(cur, datos):
     if not datos.get("top_productos"):
         return []
     producto_principal = datos["top_productos"][0]["nombre"]
-    cur.execute(
-        "SELECT c.razon_social, c.rut_cliente, SUM(p.cantidad) AS total "
-        "FROM productos p "
-        "JOIN ventas v ON v.folio::text = p.folio::text "
-        "  AND v.tipo_documento = p.tipo_documento "
-        "JOIN clientes c ON c.rut_cliente = v.rut_cliente "
-        "WHERE p.nombre_producto = %s "
-        "  AND v.rut_cliente != %s "
-        "  AND v.tipo_documento != '61' "
-        "GROUP BY c.razon_social, c.rut_cliente "
-        "ORDER BY total DESC LIMIT 5",
-        (producto_principal, datos["rut"]),
-    )
     return [
         {"razon_social": r[0], "rut": r[1], "producto": producto_principal}
-        for r in cur.fetchall()
+        for r in compradores_de(cur, producto_principal, limite=5,
+                                excluir_rut=datos["rut"])
     ]
 
 
@@ -501,24 +580,39 @@ def detectar_inconsistencias(cur, datos, notas_existentes=""):
     # 3. Top producto (global) diferente al producto de las últimas 3 facturas
     if datos.get("top_productos"):
         top_global = datos["top_productos"][0]["nombre"]
-        cur.execute(
-            "SELECT p.nombre_producto, SUM(p.cantidad) "
-            "FROM productos p "
-            "JOIN ventas v ON v.folio::text = p.folio::text "
-            "  AND v.tipo_documento = p.tipo_documento "
-            "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
-            "  AND v.folio IN ( "
-            "    SELECT folio FROM ventas "
-            "    WHERE rut_cliente = %s AND tipo_documento != '61' "
-            "    ORDER BY fecha DESC LIMIT 3 "
-            "  ) "
-            "  AND p.nombre_producto NOT ILIKE '%%logist%%' "
-            "  AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y' "
-            "  AND p.nombre_producto NOT ILIKE '%%co2%%' "
-            "GROUP BY p.nombre_producto "
-            "ORDER BY SUM(p.cantidad) DESC LIMIT 1",
-            (rut, rut),
-        )
+        # Agrupado por cerveza canónica igual que el top histórico: si no, la
+        # comparación se dispara sola cuando el productor escribe la misma
+        # cerveza distinto ("Stout Cafe" vs "Sout Cafe") y reporta un cambio de
+        # patrón que nunca ocurrió.
+        if hay_atribucion(cur):
+            cur.execute(
+                "SELECT cerveza, SUM(unidades) FROM v_ingreso_producto "
+                "WHERE rut_cliente = %s AND folio IN ( "
+                "    SELECT folio FROM ventas "
+                "    WHERE rut_cliente = %s AND tipo_documento != '61' "
+                "    ORDER BY fecha DESC LIMIT 3 "
+                "  ) "
+                "GROUP BY cerveza HAVING SUM(unidades) > 0 "
+                "ORDER BY SUM(unidades) DESC LIMIT 1",
+                (rut, rut),
+            )
+        else:
+            cur.execute(
+                "SELECT p.nombre_producto, SUM(p.cantidad) "
+                "FROM productos p "
+                "JOIN ventas v ON v.folio::text = p.folio::text "
+                "  AND v.tipo_documento = p.tipo_documento "
+                "WHERE v.rut_cliente = %s AND v.tipo_documento != '61' "
+                "  AND v.folio IN ( "
+                "    SELECT folio FROM ventas "
+                "    WHERE rut_cliente = %s AND tipo_documento != '61' "
+                "    ORDER BY fecha DESC LIMIT 3 "
+                "  ) "
+                + FILTRO_NO_CATALOGO +
+                "GROUP BY p.nombre_producto "
+                "ORDER BY SUM(p.cantidad) DESC LIMIT 1",
+                (rut, rut),
+            )
         row = cur.fetchone()
         if row and row[0] and row[0] != top_global:
             resultados.append(
@@ -888,40 +982,17 @@ def actualizar_conceptos(cur):
     lineas.append("")
     (CONCEPTOS_DIR / "clientes-inactivos.md").write_text("\n".join(lineas), encoding="utf-8")
 
-    # 4. Productos: un archivo por producto con top 10 clientes que lo compran
-    cur.execute(
-        "SELECT p.nombre_producto, SUM(p.cantidad) AS cant "
-        "FROM productos p "
-        "JOIN ventas v ON v.folio::text = p.folio::text "
-        "  AND v.tipo_documento = p.tipo_documento "
-        "WHERE v.tipo_documento != '61' "
-        # Excluir lineas que no son producto (ver CLAUDE.md). Sin parametros %s:
-        # aqui el % va simple, no doblado.
-        "AND p.nombre_producto NOT ILIKE '%logist%' "
-        "AND p.nombre_producto !~* '^(barril(es)?\\s+)?pet\\y' "
-        "AND p.nombre_producto NOT ILIKE '%co2%' "
-        "GROUP BY p.nombre_producto "
-        "ORDER BY cant DESC LIMIT 15"
-    )
-    productos = [r[0] for r in cur.fetchall()]
+    # 4. Productos: un archivo por CERVEZA con top 10 clientes que la compran.
+    # Agrupa por nombre canónico, así que "Stout Cafe" y la errata "Sout Cafe"
+    # ya no generan dos páginas para la misma cerveza.
+    productos = productos_destacados(cur, limite=15)
 
     # Limpiar productos viejos (regeneramos desde cero)
     for f in PRODUCTOS_DIR.glob("*.md"):
         f.unlink()
 
     for nombre in productos:
-        cur.execute(
-            "SELECT c.razon_social, v.rut_cliente, SUM(p.cantidad) AS cant "
-            "FROM productos p "
-            "JOIN ventas v ON v.folio::text = p.folio::text "
-            "  AND v.tipo_documento = p.tipo_documento "
-            "JOIN clientes c ON c.rut_cliente = v.rut_cliente "
-            "WHERE p.nombre_producto = %s AND v.tipo_documento != '61' "
-            "GROUP BY c.razon_social, v.rut_cliente "
-            "ORDER BY cant DESC LIMIT 10",
-            (nombre,),
-        )
-        compradores = cur.fetchall()
+        compradores = compradores_de(cur, nombre, limite=10)
         slug = slugify(nombre) or "producto"
         lineas = [
             f"# Producto: {nombre}",

@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-08-02",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-03",
   "comuna": "SAN MIGUEL",
   "deuda_pendiente": 254256.0,
@@ -13,15 +13,15 @@
   "top_productos": [
     {
       "cantidad": 21.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "nombre": "Scotch Ale"
     },
     {
       "cantidad": 12.0,
-      "nombre": "Lata 470cc Sour Berries"
+      "nombre": "Sour Berries"
     },
     {
       "cantidad": 1.0,
-      "nombre": "Barril Mincay"
+      "nombre": "Mincay"
     }
   ],
   "total_vendido": 1698248.0,

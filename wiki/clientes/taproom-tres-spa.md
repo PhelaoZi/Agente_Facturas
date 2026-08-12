@@ -2,7 +2,7 @@
 rut: 77568741-K
 razon_social: "TAPROOM TRES SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # TAPROOM TRES SPA
@@ -26,11 +26,11 @@ ultima_actualizacion: 2026-07-07
 - Cliente desde **2024-01-26**
 - Solo 1 compra registrada
 - Comportamiento de pago: **lento** (126 días promedio)
-- Producto principal: **Barril 30L Sour Pi�a**
+- Producto principal: **Sour Piña**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Sour Pi�a**:
+Clientes que también compran **Sour Piña**:
 
 - [[PRODUCTOS SIBARITAS DEL SUR SPA]] (76315087-9)
 - [[VDT SPA]] (77220069-2)
@@ -41,6 +41,7 @@ Clientes que también compran **Barril 30L Sour Pi�a**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 928 días sin nueva factura (última: 2024-01-26).
 - 2026-07-07: ⚠️ Cliente inactivo — 893 días sin nueva factura (última: 2024-01-26).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3952 por $110.110.
 - 2026-04-12: ⚠️ Cliente inactivo — 807 días sin nueva factura (última: 2024-01-26).

@@ -1,29 +1,29 @@
 {
-  "_snapshot_fecha": "2026-08-02",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-03",
   "comuna": "PROVIDENCIA",
-  "deuda_pendiente": 350740.0,
+  "deuda_pendiente": 280750.0,
   "direccion": "GENERAL BUSTAMANTE 50",
   "estado": "activo",
   "facturas_emitidas": 32,
-  "facturas_pendientes": 4,
+  "facturas_pendientes": 3,
   "promedio_dias_pago": 38,
   "razon_social": "NEUROGASTRONOMICA AMADEUS SPA",
   "rut": "77166721-K",
   "top_productos": [
     {
-      "cantidad": 22.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "cantidad": 24.0,
+      "nombre": "Scotch Ale"
+    },
+    {
+      "cantidad": 3.0,
+      "nombre": "Wee Heavy"
     },
     {
       "cantidad": 2.0,
-      "nombre": "Barril 30L Stout Cafe"
-    },
-    {
-      "cantidad": 2.0,
-      "nombre": "Barril 30L Wee Heavy"
+      "nombre": "Stout Café"
     }
   ],
   "total_vendido": 2404215.0,
-  "ultimo_pago": "2026-03-29"
+  "ultimo_pago": "2026-06-19"
 }

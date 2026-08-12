@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2025-07-23",
   "comuna": "LA REINA",
   "deuda_pendiente": 0,
@@ -13,15 +13,15 @@
   "top_productos": [
     {
       "cantidad": 3.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "nombre": "Scotch Ale"
     },
     {
       "cantidad": 1.0,
-      "nombre": "Barril 30L Cream  Ale"
+      "nombre": "Cream Ale"
     },
     {
       "cantidad": 1.0,
-      "nombre": "Barril 30L Wee Heavy"
+      "nombre": "Wee Heavy"
     }
   ],
   "total_vendido": 394370.0,

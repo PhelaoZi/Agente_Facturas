@@ -2,7 +2,7 @@
 rut: 76420926-5
 razon_social: "COMERCIAL MONKEY SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # COMERCIAL MONKEY SPA
@@ -25,26 +25,28 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-04-22**
-- Frecuencia de compra: ~1 factura cada **67 días**
+- Frecuencia de compra: ~1 factura cada **70 días**
 - Comportamiento de pago: **bueno** (29 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Black IPA**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Black IPA**:
 
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
-- [[RESTAURANTE MARINA SPA]] (77126823-4)
-- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 - [[VDT SPA]] (77220069-2)
+- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
+- [[GHMPS BAR RESTAURANTES LIMITADA]] (77282279-0)
+- [[BAR CERVECERÍA ORIGINAL SPA]] (77042203-5)
 
 ## Inconsistencias
 
-- Ninguna detectada
+- Producto principal histórico = **Black IPA**, pero en las últimas 3 facturas predomina **Cream Ale**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4339 por $0.
+- 2026-08-11: ⚠️ Cliente inactivo — 390 días sin nueva factura (última: 2025-07-17).
 - 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4339 por $0.
 - 2026-07-07: ⚠️ Cliente inactivo — 355 días sin nueva factura (última: 2025-07-17).
 - 2026-04-12: ⚠️ 12 factura(s) vencida(s) (>30 días): #4190, #4214, #4252, #4257, #4016, #4281, #4305, #4339, #4340, #4347, #4360, #4379 por $1.001.660.

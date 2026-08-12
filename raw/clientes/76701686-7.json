@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-26",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-02-28",
   "comuna": "PROVIDENCIA",
   "deuda_pendiente": 1106006.0,
@@ -12,16 +12,16 @@
   "rut": "76701686-7",
   "top_productos": [
     {
-      "cantidad": 118.0,
-      "nombre": "Barril 30L Cream Ale"
+      "cantidad": 117.0,
+      "nombre": "Cream Ale"
     },
     {
-      "cantidad": 78.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "cantidad": 79.0,
+      "nombre": "Scotch Ale"
     },
     {
-      "cantidad": 3.0,
-      "nombre": "Barril 30L Scotch  Ale"
+      "cantidad": 1.0,
+      "nombre": "Hazy Black IPA"
     }
   ],
   "total_vendido": 12739529.0,

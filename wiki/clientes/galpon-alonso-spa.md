@@ -2,7 +2,7 @@
 rut: 77615028-2
 razon_social: "GALPON ALONSO SPA"
 estado: incobrable
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # GALPON ALONSO SPA
@@ -25,20 +25,20 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **76 días**
+- Frecuencia de compra: ~1 factura cada **79 días**
 - Comportamiento de pago: **bueno** (27 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
 - ⚠ **Cliente marcado como incobrable**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
-- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -46,6 +46,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 2 factura(s) vencida(s) (>30 días): #4238, #4263 por $209.971.
 - 2026-07-07: ⚠️ 2 factura(s) vencida(s) (>30 días): #4238, #4263 por $209.971.
 - 2026-04-12: ⚠️ 12 factura(s) vencida(s) (>30 días): #3926, #3935, #3944, #3958, #3966, #3974, #3983, #3993, #4053, #4238, #4263, #4052 por $1.332.185.
 - 2026-04-08: ⚠️ 12 factura(s) vencida(s) (>30 días): #3926, #3935, #3944, #3958, #3966, #3974, #3983, #3993, #4053, #4238, #4263, #4052 por $1.332.185.

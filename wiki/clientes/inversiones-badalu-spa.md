@@ -2,7 +2,7 @@
 rut: 77101813-0
 razon_social: "INVERSIONES BADALU SPA"
 estado: incobrable
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # INVERSIONES BADALU SPA
@@ -24,20 +24,20 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **229 días**
+- Frecuencia de compra: ~1 factura cada **238 días**
 - Comportamiento de pago: **lento** (46 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 - ⚠ **Cliente marcado como incobrable**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 

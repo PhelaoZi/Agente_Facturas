@@ -1,0 +1,17 @@
+# Producto: Paint it Black
+
+Actualizado: 2026-08-11
+
+## Clientes que lo compran
+
+| Cliente | RUT | Cantidad total |
+| --- | --- | --- |
+| [[BAR CERVECERÍA ORIGINAL SPA]] | 77042203-5 | 3 |
+| [[COPAYAPU BREW-HOUSE SPA]] | 76586346-5 | 2 |
+| [[SOC COMERCIAL EBANO LIMITADA]] | 77352780-6 | 2 |
+| [[VDT SPA]] | 77220069-2 | 2 |
+| [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] | 76701686-7 | 1 |
+| [[COMERCIAL MONKEY SPA]] | 76420926-5 | 1 |
+| [[CAFETERIA FYLGJA LIMITADA]] | 77854791-0 | 1 |
+| [[CAUR BAR SPA]] | 78019027-2 | 1 |
+| [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] | 76364354-9 | 1 |

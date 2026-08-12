@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-20",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-01-24",
   "comuna": "NUNOA",
   "deuda_pendiente": 188750.0,
@@ -12,16 +12,16 @@
   "rut": "77352780-6",
   "top_productos": [
     {
-      "cantidad": 28.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "cantidad": 34.0,
+      "nombre": "Scotch Ale"
     },
     {
       "cantidad": 21.0,
-      "nombre": "Barril 30L Cream Ale"
+      "nombre": "Cream Ale"
     },
     {
-      "cantidad": 6.0,
-      "nombre": "Barril 30L Stout Cafe"
+      "cantidad": 7.0,
+      "nombre": "Black IPA"
     }
   ],
   "total_vendido": 6788704.0,

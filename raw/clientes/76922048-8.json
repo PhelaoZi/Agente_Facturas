@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-20",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-04-23",
   "comuna": "ANTOFAGASTA",
   "deuda_pendiente": 453660.0,
@@ -12,16 +12,16 @@
   "rut": "76922048-8",
   "top_productos": [
     {
-      "cantidad": 24.0,
-      "nombre": "Lata 470cc Mincay"
+      "cantidad": 21.0,
+      "nombre": "RIS"
     },
     {
-      "cantidad": 24.0,
-      "nombre": "Lata 470cc RedHouse"
+      "cantidad": 12.0,
+      "nombre": "West Coast IPA"
     },
     {
-      "cantidad": 18.0,
-      "nombre": "Barril 30L RIS"
+      "cantidad": 4.0,
+      "nombre": "Stout Café"
     }
   ],
   "total_vendido": 5976271.0,

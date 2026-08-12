@@ -2,7 +2,7 @@
 rut: 76177121-3
 razon_social: "MAZACCONE SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # MAZACCONE SPA
@@ -24,26 +24,27 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-04-19**
-- Frecuencia de compra: ~1 factura cada **162 días**
+- Frecuencia de compra: ~1 factura cada **169 días**
 - Comportamiento de pago: **lento** (48 días promedio)
-- Producto principal: **Barril 30L Black IPA**
+- Producto principal: **Black IPA**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Black IPA**:
+Clientes que también compran **Black IPA**:
 
 - [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[COMERCIAL MONKEY SPA]] (76420926-5)
 - [[VDT SPA]] (77220069-2)
-- [[BAR CERVECERÍA ORIGINAL SPA]] (77042203-5)
-- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
 - [[INVERSIONES BARDOS SPA]] (76922048-8)
+- [[BAR CERVECERÍA ORIGINAL SPA]] (77042203-5)
 
 ## Inconsistencias
 
-- Ninguna detectada
+- Producto principal histórico = **Black IPA**, pero en las últimas 3 facturas predomina **Sour Piña/Lima**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 272 días sin nueva factura (última: 2025-11-12).
 - 2026-07-07: ⚠️ Cliente inactivo — 237 días sin nueva factura (última: 2025-11-12).
 - 2026-04-12: ⚠️ 5 factura(s) vencida(s) (>30 días): #4011, #4260, #4273, #4325, #4498 por $602.231.
 - 2026-04-12: ⚠️ Cliente inactivo — 151 días sin nueva factura (última: 2025-11-12).

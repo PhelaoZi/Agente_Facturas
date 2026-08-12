@@ -1,15 +1,15 @@
-# Producto: Barril 30L RIS
+# Producto: RIS
 
-Actualizado: 2026-08-02
+Actualizado: 2026-08-11
 
 ## Clientes que lo compran
 
 | Cliente | RUT | Cantidad total |
 | --- | --- | --- |
-| [[INVERSIONES BARDOS SPA]] | 76922048-8 | 18 |
+| [[INVERSIONES BARDOS SPA]] | 76922048-8 | 21 |
 | [[VDT SPA]] | 77220069-2 | 4 |
-| [[BAR CERVECERÍA ORIGINAL SPA]] | 77042203-5 | 3 |
 | [[SOC COMERCIAL EBANO LIMITADA]] | 77352780-6 | 3 |
+| [[BAR CERVECERÍA ORIGINAL SPA]] | 77042203-5 | 3 |
 | [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] | 76364354-9 | 2 |
 | [[CAUR BAR SPA]] | 78019027-2 | 2 |
 | [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] | 76701686-7 | 1 |

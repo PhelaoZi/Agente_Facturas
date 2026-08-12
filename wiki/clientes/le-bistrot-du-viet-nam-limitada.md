@@ -2,7 +2,7 @@
 rut: 76714223-4
 razon_social: "LE BISTROT DU VIET NAM LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # LE BISTROT DU VIET NAM LIMITADA
@@ -25,15 +25,19 @@ ultima_actualizacion: 2026-08-02
 ## Patrón de comportamiento
 
 - Cliente desde **2026-03-10**
-- Frecuencia de compra: ~1 factura cada **21 días**
+- Frecuencia de compra: ~1 factura cada **22 días**
 - Comportamiento de pago: **bueno** (26 días promedio)
-- Producto principal: **Botella 330cc Cream Ale**
+- Producto principal: **Cream Ale**
 
 ## Relacionados
 
-Clientes que también compran **Botella 330cc Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
+- [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
 - [[GR RESTAURANTES LIMITADA]] (76081959-K)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 

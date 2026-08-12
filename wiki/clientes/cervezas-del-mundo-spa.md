@@ -2,7 +2,7 @@
 rut: 77098935-3
 razon_social: "CERVEZAS DEL MUNDO SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # CERVEZAS DEL MUNDO SPA
@@ -24,13 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-02-07**
-- Frecuencia de compra: ~1 factura cada **294 días**
+- Frecuencia de compra: ~1 factura cada **305 días**
 - Comportamiento de pago: **bueno** (30 días promedio)
-- Producto principal: **Lata 470cc Session IPA**
+- Producto principal: **Session IPA**
 
 ## Relacionados
 
-- Sin clientes relacionados detectados
+Clientes que también compran **Session IPA**:
+
+- [[UNCLE FLETCH CHILE SPA]] (76296603-4)
+- [[COMERCIAL PEUMAYEN LIMITADA]] (76157936-3)
+- [[INVERSIONES VALENZUELA SPA]] (76767175-K)
+- [[NEUROGASTRONOMICA AMADEUS SPA]] (77166721-K)
+- [[RESTOBAR RUBIK LIMITADA]] (76231880-6)
 
 ## Inconsistencias
 
@@ -38,6 +44,7 @@ ultima_actualizacion: 2026-07-07
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 824 días sin nueva factura (última: 2024-05-09).
 - 2026-07-07: ⚠️ Cliente inactivo — 789 días sin nueva factura (última: 2024-05-09).
 - 2026-04-12: ⚠️ 3 factura(s) vencida(s) (>30 días): #3961, #3978, #4034 por $124.702.
 - 2026-04-12: ⚠️ Cliente inactivo — 703 días sin nueva factura (última: 2024-05-09).

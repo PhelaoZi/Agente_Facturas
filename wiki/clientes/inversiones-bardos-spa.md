@@ -2,7 +2,7 @@
 rut: 76922048-8
 razon_social: "INVERSIONES BARDOS SPA"
 estado: activo
-ultima_actualizacion: 2026-07-20
+ultima_actualizacion: 2026-08-11
 ---
 
 # INVERSIONES BARDOS SPA
@@ -25,17 +25,23 @@ ultima_actualizacion: 2026-07-20
 ## Patrón de comportamiento
 
 - Cliente desde **2024-04-23**
-- Frecuencia de compra: ~1 factura cada **74 días**
+- Frecuencia de compra: ~1 factura cada **76 días**
 - Comportamiento de pago: **rápido** (7 días promedio)
-- Producto principal: **Lata 470cc Mincay**
+- Producto principal: **RIS**
 
 ## Relacionados
 
-- Sin clientes relacionados detectados
+Clientes que también compran **RIS**:
+
+- [[VDT SPA]] (77220069-2)
+- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
+- [[BAR CERVECERÍA ORIGINAL SPA]] (77042203-5)
+- [[CAUR BAR SPA]] (78019027-2)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
 
 ## Inconsistencias
 
-- Producto principal histórico = **Lata 470cc Mincay**, pero en las últimas 3 facturas predomina **Barril 30L IPA W.C**. Posible cambio de patrón de compra.
+- Producto principal histórico = **RIS**, pero en las últimas 3 facturas predomina **Stout Café**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 

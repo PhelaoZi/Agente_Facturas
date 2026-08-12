@@ -2,7 +2,7 @@
 rut: 76296603-4
 razon_social: "UNCLE FLETCH CHILE SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # UNCLE FLETCH CHILE SPA
@@ -24,19 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-03**
-- Frecuencia de compra: ~1 factura cada **48 días**
+- Frecuencia de compra: ~1 factura cada **50 días**
 - Comportamiento de pago: **normal** (45 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
@@ -44,6 +44,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 314 días sin nueva factura (última: 2025-10-01).
 - 2026-07-07: ⚠️ Cliente inactivo — 279 días sin nueva factura (última: 2025-10-01).
 - 2026-04-12: ⚠️ 19 factura(s) vencida(s) (>30 días): #3923, #3987, #3988, #3990, #3997, #4000, #4004, #4009, #4317, #4333, #4364, #4388, #4399, #4417, #4432, #4439, #4452, #3957, #3989 por $1.573.220.
 - 2026-04-12: ⚠️ Cliente inactivo — 193 días sin nueva factura (última: 2025-10-01).

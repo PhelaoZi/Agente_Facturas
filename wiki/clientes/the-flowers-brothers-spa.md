@@ -2,7 +2,7 @@
 rut: 77127778-0
 razon_social: "THE FLOWERS BROTHERS SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # THE FLOWERS BROTHERS SPA
@@ -26,16 +26,17 @@ ultima_actualizacion: 2026-07-07
 - Cliente desde **2024-02-07**
 - Solo 1 compra registrada
 - Comportamiento de pago: **rápido** (14 días promedio)
-- Producto principal: **Lata 470cc Sour Berries**
+- Producto principal: **Sour Berries**
 
 ## Relacionados
 
-Clientes que también compran **Lata 470cc Sour Berries**:
+Clientes que también compran **Sour Berries**:
 
 - [[SOCIEDAD CUENCA SUR INVERSIONES LIMITADA]] (76145092-1)
-- [[SUCESION GERMAN GARCIA GARIN]] (53310722-2)
-- [[CERVEZAS DEL MUNDO SPA]] (77098935-3)
 - [[BROTHERWOOD LA TIENDA SPA]] (77245148-2)
+- [[CERVEZAS DEL MUNDO SPA]] (77098935-3)
+- [[SUCESION GERMAN GARCIA GARIN]] (53310722-2)
+- [[PEPPERLAND BAR SPA]] (76568508-7)
 
 ## Inconsistencias
 
@@ -43,6 +44,7 @@ Clientes que también compran **Lata 470cc Sour Berries**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 916 días sin nueva factura (última: 2024-02-07).
 - 2026-07-07: ⚠️ Cliente inactivo — 881 días sin nueva factura (última: 2024-02-07).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #3962 por $30.774.
 - 2026-04-12: ⚠️ Cliente inactivo — 795 días sin nueva factura (última: 2024-02-07).

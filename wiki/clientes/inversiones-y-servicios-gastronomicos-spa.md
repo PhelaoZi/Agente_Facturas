@@ -2,7 +2,7 @@
 rut: 76701686-7
 razon_social: "INVERSIONES Y SERVICIOS GASTRONOMICOS SPA"
 estado: activo
-ultima_actualizacion: 2026-07-26
+ultima_actualizacion: 2026-08-11
 ---
 
 # INVERSIONES Y SERVICIOS GASTRONOMICOS SPA
@@ -27,17 +27,17 @@ ultima_actualizacion: 2026-07-26
 - Cliente desde **2024-02-28**
 - Frecuencia de compra: ~1 factura cada **12 días**
 - Comportamiento de pago: **normal** (35 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 6 factura(s) vencida(s) (>30 días): #4705, #4699, #4729, #4715, #4723, #4537 por $734.004.
 - 2026-07-26: ⚠️ 4 factura(s) vencida(s) (>30 días): #4705, #4699, #4715, #4537 por $548.004.
 - 2026-07-26: 📄 1 factura(s) nueva(s) desde 2026-07-20.
 - 2026-07-26: 📈 Deuda pendiente aumentó en $248.002.

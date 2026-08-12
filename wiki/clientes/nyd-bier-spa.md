@@ -2,7 +2,7 @@
 rut: 76938534-7
 razon_social: "NYD BIER SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # NYD BIER SPA
@@ -26,7 +26,6 @@ ultima_actualizacion: 2026-07-07
 - Cliente desde **2025-09-26**
 - Solo 1 compra registrada
 - Comportamiento de pago: **bueno** (30 días promedio)
-- Producto principal: **Malta.Boortmalt.Pilsen 25**
 
 ## Relacionados
 
@@ -34,10 +33,11 @@ ultima_actualizacion: 2026-07-07
 
 ## Inconsistencias
 
-- Ninguna detectada
+- Notas del agente mencionan 'incobrable' pero estado en BD no es 'incobrable'. Revisar manualmente.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 319 días sin nueva factura (última: 2025-09-26).
 - 2026-07-07: ⚠️ Cliente inactivo — 284 días sin nueva factura (última: 2025-09-26).
 - 2026-07-07: 🔄 Cambio de estado: 'incobrable' → 'activo'.
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4447 por $193.872.

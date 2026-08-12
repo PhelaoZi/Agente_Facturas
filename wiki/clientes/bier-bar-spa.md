@@ -1,8 +1,8 @@
 ---
 rut: 76861668-K
 razon_social: "BIER BAR SPA"
-estado: activo
-ultima_actualizacion: 2026-07-07
+estado: incobrable
+ultima_actualizacion: 2026-08-11
 ---
 
 # BIER BAR SPA
@@ -25,26 +25,29 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-04-19**
-- Frecuencia de compra: ~1 factura cada **67 días**
+- Frecuencia de compra: ~1 factura cada **70 días**
 - Comportamiento de pago: **normal** (33 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
+- ⚠ **Cliente marcado como incobrable**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
-- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
-- Producto principal histórico = **Barril 30L Cream Ale**, pero en las últimas 3 facturas predomina **Barril 30L Sout Caf/Ca**. Posible cambio de patrón de compra.
+- Producto principal histórico = **Cream Ale**, pero en las últimas 3 facturas predomina **Stout Café/Cacao**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4677 por $188.750.
+- 2026-08-11: 🔄 Cambio de estado: 'activo' → 'incobrable'.
 - 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4677 por $188.750.
 - 2026-06-03: ⚠️ 11 factura(s) vencida(s) (>30 días): #4012, #4151, #4168, #4236, #4294, #4330, #4378, #4398, #4512, #4576, #4591 por $1.473.168.
 - 2026-06-03: 📄 1 factura(s) nueva(s) desde 2026-04-12.

@@ -2,7 +2,7 @@
 rut: 76524621-0
 razon_social: "RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L."
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.
@@ -25,26 +25,28 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-31**
-- Frecuencia de compra: ~1 factura cada **59 días**
+- Frecuencia de compra: ~1 factura cada **62 días**
 - Comportamiento de pago: **normal** (44 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
-- Producto principal histórico = **Barril 30L Scotch Ale**, pero en las últimas 3 facturas predomina **Barril 30L Stout Cafe**. Posible cambio de patrón de compra.
+- Producto principal histórico = **Scotch Ale**, pero en las últimas 3 facturas predomina **Stout Café**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.
+- 2026-08-11: ⚠️ Cliente inactivo — 90 días sin nueva factura (última: 2026-05-13).
 - 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.
 - 2026-06-03: ⚠️ 1 factura(s) vencida(s) (>30 días): #4323 por $0.
 - 2026-06-03: 📄 2 factura(s) nueva(s) desde 2026-04-12.

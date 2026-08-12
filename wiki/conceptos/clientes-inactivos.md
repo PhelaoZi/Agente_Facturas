@@ -1,6 +1,6 @@
 # Clientes inactivos (>60 días sin compra)
 
-Actualizado: 2026-08-02 | 42 clientes inactivos
+Actualizado: 2026-08-11 | 42 clientes inactivos
 
 | Cliente | RUT | Última factura |
 | --- | --- | --- |
@@ -45,4 +45,4 @@ Actualizado: 2026-08-02 | 42 clientes inactivos
 | [[COMERCIALIZADORA DE CERVEZAS JRB LIMITADA]] | 76773284-8 | 2026-05-06 |
 | [[COMERCIAL BACO SPA]] | 76407717-2 | 2026-05-12 |
 | [[RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.]] | 76524621-0 | 2026-05-13 |
-| [[BIER BAR SPA]] | 76861668-K | 2026-05-13 |
+| [[SOCIEDAD GASTRONOMICA PRIMOS LIMITADA]] | 76011055-8 | 2026-06-11 |

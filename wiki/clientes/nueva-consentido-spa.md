@@ -2,7 +2,7 @@
 rut: 77227749-0
 razon_social: "NUEVA CONSENTIDO SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # NUEVA CONSENTIDO SPA
@@ -24,13 +24,19 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2025-06-18**
-- Frecuencia de compra: ~1 factura cada **192 días**
+- Frecuencia de compra: ~1 factura cada **210 días**
 - Comportamiento de pago: **bueno** (16 días promedio)
-- Producto principal: **Arriendo maquina schopera**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-- Sin clientes relacionados detectados
+Clientes que también compran **Scotch Ale**:
+
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
+- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -38,6 +44,7 @@ ultima_actualizacion: 2026-07-07
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 415 días sin nueva factura (última: 2025-06-22).
 - 2026-07-07: ⚠️ Cliente inactivo — 380 días sin nueva factura (última: 2025-06-22).
 - 2026-04-12: ⚠️ 2 factura(s) vencida(s) (>30 días): #4353, #4354 por $140.200.
 - 2026-04-12: ⚠️ Cliente inactivo — 294 días sin nueva factura (última: 2025-06-22).

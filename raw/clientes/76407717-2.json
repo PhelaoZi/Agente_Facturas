@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-07-07",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2025-12-12",
   "comuna": "SANTA MARIA",
   "deuda_pendiente": 0,
@@ -12,8 +12,8 @@
   "rut": "76407717-2",
   "top_productos": [
     {
-      "cantidad": 29.0,
-      "nombre": "Barril 30L Sout Cafe"
+      "cantidad": 34.0,
+      "nombre": "Stout Café"
     }
   ],
   "total_vendido": 2040480.0,

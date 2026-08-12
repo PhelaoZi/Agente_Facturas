@@ -2,7 +2,7 @@
 rut: 78019027-2
 razon_social: "CAUR BAR SPA"
 estado: activo
-ultima_actualizacion: 2026-07-20
+ultima_actualizacion: 2026-08-11
 ---
 
 # CAUR BAR SPA
@@ -25,26 +25,27 @@ ultima_actualizacion: 2026-07-20
 ## Patrón de comportamiento
 
 - Cliente desde **2025-03-15**
-- Frecuencia de compra: ~1 factura cada **62 días**
+- Frecuencia de compra: ~1 factura cada **64 días**
 - Comportamiento de pago: **bueno** (28 días promedio)
-- Producto principal: **Barril 30L Stout Cafe**
+- Producto principal: **Stout Café**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Stout Cafe**:
+Clientes que también compran **Stout Café**:
 
+- [[COMERCIAL BACO SPA]] (76407717-2)
+- [[L ART D MANGARE BENE DA NOI SPA]] (76080129-1)
 - [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
-- [[INVERSIONES BARDOS SPA]] (76922048-8)
-- [[VDT SPA]] (77220069-2)
+- [[BROTHERS SPA]] (76573828-8)
 - [[RESTAURANT PATRICIO ALBERTO TORO GUTIERREZ E.I.R.L.]] (76524621-0)
-- [[SOCIEDAD GASTRONOMICA SAER SPA]] (76337095-K)
 
 ## Inconsistencias
 
-- Producto principal histórico = **Barril 30L Stout Cafe**, pero en las últimas 3 facturas predomina **Barril 30L RIS**. Posible cambio de patrón de compra.
+- Producto principal histórico = **Stout Café**, pero en las últimas 3 facturas predomina **RIS**. Posible cambio de patrón de compra.
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 2 factura(s) vencida(s) (>30 días): #4726, #4534 por $226.830.
 - 2026-07-20: ⚠️ 1 factura(s) vencida(s) (>30 días): #4534 por $0.
 - 2026-07-20: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-20: 📈 Deuda pendiente aumentó en $226.830.

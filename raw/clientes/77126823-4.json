@@ -1,5 +1,5 @@
 {
-  "_snapshot_fecha": "2026-08-02",
+  "_snapshot_fecha": "2026-08-11",
   "cliente_desde": "2024-08-27",
   "comuna": "PROVIDENCIA",
   "deuda_pendiente": 1347667.0,
@@ -12,16 +12,16 @@
   "rut": "77126823-4",
   "top_productos": [
     {
-      "cantidad": 134.0,
-      "nombre": "Barril 30L Cream Ale"
+      "cantidad": 159.0,
+      "nombre": "Cream Ale"
     },
     {
-      "cantidad": 13.0,
-      "nombre": "Barril 30L Scotch Ale"
+      "cantidad": 14.0,
+      "nombre": "Scotch Ale"
     },
     {
-      "cantidad": 12.0,
-      "nombre": "Barril 30L Cream  Ale"
+      "cantidad": 6.0,
+      "nombre": "Sour Piña/Lima"
     }
   ],
   "total_vendido": 10998418.0,

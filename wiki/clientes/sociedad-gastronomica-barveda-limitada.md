@@ -2,7 +2,7 @@
 rut: 77594422-6
 razon_social: "SOCIEDAD GASTRONOMICA BARVEDA LIMITADA"
 estado: incobrable
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # SOCIEDAD GASTRONOMICA BARVEDA LIMITADA
@@ -25,20 +25,20 @@ ultima_actualizacion: 2026-07-07
 ## Patrón de comportamiento
 
 - Cliente desde **2024-07-30**
-- Frecuencia de compra: ~1 factura cada **39 días**
+- Frecuencia de compra: ~1 factura cada **41 días**
 - Comportamiento de pago: **normal** (36 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
 - ⚠ **Cliente marcado como incobrable**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
-- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -46,6 +46,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 4 factura(s) vencida(s) (>30 días): #4268, #4285, #4292, #4304 por $509.722.
 - 2026-07-07: ⚠️ 4 factura(s) vencida(s) (>30 días): #4268, #4285, #4292, #4304 por $509.722.
 - 2026-04-12: ⚠️ 10 factura(s) vencida(s) (>30 días): #4169, #4197, #4201, #4216, #4223, #4241, #4268, #4285, #4292, #4304 por $1.330.375.
 - 2026-04-08: ⚠️ 10 factura(s) vencida(s) (>30 días): #4169, #4197, #4201, #4216, #4223, #4241, #4268, #4285, #4292, #4304 por $1.330.375.

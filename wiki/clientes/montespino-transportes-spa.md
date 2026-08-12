@@ -2,7 +2,7 @@
 rut: 77945613-7
 razon_social: "MONTESPINO TRANSPORTES SPA"
 estado: activo
-ultima_actualizacion: 2026-07-07
+ultima_actualizacion: 2026-08-11
 ---
 
 # MONTESPINO TRANSPORTES SPA
@@ -26,11 +26,17 @@ ultima_actualizacion: 2026-07-07
 - Cliente desde **2025-11-19**
 - Solo 1 compra registrada
 - Comportamiento de pago: **bueno** (30 días promedio)
-- Producto principal: **Baril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-- Sin clientes relacionados detectados
+Clientes que también compran **Scotch Ale**:
+
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
+- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -38,6 +44,7 @@ ultima_actualizacion: 2026-07-07
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ Cliente inactivo — 265 días sin nueva factura (última: 2025-11-19).
 - 2026-07-07: ⚠️ Cliente inactivo — 230 días sin nueva factura (última: 2025-11-19).
 - 2026-04-12: ⚠️ 1 factura(s) vencida(s) (>30 días): #4510 por $69.990.
 - 2026-04-12: ⚠️ Cliente inactivo — 144 días sin nueva factura (última: 2025-11-19).

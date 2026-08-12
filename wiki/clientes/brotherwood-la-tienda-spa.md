@@ -2,7 +2,7 @@
 rut: 77245148-2
 razon_social: "BROTHERWOOD LA TIENDA SPA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # BROTHERWOOD LA TIENDA SPA
@@ -27,17 +27,17 @@ ultima_actualizacion: 2026-08-02
 - Cliente desde **2024-01-03**
 - Frecuencia de compra: ~1 factura cada **63 días**
 - Comportamiento de pago: **lento** (57 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[ESPACIOS GASTRONOMICOS OCULTO SPA]] (77290617-K)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 

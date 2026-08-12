@@ -2,7 +2,7 @@
 rut: 77220069-2
 razon_social: "VDT SPA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # VDT SPA
@@ -27,24 +27,25 @@ ultima_actualizacion: 2026-08-02
 - Cliente desde **2024-01-03**
 - Frecuencia de compra: ~1 factura cada **10 días**
 - Comportamiento de pago: **lento** (57 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
-- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
-- Producto principal histórico = **Barril 30L Cream Ale**, pero en las últimas 3 facturas predomina **Barril  30L Cream Ale**. Posible cambio de patrón de compra.
+- Ninguna detectada
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 6 factura(s) vencida(s) (>30 días): #4718, #4717, #4724, #4400, #4525, #4694 por $748.961.
 - 2026-08-02: ⚠️ 6 factura(s) vencida(s) (>30 días): #4718, #4717, #4724, #4400, #4525, #4694 por $748.961.
 - 2026-08-02: 📄 2 factura(s) nueva(s) desde 2026-07-20.
 - 2026-08-02: 📈 Deuda pendiente aumentó en $254.256.

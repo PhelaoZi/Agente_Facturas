@@ -2,7 +2,7 @@
 rut: 77290617-K
 razon_social: "ESPACIOS GASTRONOMICOS OCULTO SPA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # ESPACIOS GASTRONOMICOS OCULTO SPA
@@ -25,19 +25,19 @@ ultima_actualizacion: 2026-08-02
 ## Patrón de comportamiento
 
 - Cliente desde **2024-06-05**
-- Frecuencia de compra: ~1 factura cada **25 días**
+- Frecuencia de compra: ~1 factura cada **26 días**
 - Comportamiento de pago: **rápido** (14 días promedio)
-- Producto principal: **Barril 30L Scotch Ale**
+- Producto principal: **Scotch Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Scotch Ale**:
+Clientes que también compran **Scotch Ale**:
 
 - [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
-- [[NEUROGASTRONOMICA AMADEUS SPA]] (77166721-K)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 
 ## Inconsistencias
 
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 2 factura(s) vencida(s) (>30 días): #4697, #4709 por $139.980.
 - 2026-08-02: ⚠️ 2 factura(s) vencida(s) (>30 días): #4697, #4709 por $139.980.
 - 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-08-02: 📈 Deuda pendiente aumentó en $114.275.

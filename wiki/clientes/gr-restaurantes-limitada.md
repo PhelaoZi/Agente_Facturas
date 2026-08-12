@@ -2,7 +2,7 @@
 rut: 76081959-K
 razon_social: "GR RESTAURANTES LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # GR RESTAURANTES LIMITADA
@@ -25,15 +25,19 @@ ultima_actualizacion: 2026-08-02
 ## Patrón de comportamiento
 
 - Cliente desde **2026-03-10**
-- Frecuencia de compra: ~1 factura cada **24 días**
+- Frecuencia de compra: ~1 factura cada **26 días**
 - Comportamiento de pago: **bueno** (25 días promedio)
-- Producto principal: **Botella 330cc Cream Ale**
+- Producto principal: **Cream Ale**
 
 ## Relacionados
 
-Clientes que también compran **Botella 330cc Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
 - [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
+- [[A & C SERVICIOS GASTRONOMICOS LIMITADA]] (76364354-9)
+- [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
+- [[VDT SPA]] (77220069-2)
 
 ## Inconsistencias
 
@@ -41,6 +45,7 @@ Clientes que también compran **Botella 330cc Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4721 por $39.130.
 - 2026-08-02: ⚠️ 1 factura(s) vencida(s) (>30 días): #4721 por $39.130.
 - 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-20.
 - 2026-07-20: 📄 1 factura(s) nueva(s) desde 2026-07-07.

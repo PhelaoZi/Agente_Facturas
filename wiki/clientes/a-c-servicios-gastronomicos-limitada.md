@@ -2,7 +2,7 @@
 rut: 76364354-9
 razon_social: "A & C SERVICIOS GASTRONOMICOS LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-08-02
+ultima_actualizacion: 2026-08-11
 ---
 
 # A & C SERVICIOS GASTRONOMICOS LIMITADA
@@ -27,17 +27,17 @@ ultima_actualizacion: 2026-08-02
 - Cliente desde **2024-01-04**
 - Frecuencia de compra: ~1 factura cada **11 días**
 - Comportamiento de pago: **normal** (36 días promedio)
-- Producto principal: **Barril 30L Cream Ale**
+- Producto principal: **Cream Ale**
 
 ## Relacionados
 
-Clientes que también compran **Barril 30L Cream Ale**:
+Clientes que también compran **Cream Ale**:
 
+- [[LE BISTROT DU VIET NAM LIMITADA]] (76714223-4)
 - [[RESTAURANTE MARINA SPA]] (77126823-4)
+- [[GR RESTAURANTES LIMITADA]] (76081959-K)
 - [[INVERSIONES Y SERVICIOS GASTRONOMICOS SPA]] (76701686-7)
-- [[LEIVA, MC CARTHY Y SALAS SPA]] (76949132-5)
 - [[VDT SPA]] (77220069-2)
-- [[SOC COMERCIAL EBANO LIMITADA]] (77352780-6)
 
 ## Inconsistencias
 
@@ -45,6 +45,7 @@ Clientes que también compran **Barril 30L Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-11: ⚠️ 8 factura(s) vencida(s) (>30 días): #4704, #4700, #4728, #4714, #4708, #4722, #4538, #4691 por $1.658.420.
 - 2026-08-02: ⚠️ 7 factura(s) vencida(s) (>30 días): #4704, #4700, #4714, #4708, #4722, #4538, #4691 por $1.534.420.
 - 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-26.
 - 2026-08-02: 📈 Deuda pendiente aumentó en $124.000.
