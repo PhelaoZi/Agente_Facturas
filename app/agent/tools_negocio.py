@@ -14,6 +14,7 @@ from app.canvas.artifacts import Artifact
 from app.config import DB_URL
 from app.briefing import data as deuda_data
 from app.negocio import ventas as ventas_data
+from app.negocio import ingreso_producto as ingreso_data
 from app.negocio import costos as costos_data
 from app.negocio import flujo as flujo_data
 from app.negocio import gastos as gastos_data
@@ -257,7 +258,8 @@ def build_negocio_server(collector=None):
         return _texto(f"{args['nombre']}: {_pesos(r['total_real'])} en {r['n_facturas']} "
                       f"facturas ({r['n_notas_credito']} notas de crédito).")
 
-    @tool("ventas_producto", "Buscar ventas por nombre de producto.", {"nombre": str})
+    @tool("ventas_producto", "Buscar LÍNEAS de venta por nombre de producto "
+                             "(unidades y folios, NO dinero).", {"nombre": str})
     @_tool_seguro
     async def ventas_producto(args):
         r = _con_cursor(ventas_data.por_producto, args["nombre"])
@@ -265,6 +267,45 @@ def build_negocio_server(collector=None):
             return _texto(f"Sin ventas que coincidan con '{args['nombre']}'.")
         unidades = sum((x["cantidad"] or 0) for x in r)
         return _texto(f"'{args['nombre']}': {len(r)} líneas de venta, {unidades} unidades en total.")
+
+    @tool("ingreso_producto",
+          "Ingreso neto en pesos por cerveza (producto + logística). Es la "
+          "ÚNICA fuente de dinero por producto. Opcionales: desde, hasta "
+          "(YYYY-MM-DD), cerveza (para el detalle de una), limite.",
+          {"desde": str, "hasta": str, "cerveza": str, "limite": int},
+          opcionales=("desde", "hasta", "cerveza", "limite"))
+    @_tool_seguro
+    async def ingreso_producto(args):
+        """El ingreso de una cerveza es su línea MÁS la logística que le toca.
+
+        Sumar `productos` daba un tercio de lo real y además ordenaba mal el
+        ranking de clientes. La cabecera de alcance y cobertura la arma Python
+        con los filtros que de verdad llegaron: el modelo puede olvidarlos.
+        """
+        desde, hasta = args.get("desde"), args.get("hasta")
+
+        if args.get("cerveza"):
+            r = _con_cursor(ingreso_data.por_cerveza, args["cerveza"], desde, hasta)
+            if not r["ingreso"]:
+                return _texto(f"Sin ventas de '{args['cerveza']}' ({r['alcance']}).")
+            lineas = [f"- {c['cliente']}: {_pesos(c['ingreso'])} "
+                      f"({c['unidades']:.0f} unidades)" for c in r["clientes"]]
+            return _texto(
+                f"{r['alcance']}\nCobertura: {r['cobertura']}\n"
+                f"Ingreso neto: {_pesos(r['ingreso'])} en {r['n_documentos']} "
+                f"documentos, {r['unidades']:.0f} unidades.\n"
+                f"Principales clientes:\n" + "\n".join(lineas))
+
+        r = _con_cursor(ingreso_data.ranking, desde, hasta, args.get("limite") or 10)
+        if not r["cervezas"]:
+            return _texto(f"Sin ventas de cerveza ({r['alcance']}).")
+        lineas = [
+            f"- {c['cerveza']}: {_pesos(c['ingreso'])} ({c['unidades']:.0f} unidades"
+            + (f", {c['pct_estimado']:.0f}% estimado)" if c["pct_estimado"] else ")")
+            for c in r["cervezas"]
+        ]
+        return _texto(f"{r['alcance']}\nCobertura: {r['cobertura']}\n"
+                      + "\n".join(lineas))
 
     @tool("flujo_caja", "Proyección de caja a 4 semanas (ingresos esperados − gastos). "
                         "Opcional: saldo_inicial.", {"saldo_inicial": float},
@@ -455,6 +496,7 @@ def build_negocio_server(collector=None):
     registro = Registro("negocio", [
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
+        ingreso_producto,
         flujo_caja, costos_sku, margenes, margen_periodo, margen_cliente,
         listar_gastos,
         clientes_en_riesgo, listar_seguimiento,

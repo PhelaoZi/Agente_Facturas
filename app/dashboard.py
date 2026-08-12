@@ -236,13 +236,34 @@ def q_top_clientes(cur, cols, limit=10):
 
 
 def q_top_productos(cur, cols, limit=12):
-    """Productos mas vendidos por unidades (barriles/botellas).
+    """Cervezas mas vendidas: unidades e ingreso neto real.
 
-    Excluye lineas que no son producto (regla documentada en CLAUDE.md):
-    - 'Logistica *': desglose tributario del precio del barril (no es servicio).
-    - 'Barril Pet *' / 'Pet *': envase desechable traspasado al cliente
-      (pass-through sin margen, no es venta de cerveza).
+    El monto sale de `v_ingreso_producto`, que es la UNICA fuente de dinero por
+    producto: suma la linea del producto MAS la logistica que le corresponde.
+    Sumar `productos.total_linea` daba un tercio de lo real (la linea
+    "Logistica" a secas no esta en esa tabla) y ademas ordenaba mal.
+
+    Agrupa por el nombre canonico de la cerveza, asi que las 123 descripciones
+    con erratas del productor ("Baril", "Balck IPA", "Scoth Ale") colapsan en
+    una sola fila por cerveza.
+
+    Si la atribucion todavia no esta calculada, cae al conteo por unidades sin
+    monto: es preferible una columna vacia a una cifra deflactada.
     """
+    if "v_ingreso_producto" in cols:
+        cur.execute("""
+            SELECT cerveza AS producto,
+                   SUM(unidades)               AS unidades,
+                   SUM(ingreso_neto_atribuido) AS monto
+            FROM v_ingreso_producto
+            GROUP BY cerveza
+            ORDER BY unidades DESC NULLS LAST
+            LIMIT %s
+        """, (limit,))
+        filas = cur.fetchall()
+        if filas:
+            return filas
+
     if "productos" not in cols:
         return []
     pcols = cols.get("productos", set())
@@ -250,7 +271,9 @@ def q_top_productos(cur, cols, limit=12):
         "descripcion" if "descripcion" in pcols else None)
     if not name_col:
         return []
-    monto_expr = "SUM(p.total_linea)" if "total_linea" in pcols else "NULL"
+    # Sin la atribucion calculada NO se entrega monto: `productos` no tiene la
+    # linea de logistica y la cifra saldria a un tercio de lo real.
+    monto_expr = "NULL"
     cur.execute(f"""
         SELECT p.{name_col} AS producto,
                SUM(p.cantidad) AS unidades,

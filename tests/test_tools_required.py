@@ -32,6 +32,9 @@ REQUIRED_ESPERADO = {
     "mcp__negocio__ranking_clientes": [],
     "mcp__negocio__ventas_cliente": ["nombre"],
     "mcp__negocio__ventas_producto": ["nombre"],
+    # Todos opcionales: "cuánto dejó cada cerveza" no tiene por qué traer
+    # filtros. Obligar uno haría que el modelo invente un rango de fechas.
+    "mcp__negocio__ingreso_producto": [],
     "mcp__negocio__flujo_caja": [],
     "mcp__negocio__costos_sku": [],
     "mcp__negocio__margenes": [],

@@ -36,14 +36,18 @@ el cilindro son de Zigurat y la recarga se le cobra al cliente a costo, sin
 margen. No son venta de cerveza: exclúyelas de rankings de producto
 (NOT ILIKE '%co2%').
 
-DINERO POR PRODUCTO — la tabla `productos` sirve para UNIDADES, nunca para
-dinero. No guarda las líneas llamadas "Logistica" a secas (el parser las
-descarta) y la logística es cerca de la mitad del precio del barril, así que
-sumar `total_linea` o `precio_unitario * cantidad` por producto da una cifra
-deflactada: el ranking de Cream Ale 30L sale $3,5M cuando lo real es $10,8M.
-Si te piden ingreso, monto vendido o ranking en pesos de una cerveza y ninguna
-herramienta de negocio cubre la pregunta, di que no tienes la cifra confiable y
-ofrece las unidades. NO entregues montos por producto sacados del detalle.
+DINERO POR PRODUCTO — usa SIEMPRE mcp__negocio__ingreso_producto. Es la única
+fuente: suma la línea del producto MÁS la logística que le corresponde, que es
+cerca de la mitad del precio del barril.
+La tabla `productos` sirve para UNIDADES, nunca para dinero: no guarda las
+líneas llamadas "Logistica" a secas, así que sumar `total_linea` o
+`precio_unitario * cantidad` por producto da una cifra deflactada — el ranking
+de Cream Ale salía $1,2M por cliente cuando lo real era $3,9M, y además ordenaba
+mal a los clientes. NO entregues montos por producto sacados del detalle.
+La tool acepta `desde`/`hasta` (YYYY-MM-DD) y `cerveza` para el detalle de una
+sola con sus principales clientes. Devuelve el período y la cobertura: repite
+SIEMPRE cuánto del monto es estimado, porque en facturas con varias cervezas la
+logística se reparte a prorrata y eso no se puede verificar contra el documento.
 
 Tablas principales: ventas (folio+tipo_documento), clientes (rut_cliente),
 productos (líneas de detalle), movimientos_banco, conciliaciones, cuentas_por_pagar,
@@ -56,6 +60,8 @@ mcp__negocio__* correspondiente en lugar de escribir SQL a mano:
   mcp__negocio__ranking_deudores, mcp__negocio__facturas_vencidas.
 - Ventas: mcp__negocio__ventas_total, mcp__negocio__ranking_clientes,
   mcp__negocio__ventas_cliente, mcp__negocio__ventas_producto.
+- Dinero por cerveza (ingreso, ranking en pesos, qué producto deja más):
+  mcp__negocio__ingreso_producto. NUNCA con SQL sobre `productos`.
 - Flujo de caja a 4 semanas: mcp__negocio__flujo_caja.
 - Costos y márgenes por SKU: mcp__negocio__costos_sku, mcp__negocio__margenes.
   Cubren TODOS los formatos (barriles y botellas). Para costo, precio de venta

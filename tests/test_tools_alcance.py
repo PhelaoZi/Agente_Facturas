@@ -173,3 +173,36 @@ def test_listar_seguimiento_nombra_el_estado(monkeypatch, estado):
                     {"estado": estado} if estado != "pendiente" else {})
 
     assert estado in texto.lower()
+
+
+# ── ingreso_producto ──────────────────────────────────────────────────────────
+
+def test_ingreso_producto_sin_fechas_dice_que_es_el_historico(monkeypatch):
+    """El caso que motivo toda la reparacion: "cuanto vendi de Cream Ale" y
+    recibir el total de dos anios y medio creyendo que es del anio."""
+    datos = {"cervezas": [{"cerveza": "Cream Ale", "ingreso": 33368079.0,
+                           "unidades": 1087, "pct_estimado": 35.5}],
+             "desde": None, "hasta": None,
+             "alcance": "Ingreso por cerveza (todo el histórico, sin filtro de fecha)",
+             "cobertura": "67.8% determinístico y 32.2% estimado"}
+
+    texto = _llamar(monkeypatch, datos, "ingreso_producto")
+
+    assert "histórico" in texto.lower()
+    assert "33.368.079" in texto
+
+
+def test_ingreso_producto_declara_cuanto_se_estimo(monkeypatch):
+    """Una cifra determinista y una estimada no pueden verse iguales: la mitad
+    del ingreso de una factura con dos cervezas se reparte a prorrata, y eso
+    nadie lo puede verificar contra el documento."""
+    datos = {"cervezas": [{"cerveza": "Cream Ale", "ingreso": 1000.0,
+                           "unidades": 1, "pct_estimado": 43.7}],
+             "desde": "2026-01-01", "hasta": None,
+             "alcance": "Ingreso por cerveza (desde el 2026-01-01)",
+             "cobertura": "56.3% determinístico y 43.7% estimado"}
+
+    texto = _llamar(monkeypatch, datos, "ingreso_producto", {"desde": "2026-01-01"})
+
+    assert "43.7% estimado" in texto or "44% estimado" in texto
+    assert "2026-01-01" in texto

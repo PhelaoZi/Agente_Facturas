@@ -105,10 +105,21 @@ siempre puede desobedecer y esa basura nunca debe llegar a la pantalla.
 
 - **Lectura (`mcp__negocio__*`):** `deuda_total`, `deuda_cliente`,
   `ranking_deudores`, `facturas_vencidas`, `ventas_total`, `ranking_clientes`,
-  `ventas_cliente`, `ventas_producto`, `flujo_caja`, `costos_sku`, `margenes`,
-  `margen_cliente`, `listar_gastos`. Aplican las reglas canónicas (montos
-  ajustados, excluir NC, `fecha_pago`); el prompt obliga a usarlas en vez de
-  improvisar SQL.
+  `ventas_cliente`, `ventas_producto`, `ingreso_producto`, `flujo_caja`,
+  `costos_sku`, `margenes`, `margen_cliente`, `listar_gastos`. Aplican las
+  reglas canónicas (montos ajustados, excluir NC, `fecha_pago`); el prompt
+  obliga a usarlas en vez de improvisar SQL.
+
+**Dinero por producto — `ingreso_producto` y nada más.** Es la única fuente:
+lee `v_ingreso_producto`, que suma la línea del producto MÁS la logística que le
+corresponde. `ventas_producto` quedó para unidades y folios, no para pesos, y
+`productos` no sirve para dinero: no guarda la línea "Logistica" a secas, así
+que la cifra sale a un tercio de lo real **y ordena mal el ranking de clientes**
+(Cream Ale 2026: daba Marina $1.220.000 primero cuando el real es A&C con
+$3.860.544). La tool devuelve período y cobertura, y el prompt obliga a repetir
+qué parte del monto es estimada. El panel de productos del dashboard consume la
+misma vista: sin la atribución calculada muestra unidades y deja el monto vacío,
+que es preferible a una cifra deflactada.
 
 **Precio y margen — una sola fuente.** `margenes` (precio general) y
 `margen_cliente` (precio de un cliente puntual) salen de

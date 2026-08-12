@@ -5,7 +5,10 @@ from app.agent.tools_negocio import build_negocio_server
 def test_negocio_server_registra_los_tools():
     server, names = build_negocio_server()
     assert server is not None
-    assert len(names) == 16
+    assert len(names) == 17
+    # Es la única fuente de dinero por producto: si desaparece del registro, el
+    # agente vuelve a sumar `productos` y a responder un tercio de lo real.
+    assert "mcp__negocio__ingreso_producto" in names
     assert len(set(names)) == len(names), "hay nombres de tool duplicados"
     for esperado in [
         "mcp__negocio__margen_cliente",

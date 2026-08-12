@@ -108,10 +108,34 @@ Dos cosas que valen al consultar:
   `impuesto_adicional` de la cabecera. Cuadra en 815 de 822 facturas, y los 7
   que no son exactamente los que traen descuento.
 
-> Estado: la atribución de ingreso por producto **todavía no existe**. Hasta que
-> exista, ni el agente ni el dashboard entregan dinero por producto desde
-> `productos` (unidades sí). Plan completo en
-> `docs/debate-arquitectura/10-2026-08-10-cierre-y-decision.md`.
+#### Dinero por producto — `v_ingreso_producto` y nada más
+
+**El ingreso de una cerveza es su línea MÁS la logística que le toca.** La única
+fuente es la vista `v_ingreso_producto`, sobre la capa derivada
+`atribucion_ingreso` / `atribucion_documento`.
+
+| Para | Usar | Nunca |
+|---|---|---|
+| Dinero por producto | `v_ingreso_producto`, o `mcp__negocio__ingreso_producto` | `productos`, `v_ventas_producto` |
+| Unidades por producto | `productos` sirve | — |
+
+Sumar `productos.total_linea` da **un tercio** de lo real y además **ordena mal
+el ranking de clientes**: en Cream Ale 2026 daba Marina $1.220.000 primero
+cuando el real es A&C con $3.860.544.
+
+La capa es derivada y se recalcula entera con
+`python scripts/calcular_atribucion.py` (`--simular` para solo ver el informe).
+No se versiona ni tiene modo sombra a propósito: el rollback es volver a
+correrla. Si el lote no cuadra contra el neto de `ventas`, no escribe nada.
+
+Cada fila declara `fuente` (`linea_dte` o `residual_cabecera`), `metodo` y
+`calidad` (`deterministica` o `estimada`). **Toda respuesta de plata por
+producto repite el período y la cobertura**: en facturas con varias cervezas la
+logística se reparte a prorrata y eso no se puede verificar contra el documento.
+
+Cobertura actual: 854 de 876 documentos, $85.464.458 atribuidos de $89.639.125,
+cuadratura exacta. Historia del problema y de la decisión en
+`docs/debate-arquitectura/`.
 
 ### Pipeline de conciliación bancaria
 
