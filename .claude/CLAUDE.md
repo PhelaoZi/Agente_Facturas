@@ -133,9 +133,21 @@ Cada fila declara `fuente` (`linea_dte` o `residual_cabecera`), `metodo` y
 producto repite el período y la cobertura**: en facturas con varias cervezas la
 logística se reparte a prorrata y eso no se puede verificar contra el documento.
 
-Cobertura actual: 854 de 876 documentos, $85.464.458 atribuidos de $89.639.125,
-cuadratura exacta. Historia del problema y de la decisión en
+Cobertura actual: 873 de 876 documentos, $87.887.620 atribuidos de $89.639.125
+(98,0%), cuadratura exacta. Lo que queda afuera son $221.918 que no son cerveza
+(malta y arriendo de schopera, correctamente excluidos) y 3 documentos por
+$214.528 que mezclan un barril de 20L con latas y traen la logística sin
+desglosar: no hay base común para repartir entre formatos y **falta la regla del
+productor**, no el dato. Historia del problema y de la decisión en
 `docs/debate-arquitectura/`.
+
+**Los documentos con descuento global se recuperan invirtiendo el ILA**, y esa
+es la única parte del sistema que lo hace. El impuesto se calcula sobre la base
+ya descontada, así que dice qué proporción de las líneas sobrevivió; con eso se
+escalan y el residual absorbe la imprecisión (2 pesos en el folio 4746). Nunca
+se afirma que la base sea exacta —la invariante sigue exigiendo que todo sume el
+neto— y las líneas quedan marcadas `estimada`. La verificación normal
+(`_ila_confirma`) sigue siendo hacia adelante y no invierte nada.
 
 **En la nube la atribución NO se recalcula: se replica.** `sync_nube.py`
 materializa `v_ingreso_producto` como la tabla `ingreso_producto` y encima crea

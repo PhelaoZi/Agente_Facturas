@@ -45,13 +45,13 @@ def test_arma_una_fila_por_cerveza_y_una_por_documento():
 def test_un_documento_no_atribuido_igual_deja_su_fila_con_el_motivo():
     """Sin la fila, un documento que no se pudo atribuir es indistinguible de
     uno que nunca se procesó. La cobertura se calcula sobre esas filas."""
-    doc = _doc(4746, 81_000, 6_458, [_linea("Barril 30L Wee Heavy", 35_000)])
+    doc = _doc(4746, 81_000, 0, [_linea("Barril 30L Wee Heavy", 35_000)])
 
     lote = ca.calcular([doc])
 
     assert lote["lineas"] == []
     assert lote["documentos"][0]["estado"] == "no_atribuido"
-    assert lote["documentos"][0]["motivo"] == "descuento_global"
+    assert lote["documentos"][0]["motivo"] == "sin_ila"
 
 
 # ─── La cuadratura del lote entero ───────────────────────────────────────────
@@ -60,7 +60,7 @@ def test_el_lote_cuadra_contra_el_neto_de_los_documentos():
     lote = ca.calcular([
         _doc(1, 55_370, 4_100, CREAM),
         _doc(2, 55_370, 4_100, CREAM),
-        _doc(4746, 81_000, 6_458, [_linea("Barril 30L Wee Heavy", 35_000)]),
+        _doc(4746, 81_000, 0, [_linea("Barril 30L Wee Heavy", 35_000)]),
     ])
 
     assert lote["cuadra"] is True
@@ -74,7 +74,7 @@ def test_la_cobertura_se_reporta_en_documentos_y_en_monto():
     informan las dos o no se informa ninguna."""
     lote = ca.calcular([
         _doc(1, 55_370, 4_100, CREAM),
-        _doc(4746, 81_000, 6_458, [_linea("Barril 30L Wee Heavy", 35_000)]),
+        _doc(4746, 81_000, 0, [_linea("Barril 30L Wee Heavy", 35_000)]),
     ])
 
     assert lote["documentos_atribuidos"] == 1
@@ -105,8 +105,8 @@ def test_los_motivos_del_informe_suman_el_total_sin_atribuir():
     """
     sin_ila = [_linea("Barril 30L Wee Heavy", 35_000)]
     lote = ca.calcular([
-        _doc(4746, 81_000, 6_458, sin_ila),                    # factura rechazada
-        _doc(911, -40_000, 6_458, sin_ila, tipo=61),           # NC rechazada
+        _doc(4746, 81_000, 0, sin_ila),                        # factura rechazada
+        _doc(911, -40_000, 0, sin_ila, tipo=61),               # NC rechazada
     ])
 
     texto = ca.informe(lote)

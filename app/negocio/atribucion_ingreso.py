@@ -124,8 +124,10 @@ def _ila_confirma(documento, cerveza_lineas):
     """Compara el ILA declarado contra el que corresponde al bruto de las líneas.
 
     Es una validación HACIA ADELANTE: se calcula el impuesto esperado y se
-    compara con el declarado. No se invierte el impuesto para deducir una base,
-    porque está redondeado y varias bases dan el mismo peso.
+    compara con el declarado. Acá NUNCA se invierte el impuesto — está redondeado
+    al peso y varias bases dan el mismo. Invertirlo solo se hace después, en
+    `_factor_descuento`, cuando esta verificación ya falló: ahí no se afirma una
+    base, se deduce una proporción y el residual absorbe la imprecisión.
 
     Cuando no calza, el documento trae un descuento global: sobre las 822
     facturas con ILA, calza en 815 y los 7 que no son exactamente los que traen
@@ -142,6 +144,44 @@ def _ila_confirma(documento, cerveza_lineas):
     tasa = Decimal(str(documento.get("tasa_ila") or "0.205"))
     esperado = (bruto_cerveza * tasa).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     return abs(esperado - ila_declarado) <= TOLERANCIA_ILA
+
+
+def _factor_descuento(documento, cerveza_lineas):
+    """Cuánto quedó de las líneas escritas, deducido del impuesto declarado.
+
+    El ILA se calcula sobre la base YA descontada, así que dice qué proporción
+    del bruto sobrevivió al descuento global. Se usa SOLO cuando la verificación
+    directa falló, y el resultado nunca se afirma exacto: el redondeo del propio
+    impuesto (2 pesos en el folio 4746) cae en el residual, que ya viaja como
+    `estimada`, y la invariante sigue exigiendo que todo sume el neto.
+
+    Solo se acepta un descuento. Un impuesto MAYOR que el de las líneas no es un
+    recargo conocido: es señal de que algo no entendemos, y ahí corresponde
+    dejar el hueco honesto.
+    """
+    ila = abs(Decimal(str(documento.get("impuesto_adicional") or 0)))
+    bruto = sum(Decimal(str(l["total_linea"])) for l, _ in cerveza_lineas)
+    if not ila or not bruto:
+        return None
+    tasa = Decimal(str(documento.get("tasa_ila") or "0.205"))
+    factor = (ila / tasa) / bruto
+    return factor if 0 < factor <= 1 else None
+
+
+def _escalar(grupos, factor):
+    """Aplica el descuento global a cada línea escrita.
+
+    Con descuento, lo que se cobró por una línea no es lo que dice la línea. El
+    `monto_linea_evidencia` pasa a ser el monto ya descontado: es lo que de
+    verdad entró por esa cerveza, y es lo único que permite que la suma cuadre.
+    """
+    if factor == 1:
+        return grupos
+    return {clase: [({**linea,
+                      "total_linea": Decimal(str(linea["total_linea"])) * factor},
+                     info)
+                    for linea, info in lineas]
+            for clase, lineas in grupos.items()}
 
 
 def atribuir(documento):
@@ -168,9 +208,17 @@ def atribuir(documento):
     # de mirar el residual: es lo que distingue "falta la línea de logística"
     # de "hubo un descuento global", que dejan el mismo hueco.
     confirmacion = _ila_confirma(documento, cervezas)
+    factor = None
     if confirmacion is False:
-        return _resultado("no_atribuido", "descuento_global",
-                          sin_atribuir=signo * _redondear(neto), signo=signo)
+        # No confirma porque el impuesto se calculó sobre la base ya descontada.
+        # El mismo impuesto dice cuánto se descontó: se escalan las líneas y el
+        # residual absorbe el resto.
+        factor = _factor_descuento(documento, cervezas)
+        if factor is None:
+            return _resultado("no_atribuido", "descuento_global",
+                              sin_atribuir=signo * _redondear(neto), signo=signo)
+        grupos = _escalar(grupos, factor)
+        cervezas = grupos.get("cerveza", [])
     if confirmacion is None and cervezas:
         return _resultado("no_atribuido", "sin_ila",
                           sin_atribuir=signo * _redondear(neto), signo=signo)
@@ -204,7 +252,8 @@ def atribuir(documento):
                           pass_through=signo * _redondear(pass_through),
                           sin_atribuir=signo * _redondear(otros), signo=signo)
 
-    atribuidas = _repartir(grupos, cervezas, signo, residual)
+    atribuidas = _repartir(grupos, cervezas, signo, residual,
+                           descontado=factor is not None)
     if atribuidas is None:
         return _resultado("no_atribuido", "logistica_no_repartible",
                           sin_atribuir=signo * _redondear(neto), signo=signo)
@@ -221,6 +270,23 @@ def atribuir(documento):
                       atribuido=total_atribuido,
                       pass_through=signo * _redondear(pass_through),
                       sin_atribuir=signo * _redondear(otros), signo=signo)
+
+
+def _cervezas_por_formato(nombre_logistica, cervezas):
+    """Las cervezas del documento cuyo FORMATO nombra esta logística.
+
+    El productor desglosa la logística por estilo ("Logistica Scotch") cuando el
+    costo difiere por estilo, y por formato ("Logistica Barril", "Logistica
+    Latas") cuando difiere por formato. Las dos son evidencia suya.
+
+    Se compara en singular porque escribe "Latas" y el formato es "lata".
+    """
+    resto = cl.RE_LOGISTICA_PALABRA.sub("", cl.normalizar(nombre_logistica)).strip(" .-–")
+    if len(resto) < MINIMO_ABREVIATURA:
+        return []
+    singular = resto.rstrip("s")
+    return [(linea, info) for linea, info in cervezas
+            if info["formato"] and info["formato"].rstrip("s") == singular]
 
 
 def _cerveza_por_contexto(nombre_logistica, cervezas_del_documento):
@@ -244,7 +310,7 @@ def _cerveza_por_contexto(nombre_logistica, cervezas_del_documento):
     return candidatas.pop() if len(candidatas) == 1 else None
 
 
-def _repartir(grupos, cervezas, signo, residual=Decimal(0)):
+def _repartir(grupos, cervezas, signo, residual=Decimal(0), descontado=False):
     """Reparte la logística entre las cervezas. None si no hay forma de hacerlo.
 
     `residual` es la logística que falta en el histórico, deducida de la
@@ -259,13 +325,26 @@ def _repartir(grupos, cervezas, signo, residual=Decimal(0)):
 
     nombradas, sin_nombrar = {}, Decimal(0)
     for linea, info in logisticas:
+        monto = Decimal(str(linea["total_linea"]))
         cerveza = info["cerveza"] or _cerveza_por_contexto(
             linea["nombre_producto"], del_documento)
         if cerveza in del_documento:
-            nombradas[cerveza] = nombradas.get(cerveza, Decimal(0)) + \
-                                 Decimal(str(linea["total_linea"]))
-        else:
-            sin_nombrar += Decimal(str(linea["total_linea"]))
+            nombradas[cerveza] = nombradas.get(cerveza, Decimal(0)) + monto
+            continue
+
+        # "Logistica Barril" / "Logistica Latas": nombró el FORMATO en vez del
+        # estilo. Es evidencia suya igual que el nombre, y sin leerla no había
+        # cómo prorratear entre un barril y una lata: el documento se caía.
+        del_formato = _cervezas_por_formato(linea["nombre_producto"], cervezas)
+        if del_formato:
+            base = sum(Decimal(str(l["total_linea"])) for l, _ in del_formato)
+            for l, i in del_formato:
+                parte = (monto * Decimal(str(l["total_linea"])) / base if base
+                         else monto / len(del_formato))
+                nombradas[i["cerveza"]] = nombradas.get(i["cerveza"], Decimal(0)) + parte
+            continue
+
+        sin_nombrar += monto
 
     # El residual de la cabecera se comporta como logística sin nombrar: no dice
     # a qué cerveza corresponde, así que se reparte con el mismo criterio.
@@ -277,36 +356,44 @@ def _repartir(grupos, cervezas, signo, residual=Decimal(0)):
         if pesos is None or not sum(pesos):
             return None
 
-    # Primera pasada: la logística exacta de cada cerveza, sin redondear. Lo que
-    # se redondea es la logística y no el ingreso, porque el monto de la línea ya
-    # es un entero del documento: así el ingreso queda exacto por construcción.
-    exactas, metodos = [], []
+    # Primera pasada, sin redondear nada: el monto de la línea y la logística que
+    # le toca. Con un descuento global el monto tampoco es entero, así que lo que
+    # hay que conservar al redondear es el INGRESO —que es lo que la invariante
+    # compara contra el neto— y no cada parte por su lado.
+    montos_exactos, logisticas_exactas, metodos = [], [], []
     for indice, (linea, info) in enumerate(cervezas):
         logistica = nombradas.get(info["cerveza"], Decimal(0))
         metodo = "logistica_nombrada" if logistica else "cerveza_unica"
         if a_repartir:
             logistica += a_repartir * pesos[indice] / sum(pesos)
             metodo = metodo_reparto if len(cervezas) > 1 else "cerveza_unica"
-        exactas.append(logistica)
+        montos_exactos.append(Decimal(str(linea["total_linea"])))
+        logisticas_exactas.append(logistica)
         metodos.append(metodo)
 
-    logisticas = _redondear_conservando_total(exactas)
+    ingresos = _redondear_conservando_total(
+        [m + l for m, l in zip(montos_exactos, logisticas_exactas)])
+    montos = _redondear_conservando_total(montos_exactos)
 
-    calidad = "estimada" if (a_repartir and len(cervezas) > 1) else "deterministica"
+    # Un descuento deducido del impuesto NO es determinístico aunque haya una
+    # sola cerveza: el factor se infirió, no venía escrito en el documento.
+    calidad = ("estimada" if descontado or (a_repartir and len(cervezas) > 1)
+               else "deterministica")
     fuente = "residual_cabecera" if residual else "linea_dte"
 
     resultado = []
     for indice, (linea, info) in enumerate(cervezas):
-        monto = _redondear(Decimal(str(linea["total_linea"])))
         resultado.append({
             "linea_id": linea.get("id"),
             "cerveza": info["cerveza"],
             "formato": info["formato"],
             "litros": info["litros"],
             "unidades": linea.get("cantidad"),
-            "monto_linea_evidencia": signo * monto,
-            "logistica_atribuida": signo * logisticas[indice],
-            "ingreso_neto_atribuido": signo * (monto + logisticas[indice]),
+            "monto_linea_evidencia": signo * montos[indice],
+            # Se deriva del ingreso para que las tres cifras sean consistentes:
+            # evidencia + logística == ingreso, siempre.
+            "logistica_atribuida": signo * (ingresos[indice] - montos[indice]),
+            "ingreso_neto_atribuido": signo * ingresos[indice],
             "metodo": metodos[indice],
             "calidad": calidad,
             "fuente": fuente,
