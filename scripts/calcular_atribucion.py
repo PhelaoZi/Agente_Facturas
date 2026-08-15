@@ -208,9 +208,17 @@ def informe(lote):
                   if lote["neto_total"] else 0)
     motivos = defaultdict(lambda: [0, 0.0])
     for d in lote["documentos"]:
-        if d["motivo"]:
-            motivos[d["motivo"]][0] += 1
-            motivos[d["motivo"]][1] += abs(d["neto_documento"])
+        if not d["monto_sin_atribuir"]:
+            continue
+        # Un documento atribuido puede dejar plata afuera igual: Zigurat factura
+        # malta y arriendo de schopera, que no son cerveza. Sin esta rama el
+        # informe tenía $221.918 que no estaban en ningún motivo.
+        motivo = d["motivo"] or "no_es_cerveza (servicio/insumo)"
+        motivos[motivo][0] += 1
+        # Con signo, igual que el total: una nota de crédito rechazada RESTA.
+        # Con abs() los motivos no sumaban el total y había que rehacer la
+        # cuenta a mano para creerle al informe.
+        motivos[motivo][1] += d["monto_sin_atribuir"]
 
     lineas = [
         "",
@@ -227,7 +235,7 @@ def informe(lote):
         lineas.append("")
         lineas.append("  Sin atribuir, por motivo:")
         for motivo, (n, monto) in sorted(motivos.items(), key=lambda x: -x[1][1]):
-            lineas.append(f"    {motivo:<26} {n:>3} docs   ${monto:>12,.0f}")
+            lineas.append(f"    {motivo:<32} {n:>3} docs   ${monto:>12,.0f}")
     return "\n".join(lineas)
 
 

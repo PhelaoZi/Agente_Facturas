@@ -90,6 +90,47 @@ def test_con_varias_cervezas_la_logistica_se_reparte_por_litros():
     assert all(l["calidad"] == "estimada" for l in r["lineas"])
 
 
+def test_un_residual_que_no_divide_exacto_igual_cuadra():
+    """Folio 4313 real: $191.345 de neto entre dos barriles de 30L.
+
+    El residual es $131.345 y la mitad son $65.672,5. Redondeando cada línea por
+    separado las dos suben a $65.673 y la suma da $191.346 — un peso de más, y
+    la invariante botaba el documento entero.
+
+    Son 9 documentos por $1.732.185 perdidos por 9 pesos de redondeo. El peso
+    sobrante tiene que ir a alguna cerveza: repartir plata es elegir dónde cae
+    el resto, no puede quedar sin dueño.
+    """
+    doc = _documento([
+        _linea("Barril 30L Scotch Ale", 30_000, cantidad=2),
+        _linea("Barril 30L Cream Ale", 30_000, cantidad=2),
+    ], neto=191_345, ila=12_300, folio=4313)
+
+    r = ai.atribuir(doc)
+
+    assert r["estado"] == "atribuido", r.get("motivo")
+    assert sum(l["ingreso_neto_atribuido"] for l in r["lineas"]) == 191_345
+
+
+def test_el_peso_del_redondeo_no_se_reparte_dos_veces():
+    """Con tres cervezas el sobrante puede ser de 2 pesos: se absorben una sola
+    vez, no uno por línea."""
+    doc = _documento([
+        _linea("Barril 30L Wee Heavy", 30_000),
+        _linea("Barril 30L Stout Cafe", 20_000),
+        _linea("Barril 30L Sour FL", 20_000),
+    ], neto=228_000, ila=14_350, folio=4287)
+
+    r = ai.atribuir(doc)
+
+    assert r["estado"] == "atribuido", r.get("motivo")
+    assert sum(l["ingreso_neto_atribuido"] for l in r["lineas"]) == 228_000
+    # El ajuste es de centavos: ninguna cerveza puede moverse mas de 1 peso de
+    # su parte a prorrata (30.000 + 158.000/3 = 82.666,67 y 20.000 + 52.666,67).
+    montos = sorted(l["ingreso_neto_atribuido"] for l in r["lineas"])
+    assert montos[0] in (72_666, 72_667) and montos[2] in (82_666, 82_667)
+
+
 def test_barriles_de_distinto_tamano_reparten_la_logistica_a_prorrata_de_litros():
     """Un barril de 20L no puede costar la misma logística que uno de 30L: es el
     mismo barril con menos adentro, y el precio escala con los litros."""

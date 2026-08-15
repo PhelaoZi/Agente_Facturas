@@ -9,6 +9,8 @@ La regla de fondo es la misma que dentro del motor, subida un nivel: **si no
 cuadra, no se publica**. Un documento a medias no se publica, y un recálculo
 que no cuadra contra `ventas` tampoco.
 """
+import re
+
 import pytest
 
 from scripts import calcular_atribucion as ca
@@ -91,6 +93,50 @@ def test_las_notas_de_credito_restan_una_sola_vez():
 
     assert lote["monto_atribuido"] == 0
     assert lote["cuadra"] is True
+
+
+def test_los_motivos_del_informe_suman_el_total_sin_atribuir():
+    """El desglose por motivo usaba `abs()` mientras el total iba con signo, así
+    que las partes no sumaban el todo: con una NC rechazada el informe mostraba
+    $1.501.691 repartidos en motivos y $1.127.423 de total.
+
+    Un informe donde los pedazos no dan el total obliga a rehacer la cuenta a
+    mano para creerle, que es lo contrario de para qué existe.
+    """
+    sin_ila = [_linea("Barril 30L Wee Heavy", 35_000)]
+    lote = ca.calcular([
+        _doc(4746, 81_000, 6_458, sin_ila),                    # factura rechazada
+        _doc(911, -40_000, 6_458, sin_ila, tipo=61),           # NC rechazada
+    ])
+
+    texto = ca.informe(lote)
+    montos = [int(m.replace(",", ""))
+              for m in re.findall(r"docs\s+\$\s*(-?[\d,]+)", texto)]
+
+    assert sum(montos) == lote["monto_sin_atribuir"] == 41_000
+
+
+def test_lo_vendido_que_no_es_cerveza_tambien_aparece_en_el_informe():
+    """Zigurat a veces factura malta o el arriendo de una schopera. El documento
+    se atribuye igual (la cerveza que trae se explica bien), pero esa línea no es
+    ingreso de cerveza y queda fuera.
+
+    Sin mostrarla, el informe tenía $221.918 que no estaban en ningún motivo:
+    dos documentos reales, la malta del folio 4447 y la schopera del 4354.
+    """
+    lote = ca.calcular([
+        _doc(4447, 20_000 + 162_918, 4_100,
+             CREAM + [_linea("Malta.Boortmalt.Pilsen 25", 162_918, id_linea=2)]),
+    ])
+
+    assert lote["documentos_atribuidos"] == 1        # el documento cuadra
+    assert lote["monto_sin_atribuir"] == 162_918     # pero la malta no es cerveza
+
+    texto = ca.informe(lote)
+    montos = [int(m.replace(",", ""))
+              for m in re.findall(r"docs\s+\$\s*(-?[\d,]+)", texto)]
+
+    assert sum(montos) == 162_918, "los motivos deben sumar el total sin atribuir"
 
 
 # ─── La escritura ────────────────────────────────────────────────────────────

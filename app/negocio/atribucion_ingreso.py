@@ -27,7 +27,10 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from app.negocio import clasificacion_lineas as cl
 
-VERSION_ALGORITMO = "1.0"
+# 1.1 (2026-08-14): el redondeo del reparto conserva el total. Antes cada línea
+# redondeaba por su cuenta y la suma se pasaba en un peso, lo que hacía fallar la
+# invariante y botaba el documento entero: 9 documentos por $1.732.185.
+VERSION_ALGORITMO = "1.1"
 
 CALIDADES = frozenset({
     "deterministica",   # no hubo nada que repartir
@@ -55,6 +58,25 @@ MINIMO_ABREVIATURA = 3
 
 def _redondear(valor):
     return int(Decimal(valor).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def _redondear_conservando_total(exactos):
+    """Redondea una lista de montos sin que la suma se mueva.
+
+    Redondear cada parte por su cuenta no conserva el total: $131.345 entre dos
+    barriles da $65.672,5 y las dos suben a $65.673, así que la suma se pasa en
+    un peso. Con la invariante estricta —correcta— eso botaba el documento
+    entero: eran 9 documentos por $1.732.185 perdidos por 9 pesos.
+
+    Repartir plata obliga a elegir dónde cae el resto; no puede quedar sin
+    dueño. Va a la parte mayor, que es donde menos pesa en términos relativos.
+    """
+    redondeados = [_redondear(x) for x in exactos]
+    diferencia = _redondear(sum(exactos)) - sum(redondeados)
+    if diferencia and redondeados:
+        mayor = max(range(len(exactos)), key=lambda i: exactos[i])
+        redondeados[mayor] += diferencia
+    return redondeados
 
 
 def _resultado(estado, motivo=None, lineas=None, atribuido=0, pass_through=0,
@@ -255,29 +277,37 @@ def _repartir(grupos, cervezas, signo, residual=Decimal(0)):
         if pesos is None or not sum(pesos):
             return None
 
-    resultado = []
+    # Primera pasada: la logística exacta de cada cerveza, sin redondear. Lo que
+    # se redondea es la logística y no el ingreso, porque el monto de la línea ya
+    # es un entero del documento: así el ingreso queda exacto por construcción.
+    exactas, metodos = [], []
     for indice, (linea, info) in enumerate(cervezas):
-        monto = Decimal(str(linea["total_linea"]))
         logistica = nombradas.get(info["cerveza"], Decimal(0))
         metodo = "logistica_nombrada" if logistica else "cerveza_unica"
-
         if a_repartir:
             logistica += a_repartir * pesos[indice] / sum(pesos)
             metodo = metodo_reparto if len(cervezas) > 1 else "cerveza_unica"
+        exactas.append(logistica)
+        metodos.append(metodo)
 
-        calidad = "estimada" if (a_repartir and len(cervezas) > 1) else "deterministica"
-        fuente = "residual_cabecera" if residual else "linea_dte"
+    logisticas = _redondear_conservando_total(exactas)
 
+    calidad = "estimada" if (a_repartir and len(cervezas) > 1) else "deterministica"
+    fuente = "residual_cabecera" if residual else "linea_dte"
+
+    resultado = []
+    for indice, (linea, info) in enumerate(cervezas):
+        monto = _redondear(Decimal(str(linea["total_linea"])))
         resultado.append({
             "linea_id": linea.get("id"),
             "cerveza": info["cerveza"],
             "formato": info["formato"],
             "litros": info["litros"],
             "unidades": linea.get("cantidad"),
-            "monto_linea_evidencia": signo * _redondear(monto),
-            "logistica_atribuida": signo * _redondear(logistica),
-            "ingreso_neto_atribuido": signo * _redondear(monto + logistica),
-            "metodo": metodo,
+            "monto_linea_evidencia": signo * monto,
+            "logistica_atribuida": signo * logisticas[indice],
+            "ingreso_neto_atribuido": signo * (monto + logisticas[indice]),
+            "metodo": metodos[indice],
             "calidad": calidad,
             "fuente": fuente,
             "version_algoritmo": VERSION_ALGORITMO,
