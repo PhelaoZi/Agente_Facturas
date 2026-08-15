@@ -18,13 +18,112 @@ Deno.test("formatearPesos usa puntos de miles chilenos", () => {
   assertEquals(formatearPesos("55370.00"), "$55.370");
 });
 
-Deno.test("TOOLS: 18 tools con nombres unicos y schema de objeto", () => {
-  assertEquals(TOOLS.length, 18);
+/** Como fakeSql, pero ademas guarda el texto de cada query ejecutada. */
+function fakeSqlEspia(
+  sqls: string[],
+  ...resultados: unknown[][]
+): SqlCliente {
+  const cola = [...resultados];
+  return ((strings: TemplateStringsArray, ..._vals: unknown[]) => {
+    sqls.push(strings.join(" ? "));
+    return Promise.resolve(cola.shift() ?? []);
+  }) as unknown as SqlCliente;
+}
+
+Deno.test("TOOLS: 19 tools con nombres unicos y schema de objeto", () => {
+  assertEquals(TOOLS.length, 19);
   const nombres = TOOLS.map((t) => (t as { name: string }).name);
-  assertEquals(new Set(nombres).size, 18);
+  assertEquals(new Set(nombres).size, 19);
   for (const t of TOOLS) {
     assertEquals((t as { input_schema: { type: string } }).input_schema.type, "object");
   }
+});
+
+// ── Dinero por producto ──────────────────────────────────────────────────────
+// El telefono respondia un tercio de lo real: sumaba v_ventas_producto, que no
+// trae la linea "Logistica" a secas (cerca de la mitad del precio del barril).
+// La unica fuente de plata por cerveza es v_ingreso_producto, replicada desde
+// el PC, que ya suma producto + la logistica que le toca.
+
+Deno.test("ingreso_producto: el ranking sale de v_ingreso_producto", async () => {
+  const sqls: string[] = [];
+  const sql = fakeSqlEspia(sqls, [
+    { cerveza: "Cream Ale", ingreso: 33526991, unidades: 605,
+      determinista: 20000000, estimado: 13526991 },
+    { cerveza: "Scotch Ale", ingreso: 12000000, unidades: 210,
+      determinista: 12000000, estimado: 0 },
+  ]);
+  const r = await ejecutarTool(sql, "ingreso_producto", {}, HOY);
+
+  assertStringIncludes(sqls[0], "v_ingreso_producto");
+  assertStringIncludes(r, "Cream Ale");
+  assertStringIncludes(r, "$33.526.991");
+  assertStringIncludes(r, "Scotch Ale");
+});
+
+Deno.test("ingreso_producto declara SIEMPRE el periodo consultado", async () => {
+  // Sin esto una cifra de tres anos se lee como si fuera del mes. Es el
+  // defecto que este modulo existe para no repetir.
+  const sinFiltro = await ejecutarTool(
+    fakeSqlEspia([], [{ cerveza: "Cream Ale", ingreso: 100, unidades: 2,
+                       determinista: 100, estimado: 0 }]),
+    "ingreso_producto", {}, HOY);
+  assertStringIncludes(sinFiltro, "todo el historico");
+
+  const conRango = await ejecutarTool(
+    fakeSqlEspia([], [{ cerveza: "Cream Ale", ingreso: 100, unidades: 2,
+                       determinista: 100, estimado: 0 }]),
+    "ingreso_producto", { desde: "2026-01-01", hasta: "2026-06-30" }, HOY);
+  assertStringIncludes(conRango, "2026-01-01");
+  assertStringIncludes(conRango, "2026-06-30");
+});
+
+Deno.test("ingreso_producto declara que parte del monto es estimada", async () => {
+  // En facturas con varias cervezas la logistica se reparte a prorrata: eso no
+  // se puede verificar contra el documento y el usuario tiene que saberlo.
+  const mezclado = await ejecutarTool(
+    fakeSqlEspia([], [{ cerveza: "Cream Ale", ingreso: 1000, unidades: 10,
+                       determinista: 750, estimado: 250 }]),
+    "ingreso_producto", {}, HOY);
+  assertStringIncludes(mezclado, "75.0% determinist");
+  assertStringIncludes(mezclado, "25.0% estimado");
+
+  const limpio = await ejecutarTool(
+    fakeSqlEspia([], [{ cerveza: "Cream Ale", ingreso: 1000, unidades: 10,
+                       determinista: 1000, estimado: 0 }]),
+    "ingreso_producto", {}, HOY);
+  assertStringIncludes(limpio, "100% determinist");
+});
+
+Deno.test("ingreso_producto de UNA cerveza trae sus principales clientes", async () => {
+  const sqls: string[] = [];
+  const sql = fakeSqlEspia(sqls,
+    [{ ingreso: 10867242, unidades: 196, determinista: 8000000,
+       estimado: 2867242, n_documentos: 120 }],
+    [{ razon_social: "A & C SERVICIOS", ingreso: 3860544, unidades: 70 },
+     { razon_social: "MARINA SPA", ingreso: 3091491, unidades: 56 }],
+  );
+  const r = await ejecutarTool(sql, "ingreso_producto", { cerveza: "Cream Ale" }, HOY);
+
+  assertStringIncludes(sqls[0], "v_ingreso_producto");
+  assertStringIncludes(sqls[1], "v_ingreso_producto");
+  assertStringIncludes(r, "$10.867.242");
+  assertStringIncludes(r, "A & C SERVICIOS");
+  assertStringIncludes(r, "$3.860.544");
+});
+
+Deno.test("ingreso_producto sin datos lo dice, no devuelve $0", async () => {
+  const r = await ejecutarTool(fakeSqlEspia([], []), "ingreso_producto",
+    { cerveza: "Witbier" }, HOY);
+  assertStringIncludes(r.toLowerCase(), "sin ventas");
+});
+
+Deno.test("ventas_producto no promete dinero en su descripcion", () => {
+  // La descripcion es lo unico que el modelo lee antes de elegir la tool.
+  const t = TOOLS.find((x) => (x as { name: string }).name === "ventas_producto");
+  const desc = (t as { description: string }).description.toLowerCase();
+  assertStringIncludes(desc, "unidades");
+  assertEquals(desc.includes("monto"), false);
 });
 
 Deno.test("deuda_total suma y separa por antiguedad", async () => {

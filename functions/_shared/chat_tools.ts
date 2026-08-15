@@ -98,9 +98,15 @@ export const TOOLS = [
     input_schema: { type: "object", properties: {
       nombre: { type: "string" } }, required: ["nombre"] } },
   { name: "ventas_producto",
-    description: "Lineas de venta que coinciden con un nombre de producto (ya excluye Logistica y envases PET).",
+    description: "UNIDADES vendidas y fechas de un producto por nombre (ya excluye Logistica y envases PET). NO sirve para pesos: para dinero usa ingreso_producto.",
     input_schema: { type: "object", properties: {
       nombre: { type: "string" } }, required: ["nombre"] } },
+  { name: "ingreso_producto",
+    description: "Dinero por cerveza: cuanto ingreso neto dejo cada una. UNICA fuente de plata por producto (suma la linea del producto MAS la logistica que le corresponde, que es cerca de la mitad del precio del barril). Sin argumentos da el ranking completo; con 'cerveza' da esa sola y sus principales clientes. Rango opcional desde/hasta en YYYY-MM-DD.",
+    input_schema: { type: "object", properties: {
+      cerveza: { type: "string", description: "Nombre parcial de una cerveza; omitir para el ranking" },
+      desde: { type: "string" }, hasta: { type: "string" },
+      limite: { type: "integer", description: "Cuantas cervezas en el ranking (default 10)" } } } },
   { name: "flujo_caja",
     description: "Proyeccion de caja a 4 semanas: cobros esperados por cliente menos gastos programados, partiendo del saldo bancario del ultimo sync.",
     input_schema: { type: "object", properties: {} } },
@@ -160,6 +166,32 @@ export const TOOLS = [
       consulta: { type: "string", description: "Una sentencia SELECT o WITH" } },
       required: ["consulta"] } },
 ];
+
+// ── Dinero por producto ──────────────────────────────────────────────────────
+// Espejo de app/negocio/ingreso_producto.py. La regla que ordena esto: una
+// cifra de plata por producto NUNCA sale sola — va siempre con su periodo y su
+// cobertura. Un "$33 millones" no dice si son de un ano o de tres, ni cuanto de
+// eso se estimo, y asi fue como se llego a este problema.
+const CALIDAD_ESTIMADA = "estimada";
+
+/** Frase de periodo. La arma el codigo con los filtros que de verdad llegaron,
+ *  nunca el modelo, que puede olvidarlos. */
+export function alcanceFechas(desde: string | null, hasta: string | null): string {
+  if (desde && hasta) return `del ${desde} al ${hasta}`;
+  if (desde) return `desde el ${desde}`;
+  if (hasta) return `hasta el ${hasta}`;
+  return "todo el historico, sin filtro de fecha";
+}
+
+/** Que parte del monto se pudo verificar contra el documento. */
+export function coberturaAtribucion(determinista: number, estimado: number): string {
+  const total = determinista + estimado;
+  if (!total) return "sin ventas en el periodo consultado";
+  const pct = Math.round(1000 * estimado / total) / 10;
+  if (!pct) return "100% deterministico (una sola cerveza por factura)";
+  return `${(100 - pct).toFixed(1)}% deterministico y ${pct.toFixed(1)}% estimado ` +
+    "(facturas con varias cervezas, logistica repartida a prorrata)";
+}
 
 interface FilaPendiente { total: unknown; dias_desde_emision: unknown }
 
@@ -274,6 +306,79 @@ export async function ejecutarTool(
       const unidades = filas.reduce((s, f) => s + num(f.cantidad), 0);
       return `'${input.nombre}': ${filas.length} lineas de venta, ${unidades} unidades ` +
         `(ultima el ${String(filas[0].fecha).slice(0, 10)}).`;
+    }
+    case "ingreso_producto": {
+      const cerveza = input.cerveza ? String(input.cerveza) : null;
+      // Los filtros de fecha van como parametros que pueden ser NULL, en vez de
+      // ramificar la query en cuatro variantes: el rango es opcional en los dos
+      // extremos y las ramas se multiplican por cada query.
+      const desde = input.desde ? String(input.desde) : null;
+      const hasta = input.hasta ? String(input.hasta) : null;
+      const periodo = alcanceFechas(desde, hasta);
+
+      if (!cerveza) {
+        const limite = num(input.limite) || 10;
+        const filas = await sql`
+          SELECT cerveza,
+                 SUM(ingreso_neto_atribuido) AS ingreso,
+                 SUM(unidades)               AS unidades,
+                 SUM(CASE WHEN calidad <> ${CALIDAD_ESTIMADA}
+                          THEN ABS(ingreso_neto_atribuido) ELSE 0 END) AS determinista,
+                 SUM(CASE WHEN calidad =  ${CALIDAD_ESTIMADA}
+                          THEN ABS(ingreso_neto_atribuido) ELSE 0 END) AS estimado
+          FROM v_ingreso_producto
+          WHERE (${desde}::date IS NULL OR fecha_evento >= ${desde}::date)
+            AND (${hasta}::date IS NULL OR fecha_evento <= ${hasta}::date)
+          GROUP BY cerveza
+          ORDER BY ingreso DESC
+          LIMIT ${limite}`;
+        if (!filas.length) return `Sin ventas atribuidas (${periodo}).`;
+        let det = 0, est = 0;
+        const lineas = filas.map((f, i) => {
+          det += num(f.determinista);
+          est += num(f.estimado);
+          return `${i + 1}. ${f.cerveza}: ${formatearPesos(num(f.ingreso))} ` +
+            `(${num(f.unidades)} unidades)`;
+        });
+        return `Ingreso por cerveza (${periodo}):\n${lineas.join("\n")}\n` +
+          `Cobertura: ${coberturaAtribucion(det, est)}.`;
+      }
+
+      const q = `%${cerveza}%`;
+      const totales = await sql`
+        SELECT SUM(ingreso_neto_atribuido) AS ingreso,
+               SUM(unidades)               AS unidades,
+               SUM(CASE WHEN calidad <> ${CALIDAD_ESTIMADA}
+                        THEN ABS(ingreso_neto_atribuido) ELSE 0 END) AS determinista,
+               SUM(CASE WHEN calidad =  ${CALIDAD_ESTIMADA}
+                        THEN ABS(ingreso_neto_atribuido) ELSE 0 END) AS estimado,
+               COUNT(DISTINCT folio)       AS n_documentos
+        FROM v_ingreso_producto
+        WHERE cerveza ILIKE ${q}
+          AND (${desde}::date IS NULL OR fecha_evento >= ${desde}::date)
+          AND (${hasta}::date IS NULL OR fecha_evento <= ${hasta}::date)`;
+      const t = totales[0];
+      // Sin filas o con la suma en NULL es lo mismo: no hubo ventas. Decirlo,
+      // nunca devolver $0 (se lee como "vendio cero", no como "no hay dato").
+      if (!t || t.ingreso == null) return `Sin ventas de '${cerveza}' (${periodo}).`;
+
+      const clientes = await sql`
+        SELECT razon_social,
+               SUM(ingreso_neto_atribuido) AS ingreso,
+               SUM(unidades)               AS unidades
+        FROM v_ingreso_producto
+        WHERE cerveza ILIKE ${q}
+          AND (${desde}::date IS NULL OR fecha_evento >= ${desde}::date)
+          AND (${hasta}::date IS NULL OR fecha_evento <= ${hasta}::date)
+        GROUP BY razon_social
+        ORDER BY ingreso DESC
+        LIMIT 5`;
+      const top = clientes.map((c) =>
+        `- ${c.razon_social}: ${formatearPesos(num(c.ingreso))} (${num(c.unidades)} unidades)`);
+      return `${cerveza} (${periodo}): ${formatearPesos(num(t.ingreso))} de ingreso, ` +
+        `${num(t.unidades)} unidades en ${num(t.n_documentos)} documentos.\n` +
+        (top.length ? `Principales clientes:\n${top.join("\n")}\n` : "") +
+        `Cobertura: ${coberturaAtribucion(num(t.determinista), num(t.estimado))}.`;
     }
     case "flujo_caja": {
       // Mismas queries que functions/flujo.ts (paridad con el endpoint /flujo).

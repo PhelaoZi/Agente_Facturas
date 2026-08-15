@@ -27,15 +27,26 @@ def _una_linea(texto: str) -> str:
     Los prompts van envueltos a ~78 columnas y el punto de corte se mueve cada
     vez que se reescribe un parrafo. Sin esto, el test fijaria el ancho de linea
     en vez de la regla, y fallaria por un reflujo cosmetico.
+
+    El prompt de la nube es un template literal de TypeScript, donde el salto se
+    escribe `\\` + fin de linea. Ese backslash tambien es ancho de linea, no
+    regla: hay que sacarlo ANTES de colapsar los espacios, o el test vuelve a
+    fijar donde cae el corte.
     """
-    return re.sub(r"\s+", " ", texto)
+    return re.sub(r"\s+", " ", texto.replace("\\\n", ""))
+
+
+# Sin el sujeto ("productos sirve" / "v_ventas_producto y productos sirven"):
+# el test fija la REGLA, no la conjugacion del verbo. Mismo criterio que
+# _una_linea con el ancho de linea.
+REGLA_UNIDADES = "para UNIDADES, nunca para dinero"
 
 
 def test_el_prompt_local_prohibe_dinero_por_producto_desde_el_detalle():
     from app.agent.system_prompt import SYSTEM_PROMPT
 
     prompt = _una_linea(SYSTEM_PROMPT)
-    assert "sirve para UNIDADES, nunca para dinero" in prompt
+    assert REGLA_UNIDADES in prompt
     assert "NO entregues montos por producto" in prompt
 
 
@@ -44,7 +55,7 @@ def test_el_prompt_de_la_nube_prohibe_dinero_por_producto_desde_el_detalle():
     solo el del PC deja el agujero abierto en el canal que mas se usa."""
     texto = _una_linea(PROMPT_NUBE.read_text(encoding="utf-8"))
 
-    assert "sirve para UNIDADES, nunca para dinero" in texto
+    assert REGLA_UNIDADES in texto
     assert "NO entregues montos por producto" in texto
 
 
@@ -55,3 +66,24 @@ def test_el_prompt_de_la_nube_ya_no_manda_v_ventas_producto_sin_reservas():
     texto = _una_linea(PROMPT_NUBE.read_text(encoding="utf-8"))
 
     assert "usa la view v_ventas_producto (ya excluye Logistica y PET)" not in texto
+
+
+def test_el_prompt_de_la_nube_manda_a_la_tool_de_ingreso():
+    """Prohibir sin dar el reemplazo deja al telefono sin poder responder algo
+    que el PC ya contesta bien. Desde que la atribucion se replica (2026-08-12)
+    hay una fuente correcta y el prompt tiene que nombrarla."""
+    texto = _una_linea(PROMPT_NUBE.read_text(encoding="utf-8"))
+
+    assert "ingreso_producto" in texto
+    assert "v_ingreso_producto" in texto
+    # Ya no corresponde declararse incapaz: eso era el parche de mientras.
+    assert "no tienes la cifra confiable" not in texto
+
+
+def test_el_prompt_de_la_nube_obliga_a_declarar_la_cobertura():
+    """La logistica repartida a prorrata no se puede verificar contra el
+    documento. El PC ya obliga a decirlo; el telefono es el canal mas usado."""
+    texto = _una_linea(PROMPT_NUBE.read_text(encoding="utf-8"))
+
+    assert "cobertura" in texto.lower()
+    assert "estimad" in texto.lower()

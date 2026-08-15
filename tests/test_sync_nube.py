@@ -217,3 +217,31 @@ def test_sql_views_define_lo_nuevo_idempotente():
     assert "CREATE OR REPLACE VIEW v_lineas_factura" in sql
     assert "tipo_linea" in sql
     assert "tiene_nc" in sql
+
+
+# --- Dinero por producto en el telefono (2026-08-12) ---
+# La atribucion NO se recalcula en la nube: se calcula en el PC (unica fuente de
+# verdad) y viaja ya resuelta, igual que costo_sku. Replicar el motor alla seria
+# tener dos implementaciones de la misma regla, que es como empezo este problema.
+
+def test_la_atribucion_viaja_a_la_nube():
+    fuente, columnas = sync_nube.VISTAS_REPLICADAS["ingreso_producto"]
+    assert fuente == "v_ingreso_producto"
+    # Sin `calidad` el telefono no puede decir que parte del monto es estimada,
+    # y una cifra de plata por producto no sale sola.
+    for imprescindible in ["cerveza", "ingreso_neto_atribuido", "unidades",
+                           "calidad", "fecha_evento", "razon_social"]:
+        assert imprescindible in columnas
+    assert "ingreso_producto" not in sync_nube.TABLAS_ORDEN
+
+
+def test_la_nube_expone_la_atribucion_con_el_mismo_nombre_que_el_pc():
+    """El SQL que sirve en el PC tiene que servir en la nube.
+
+    La tabla replicada se llama `ingreso_producto` (es una tabla, no una vista),
+    pero encima va `v_ingreso_producto`: asi una consulta escrita contra la BD
+    local corre igual contra la replica, y el prompt puede nombrar una sola cosa.
+    """
+    sql = (_RAIZ / "scripts" / "migrate_nube_views.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS ingreso_producto" in sql
+    assert "CREATE OR REPLACE VIEW v_ingreso_producto" in sql

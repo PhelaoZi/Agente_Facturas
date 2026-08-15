@@ -50,6 +50,15 @@ VISTAS_REPLICADAS = {
                   ["codigo", "nombre_cerveza", "formato",
                    "costo_liquido_unitario", "costo_envasado_unitario",
                    "costo_total_unitario"]),
+    # Dinero por cerveza (producto + la logistica que le toca). `calidad` viaja
+    # si o si: sin ella el telefono no puede decir que parte del monto es
+    # estimada, y una cifra de plata por producto no sale sola.
+    "ingreso_producto": ("v_ingreso_producto",
+                         ["tipo_documento", "folio", "fecha_evento",
+                          "rut_cliente", "razon_social", "cerveza", "formato",
+                          "litros", "unidades", "ingreso_neto_atribuido",
+                          "logistica_atribuida", "fuente", "metodo",
+                          "calidad"]),
 }
 LOTE = 1000
 TIMEOUT_PG_DUMP = 120

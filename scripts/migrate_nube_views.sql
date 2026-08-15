@@ -76,6 +76,38 @@ CREATE TABLE IF NOT EXISTS costo_sku (
     costo_total_unitario     NUMERIC
 );
 
+-- Replica de la capa de atribucion: cuanta plata dejo cada cerveza.
+-- La atribucion NO se recalcula aqui. Se calcula en el PC (scripts/
+-- calcular_atribucion.py, unica fuente de verdad) y viaja ya resuelta, igual
+-- que costo_sku. Tener el motor en dos lados seria tener la regla en dos
+-- lados, que es exactamente como se llego a este problema.
+CREATE TABLE IF NOT EXISTS ingreso_producto (
+    tipo_documento          INTEGER,
+    folio                   INTEGER,
+    fecha_evento            DATE,
+    rut_cliente             TEXT,
+    razon_social            TEXT,
+    cerveza                 TEXT,
+    formato                 TEXT,
+    litros                  INTEGER,
+    unidades                NUMERIC(14, 3),
+    ingreso_neto_atribuido  NUMERIC(14, 2),
+    logistica_atribuida     NUMERIC(14, 2),
+    fuente                  TEXT,
+    metodo                  TEXT,
+    calidad                 TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_ingreso_producto_cerveza
+    ON ingreso_producto (cerveza);
+CREATE INDEX IF NOT EXISTS idx_ingreso_producto_fecha
+    ON ingreso_producto (fecha_evento);
+
+-- Mismo nombre que en el PC a proposito: una consulta escrita contra la BD
+-- local corre igual contra la replica, y el prompt nombra una sola cosa.
+CREATE OR REPLACE VIEW v_ingreso_producto AS
+SELECT * FROM ingreso_producto;
+
 -- Cabecera de CUALQUIER documento por folio (incluye NC tipo 61: la tool
 -- del chat avisa si el folio es una nota de credito, no una factura).
 CREATE OR REPLACE VIEW v_factura_cabecera AS

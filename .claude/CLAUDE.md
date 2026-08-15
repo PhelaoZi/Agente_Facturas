@@ -137,6 +137,12 @@ Cobertura actual: 854 de 876 documentos, $85.464.458 atribuidos de $89.639.125,
 cuadratura exacta. Historia del problema y de la decisión en
 `docs/debate-arquitectura/`.
 
+**En la nube la atribución NO se recalcula: se replica.** `sync_nube.py`
+materializa `v_ingreso_producto` como la tabla `ingreso_producto` y encima crea
+una vista del mismo nombre que la local, así el SQL escrito contra el PC corre
+igual contra la réplica. El motor vive solo acá — tenerlo en dos lados sería
+tener la regla en dos lados, que es exactamente como empezó este problema.
+
 ### Pipeline de conciliación bancaria
 
 ```
