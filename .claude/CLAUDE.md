@@ -117,7 +117,23 @@ fuente es la vista `v_ingreso_producto`, sobre la capa derivada
 | Para | Usar | Nunca |
 |---|---|---|
 | Dinero por producto | `v_ingreso_producto`, o `mcp__negocio__ingreso_producto` | `productos`, `v_ventas_producto` |
-| Unidades por producto | `productos` sirve | — |
+| Unidades por producto | `v_lineas_producto`, agrupando por `cerveza` | agrupar por `nombre_producto` |
+
+**Nunca agrupar por `nombre_producto`.** El nombre se escribe a mano en cada
+factura: **125 formas distintas, 84 de ellas cerveza, que colapsan en 27**.
+`Barril 30L APA` y `Barril 30L  APA` (doble espacio) son dos filas para
+Postgres, así que agrupar por el texto crudo parte las unidades de una cerveza
+entre sus erratas — el chat llegó a mostrar la misma cerveza dos veces en una
+tabla. La traducción vive en `linea_canonica` (una fila por línea de
+`productos`) y se consulta por `v_lineas_producto`, que además trae `clase`
+(`cerveza`/`logistica`/`envase`/`co2`/…): **filtrar por `clase = 'cerveza'` en
+vez de repetir los `ILIKE`** de más abajo.
+
+`productos` NO se corrige: es lo que dice el documento tributario y reescribirla
+sería falsificar la evidencia. Se traduce al consultar.
+
+`calcular_atribucion.py` avisa en su informe los nombres que no reconoce —
+agregarlos a `CERVEZAS` en `app/negocio/clasificacion_lineas.py`.
 
 Sumar `productos.total_linea` da **un tercio** de lo real y además **ordena mal
 el ranking de clientes**: en Cream Ale 2026 daba Marina $1.220.000 primero
@@ -127,6 +143,19 @@ La capa es derivada y se recalcula entera con
 `python scripts/calcular_atribucion.py` (`--simular` para solo ver el informe).
 No se versiona ni tiene modo sombra a propósito: el rollback es volver a
 correrla. Si el lote no cuadra contra el neto de `ventas`, no escribe nada.
+
+**Importar desde el dashboard ya encadena todo:** wiki → atribución → nube
+(`_tareas_post_importacion` en `app/dashboard.py`). Existe porque no lo hacía:
+el 2026-08-16 se importaron 13 facturas de agosto y quedaron fuera del dinero
+por cerveza, mientras la tarea programada de la nube seguía publicando a diario
+lo que hubiera. **Si la atribución falla no se publica nada** — `sync_nube`
+trunca y recarga, así que subiría `ventas` nueva con el dinero por cerveza
+viejo. Mejor el teléfono una versión atrás completo que media versión adelante.
+
+El deploy del chat de la nube va por `python scripts/deploy_chat.py`, que borra
+el bundle antes de construir: hacerlo a mano subió una vez el bundle de la
+corrida anterior sin avisar, porque `deno bundle` falló y el archivo viejo
+seguía en disco.
 
 Cada fila declara `fuente` (`linea_dte` o `residual_cabecera`), `metodo` y
 `calidad` (`deterministica` o `estimada`). **Toda respuesta de plata por
