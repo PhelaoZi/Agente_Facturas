@@ -21,6 +21,7 @@ tipo_documento como texto, etc.).
 import sys
 import json
 import os
+import subprocess
 import webbrowser
 import threading
 from pathlib import Path
@@ -990,6 +991,10 @@ MAX_ARCHIVOS_IMPORT = 20
 MAX_BYTES_ARCHIVO = 5 * 1024 * 1024
 MAX_BYTES_TOTAL = 20 * 1024 * 1024
 TIMEOUT_WIKI_SEG = 180
+# El recálculo completo demora 0,2s sobre 889 documentos; el margen es para que
+# un bloqueo de la BD se corte solo en vez de dejar la importación esperando.
+TIMEOUT_ATRIBUCION_SEG = 120
+TIMEOUT_NUBE_SEG = 180          # depende de la red: la réplica sube ~4.000 filas
 
 
 class _ImportacionFallida(Exception):
@@ -1000,6 +1005,27 @@ class _ImportacionFallida(Exception):
         self.resultado = resultado
 
 
+def _correr_script(nombre: str, args=(), timeout=TIMEOUT_WIKI_SEG, que_es="El script") -> dict:
+    """Lanza un script de `scripts/` y traduce el resultado a {ok, detalle}.
+
+    **Nunca lanza excepción.** Todo lo que usa esto corre DESPUÉS de que las
+    facturas quedaron guardadas: un fallo acá se avisa, no voltea la importación.
+    """
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(PROJECT_ROOT / "scripts" / nombre), *args],
+            cwd=str(PROJECT_ROOT), capture_output=True, text=True,
+            timeout=timeout, encoding="utf-8", errors="replace")
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "detalle": f"{que_es} tardó más de {timeout}s; se canceló."}
+    except Exception as e:
+        return {"ok": False, "detalle": f"No se pudo ejecutar {nombre}: {e}"}
+    if proc.returncode != 0:
+        detalle = (proc.stderr or proc.stdout or "").strip()[-400:]
+        return {"ok": False, "detalle": detalle or f"{nombre} salió con código {proc.returncode}"}
+    return {"ok": True, "detalle": (proc.stdout or "").strip()[-400:]}
+
+
 def _actualizar_wiki(ruts: list) -> dict:
     """Regenera las fichas wiki de los clientes tocados. Nunca bloquea la importación.
 
@@ -1008,21 +1034,58 @@ def _actualizar_wiki(ruts: list) -> dict:
     """
     if not ruts:
         return {"ok": True, "detalle": "Sin clientes nuevos que actualizar."}
-    import subprocess
-    try:
-        proc = subprocess.run(
-            [sys.executable, str(PROJECT_ROOT / "scripts" / "wiki_update.py"),
-             "--ruts", ",".join(ruts), "--origen", "dashboard"],
-            cwd=str(PROJECT_ROOT), capture_output=True, text=True,
-            timeout=TIMEOUT_WIKI_SEG, encoding="utf-8", errors="replace")
-    except subprocess.TimeoutExpired:
-        return {"ok": False, "detalle": f"La wiki tardó más de {TIMEOUT_WIKI_SEG}s; se canceló."}
-    except Exception as e:
-        return {"ok": False, "detalle": f"No se pudo ejecutar wiki_update.py: {e}"}
-    if proc.returncode != 0:
-        detalle = (proc.stderr or proc.stdout or "").strip()[-400:]
-        return {"ok": False, "detalle": detalle or f"wiki_update.py salió con código {proc.returncode}"}
-    return {"ok": True, "detalle": f"{len(ruts)} ficha(s) de cliente actualizada(s)."}
+    r = _correr_script("wiki_update.py",
+                       ["--ruts", ",".join(ruts), "--origen", "dashboard"],
+                       TIMEOUT_WIKI_SEG, "La wiki")
+    if r["ok"]:
+        r["detalle"] = f"{len(ruts)} ficha(s) de cliente actualizada(s)."
+    return r
+
+
+def _actualizar_atribucion() -> dict:
+    """Recalcula cuánta plata dejó cada cerveza.
+
+    Importar deja las facturas en `ventas` y `productos`, pero el dinero por
+    producto no vive ahí: se deduce sumando a cada cerveza la logística que le
+    toca. Esa capa se recalcula entera y no se entera sola de que llegó una
+    factura nueva — antes del 2026-08-16 había que acordarse de correrla a mano,
+    y 13 facturas de agosto quedaron fuera del ranking sin que nadie lo notara.
+
+    Es todo-o-nada: si el lote no cuadra contra `ventas`, el script no escribe.
+    """
+    return _correr_script("calcular_atribucion.py", (),
+                          TIMEOUT_ATRIBUCION_SEG, "El recálculo de atribución")
+
+
+def _publicar_en_la_nube() -> dict:
+    """Replica la base local a InsForge para que el teléfono la vea al toque.
+
+    La tarea programada ya lo hace a diario; esto es para no esperar hasta
+    mañana después de importar.
+    """
+    return _correr_script("sync_nube.py", (), TIMEOUT_NUBE_SEG, "El sync a la nube")
+
+
+def _tareas_post_importacion(ruts: list) -> dict:
+    """Todo lo que se recalcula solo después de importar, encadenado y en orden.
+
+    La atribución va ANTES que la nube porque la nube copia lo que la atribución
+    dejó. **Si la atribución falla no se publica nada**: `sync_nube` trunca y
+    recarga todo, así que subiría `ventas` nueva con el dinero por cerveza viejo
+    —las ventas totales con agosto y el ranking de cervezas sin agosto, en la
+    misma pantalla—. Preferimos el teléfono una versión atrás completo que media
+    versión adelante.
+    """
+    wiki = _actualizar_wiki(ruts)
+    atribucion = _actualizar_atribucion()
+    if atribucion["ok"]:
+        nube = _publicar_en_la_nube()
+    else:
+        nube = {"ok": False,
+                "detalle": "No se publicó: la atribución falló y subirla vieja "
+                           "dejaría el teléfono con las ventas nuevas y el "
+                           "dinero por cerveza viejo."}
+    return {"wiki": wiki, "atribucion": atribucion, "nube": nube}
 
 
 def _leer_archivos_import(body: dict) -> list:
@@ -1137,7 +1200,7 @@ def importar_dte(archivos: list) -> dict:
                 ruts.append(rut)
 
     return {"ok": True, "resumen": resumen, "duplicados": duplicados,
-            "archivos": resultados, "wiki": _actualizar_wiki(ruts)}
+            "archivos": resultados, **_tareas_post_importacion(ruts)}
 
 
 def _md_to_html(s: str) -> str:

@@ -475,7 +475,7 @@
         <div class="mini-row"><span>Emitidas por Zigurat (33, 34, 39, 41)</span><span class="v">→ ventas + clientes + productos</span></div>
         <div class="mini-row"><span>Notas de crédito (61)</span><span class="v">→ descuentan la factura referenciada</span></div>
         <div class="mini-row"><span>Emitidas por un proveedor</span><span class="v">→ precios de insumos o gastos operativos</span></div>
-        <div class="mini-row"><span>Al terminar</span><span class="v">→ se archiva el XML, se actualiza la wiki y este panel</span></div>
+        <div class="mini-row"><span>Al terminar</span><span class="v">→ se archiva el XML, se recalcula el dinero por cerveza, se actualiza la wiki y se publica al teléfono</span></div>
       </div>
     </div>
   </section>
@@ -1033,8 +1033,16 @@ function renderImportacion(d){
       + '</tbody></table></div></details>';
   }
 
-  const w=d.wiki||{};
-  if(w.detalle) html+=`<div class="path" style="margin-top:12px">${w.ok?'📚':'⚠️'} Wiki: ${esc(w.detalle)}</div>`;
+  // Lo que se recalcula solo despues de importar. Se muestra SIEMPRE, tambien
+  // cuando sale bien: si el usuario no ve que corrio, no sabe si sus cifras
+  // estan al dia -- que fue justo lo que paso con las 13 facturas de agosto.
+  const pasos=[['📚','Wiki',d.wiki],['🧮','Dinero por cerveza',d.atribucion],
+               ['☁️','Teléfono',d.nube]];
+  for(const [icono,nombre,r] of pasos){
+    if(!r) continue;
+    const detalle=r.ok?(nombre==='Wiki'?esc(r.detalle||''):'actualizado'):esc(r.detalle||'falló');
+    html+=`<div class="path" style="margin-top:8px">${r.ok?icono:'⚠️'} ${nombre}: ${detalle}</div>`;
+  }
   out.innerHTML=html;
 }
 
