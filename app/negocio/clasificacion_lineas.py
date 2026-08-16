@@ -45,6 +45,7 @@ CERVEZAS = {
 
     "scotch ale": "Scotch Ale",
     "scoth ale": "Scotch Ale",
+    "stcotch ale": "Scotch Ale",
     "scotch": "Scotch Ale",
     "scotch ale ale": "Scotch Ale",
     "imp scotch": "Imperial Scotch",

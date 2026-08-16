@@ -57,6 +57,7 @@ def test_la_logistica_con_nombre_de_cerveza_sigue_siendo_logistica():
     ("Barril 30L Cream  Ale",     "Cream Ale",       30),
     ("Baril 30L Scotch Ale",      "Scotch Ale",      30),   # "Baril"
     ("Barril 30L Scoth Ale",      "Scotch Ale",      30),   # "Scoth"
+    ("Barril 30L Stcotch Ale",    "Scotch Ale",      30),   # folio 4766, ago-2026
     ("Barril 30L Scotch Ale Ale", "Scotch Ale",      30),   # "Ale" repetido
     ("Barril 30L Scotch",         "Scotch Ale",      30),
     ("Barril 30L Balck IPA",      "Black IPA",       30),   # "Balck"
