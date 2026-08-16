@@ -284,6 +284,21 @@ se factura como "Barril 25L". **Precio y logística escalan con los litros**, as
 que `precios_venta.py` normaliza el precio a barril de 30L equivalente y todos
 comparten la clave de formato `barril 30L`.
 
+**Cómo lo calcula el productor** (confirmado por él y verificado contra las
+facturas, 2026-08-16): divide *las dos* líneas del barril de 30L por 30 y
+multiplica por los litros que despacha. Black IPA en abril-2024 valía $45.000 de
+cerveza + $52.000 de logística por 30L; los barriles de 20L de esa semana se
+facturaron a $30.000 ($45.000 × 20/30, exacto en el folio 4019) y la logística
+sale a $34.667 por el mismo camino.
+
+El caso que esto NO resuelve es una factura que mezcle barriles con latas y traiga
+la logística en una sola línea: para repartirla hay que conocer la tarifa de 30L
+de ese estilo, y esa no está en el documento —hay que deducirla de otras
+facturas—. Son 3 documentos de abril-2024 ($214.528, 0,2%) y el productor ya no
+recuerda cuál de las dos lecturas posibles fue; quedan sin atribuir a propósito.
+Si vuelve a pasar, `logistica_no_repartible` lo reporta al importar y ahí
+conviene resolverlo con el caso fresco.
+
 ### Precio de venta — se deduce de las facturas, no de una lista
 
 `app/negocio/precios_venta.py` reconstruye el precio neto unitario real por
