@@ -88,15 +88,19 @@ def test_trae_los_litros_ademas_de_las_unidades():
     assert r["total_litros"] == 1119.6
 
 
-def test_el_barril_aporta_sus_litros_y_la_botella_los_suyos():
-    """El SQL tiene que usar los litros del barril cuando los hay, y el volumen
-    del formato cuando no (una botella no trae litros en el nombre)."""
+def test_suma_litros_derecho_porque_la_vista_ya_trae_el_total():
+    """`v_lineas_producto.litros` es el total de la LINEA (cantidad x volumen),
+    no el tamano del envase. Ese cambio existe porque el modelo escribio
+    `SUM(litros)` con la definicion anterior y le dio 480 L donde eran 1.080:
+    ignoraba la cantidad. La consulta ingenua tiene que ser la correcta.
+
+    Si esto vuelve a `SUM(cantidad * litros)`, el volumen se multiplica al
+    cuadrado."""
     cur = FakeCursor()
     up.ranking(cur)
 
-    assert "litros" in cur.sql
-    # El volumen de botella y lata viaja parametrizado, no interpolado.
-    assert 0.33 in cur.params and 0.47 in cur.params
+    assert "SUM(litros)" in cur.sql
+    assert "cantidad * litros" not in cur.sql
 
 
 # ─── Lo que devuelve ─────────────────────────────────────────────────────────
@@ -140,6 +144,41 @@ def test_se_puede_pedir_una_sola_cerveza():
 
     assert "cerveza ILIKE" in cur.sql
     assert "%Cream%" in cur.params
+
+
+# ─── Corte mensual ───────────────────────────────────────────────────────────
+# Existe porque sin él, ante "informe por producto por cada mes del 2026", el
+# modelo se fue a escribir SQL — y ahí sumó `litros` sin multiplicar por la
+# cantidad. Cada pregunta frecuente sin herramienta es una consulta improvisada.
+
+def test_por_mes_abre_una_fila_por_mes():
+    cur = FakeCursor()
+    up.ranking(cur, por_mes=True)
+
+    assert "to_char(fecha, 'YYYY-MM') AS mes" in cur.sql
+    assert "GROUP BY to_char(fecha, 'YYYY-MM'), cerveza, formato" in cur.sql
+
+
+def test_sin_por_mes_no_aparece_la_columna():
+    """El caso normal es el agregado; el mes es lo excepcional."""
+    cur = FakeCursor()
+    up.ranking(cur)
+
+    assert "AS mes" not in cur.sql
+
+
+def test_por_mes_ordena_cronologicamente_y_devuelve_el_mes():
+    cur = FakeCursor([
+        {"mes": "2026-06", "cerveza": "Cream Ale", "formato": "barril",
+         "unidades": 27, "litros": 810.0, "documentos": 13, "ultima": "2026-06-30"},
+        {"mes": "2026-07", "cerveza": "Cream Ale", "formato": "barril",
+         "unidades": 36, "litros": 1080.0, "documentos": 16, "ultima": "2026-07-31"},
+    ])
+
+    r = up.ranking(cur, por_mes=True)
+
+    assert [p["mes"] for p in r["productos"]] == ["2026-06", "2026-07"]
+    assert r["total_litros"] == 1890.0
 
 
 @pytest.mark.parametrize("valor", [None, 0, ""])

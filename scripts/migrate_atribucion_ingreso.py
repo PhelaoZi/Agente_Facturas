@@ -140,6 +140,15 @@ DROP VIEW IF EXISTS v_lineas_producto;
 -- Para UNIDADES por cerveza (para dinero está `v_ingreso_producto`). `clase`
 -- reemplaza a los filtros con ILIKE '%logist%' repartidos por todo el código:
 -- una columna, no una expresión que hay que acordarse de escribir bien.
+-- `litros` es el total de la LÍNEA (cantidad × volumen unitario), no el tamaño
+-- del envase. Es a propósito: lo natural de escribir es `SUM(litros)`, y con la
+-- otra definición esa consulta daba 480 L donde eran 1.080 —ignoraba la
+-- cantidad— y 0 para las botellas, porque el tamaño venía NULL. La consulta
+-- ingenua tiene que ser la correcta. El tamaño del envase queda en
+-- `litros_unidad`, que nadie suma por accidente.
+--
+-- Todas las botellas del catálogo son de 330cc y todas las latas de 470cc
+-- (verificado sobre las 125 descripciones de `productos`).
 CREATE VIEW v_lineas_producto AS
 SELECT p.id            AS linea_id,
        p.folio,
@@ -150,9 +159,14 @@ SELECT p.id            AS linea_id,
        p.nombre_producto,          -- lo que dice la factura, sin tocar
        lc.cerveza,                 -- el nombre canónico
        lc.formato,
-       lc.litros,
        lc.clase,
        p.cantidad,
+       COALESCE(lc.litros::numeric,
+                CASE lc.formato WHEN 'botella' THEN 0.33
+                                WHEN 'lata'    THEN 0.47 END) AS litros_unidad,
+       p.cantidad * COALESCE(lc.litros::numeric,
+                CASE lc.formato WHEN 'botella' THEN 0.33
+                                WHEN 'lata'    THEN 0.47 END) AS litros,
        p.total_linea
 FROM productos p
 JOIN linea_canonica lc ON lc.linea_id = p.id

@@ -323,9 +323,11 @@ def build_negocio_server(collector=None):
           "Úsala para cuánta cerveza se vendió, cuántos barriles/botellas y "
           "comparaciones entre períodos. Ya agrupa las erratas del nombre y "
           "excluye logística, envases PET y CO2. Para PESOS usa "
-          "ingreso_producto. Opcionales: desde, hasta (YYYY-MM-DD), cerveza.",
-          {"desde": str, "hasta": str, "cerveza": str},
-          opcionales=("desde", "hasta", "cerveza"))
+          "ingreso_producto. Con por_mes=true abre una fila por mes, para "
+          "informes mes a mes. Opcionales: desde, hasta (YYYY-MM-DD), cerveza, "
+          "por_mes.",
+          {"desde": str, "hasta": str, "cerveza": str, "por_mes": bool},
+          opcionales=("desde", "hasta", "cerveza", "por_mes"))
     @_tool_seguro
     async def unidades_producto(args):
         """Existe para que el modelo NO tenga que escribir SQL para esto.
@@ -344,10 +346,12 @@ def build_negocio_server(collector=None):
         1.080. La aritmética estaba bien; el ranking, dado vuelta.
         """
         r = _con_cursor(unidades_data.ranking, args.get("desde"),
-                        args.get("hasta"), args.get("cerveza"))
+                        args.get("hasta"), args.get("cerveza"),
+                        bool(args.get("por_mes")))
         if not r["productos"]:
             return _texto(f"Sin ventas de cerveza ({r['alcance']}).")
-        lineas = [f"- {p['cerveza']} · {p['formato'] or 's/formato'}: "
+        lineas = [(f"- {p['mes']} · " if p.get("mes") else "- ")
+                  + f"{p['cerveza']} · {p['formato'] or 's/formato'}: "
                   f"{_litros(p['litros'])} L ({p['unidades']:.0f} unidades, "
                   f"{p['documentos']} facturas)"
                   for p in r["productos"]]

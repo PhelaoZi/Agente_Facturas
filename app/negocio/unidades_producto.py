@@ -19,7 +19,6 @@ se pueda repartir entre formatos.
 
 Sigue el contrato de `app/negocio/`: recibe un cursor, no maneja conexión.
 """
-from app.negocio import clasificacion_lineas as cl
 
 # Las notas de crédito devuelven mercadería: restan unidades. Sumarlas dejaría
 # el volumen inflado con lo que volvió a la bodega.
@@ -41,20 +40,24 @@ def _alcance(desde, hasta, cerveza):
     return f"{que} ({periodo})"
 
 
-def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
-    """Unidades por cerveza y formato, de mayor a menor.
+def ranking(cur, desde=None, hasta=None, cerveza=None, por_mes=False, limite=200):
+    """Volumen por cerveza y formato, de mayor a menor.
 
     Agrupa por el nombre CANÓNICO: el productor escribe el nombre a mano y hay
     84 formas de escribir 27 cervezas.
+
+    Con `por_mes` abre una fila por mes. Existe porque sin eso el modelo se iba
+    a escribir SQL para un informe mensual — y ahí sumaba `litros` sin
+    multiplicar por la cantidad.
+
+    `v_lineas_producto.litros` ya es el total de la línea, así que acá se suma
+    derecho: la vista es la que sabe cuántos litros lleva cada formato.
     """
     condiciones = [
         "clase = 'cerveza'",
         f"tipo_documento != {TIPO_NOTA_CREDITO}",
     ]
-    # Los litros de un barril vienen en su nombre; los de una botella o una lata
-    # salen del formato. Van parametrizados y desde `clasificacion_lineas`, que
-    # es donde vive el conocimiento de formatos.
-    params = [cl.LITROS_POR_UNIDAD["botella"], cl.LITROS_POR_UNIDAD["lata"]]
+    params = []
     if desde:
         condiciones.append("fecha >= %s")
         params.append(desde)
@@ -65,25 +68,29 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
         condiciones.append("cerveza ILIKE %s")
         params.append(f"%{cerveza}%")
 
+    mes = "to_char(fecha, 'YYYY-MM')"
+    columna_mes = f"{mes} AS mes," if por_mes else ""
+    grupo = f"{mes}, cerveza, formato" if por_mes else "cerveza, formato"
+    orden = f"{mes}, litros DESC" if por_mes else "litros DESC"
+
     cur.execute(f"""
-        SELECT cerveza,
+        SELECT {columna_mes}
+               cerveza,
                formato,
                SUM(cantidad)         AS unidades,
-               SUM(cantidad * COALESCE(litros,
-                     CASE formato WHEN 'botella' THEN %s
-                                  WHEN 'lata'    THEN %s
-                                  ELSE 0 END))  AS litros,
+               SUM(litros)           AS litros,
                COUNT(DISTINCT folio) AS documentos,
                MAX(fecha)            AS ultima
         FROM v_lineas_producto
         WHERE {' AND '.join(condiciones)}
-        GROUP BY cerveza, formato
-        ORDER BY litros DESC
+        GROUP BY {grupo}
+        ORDER BY {orden}
         LIMIT %s
     """, params + [limite])
 
     productos = [
-        {"cerveza": f["cerveza"],
+        {"mes": f.get("mes"),
+         "cerveza": f["cerveza"],
          "formato": f["formato"],
          "unidades": float(f["unidades"] or 0),
          "litros": round(float(f["litros"] or 0), 1),
@@ -96,6 +103,7 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
         "productos": productos,
         "desde": desde,
         "hasta": hasta,
+        "por_mes": por_mes,
         "alcance": _alcance(desde, hasta, cerveza),
         "total_unidades": sum(p["unidades"] for p in productos),
         "total_litros": round(sum(p["litros"] for p in productos), 1),

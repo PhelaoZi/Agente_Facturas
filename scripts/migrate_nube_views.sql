@@ -94,9 +94,15 @@ CREATE TABLE IF NOT EXISTS linea_canonica (
 CREATE INDEX IF NOT EXISTS idx_linea_canonica_cerveza
     ON linea_canonica (cerveza);
 
--- Espejo de la vista local: UNIDADES por cerveza con el nombre ya traducido.
+-- Espejo de la vista local: volumen por cerveza con el nombre ya traducido.
 -- `clase` reemplaza a los filtros ILIKE '%logist%' repartidos por el codigo.
-CREATE OR REPLACE VIEW v_lineas_producto AS
+--
+-- `litros` es el total de la LINEA (cantidad x volumen unitario), no el tamano
+-- del envase: lo natural de escribir es SUM(litros), y con la otra definicion
+-- esa consulta daba 480 L donde eran 1.080 e ignoraba las botellas. La consulta
+-- ingenua tiene que ser la correcta.
+DROP VIEW IF EXISTS v_lineas_producto;
+CREATE VIEW v_lineas_producto AS
 SELECT p.id            AS linea_id,
        p.folio,
        p.tipo_documento,
@@ -106,9 +112,14 @@ SELECT p.id            AS linea_id,
        p.nombre_producto,
        lc.cerveza,
        lc.formato,
-       lc.litros,
        lc.clase,
        p.cantidad,
+       COALESCE(lc.litros::numeric,
+                CASE lc.formato WHEN 'botella' THEN 0.33
+                                WHEN 'lata'    THEN 0.47 END) AS litros_unidad,
+       p.cantidad * COALESCE(lc.litros::numeric,
+                CASE lc.formato WHEN 'botella' THEN 0.33
+                                WHEN 'lata'    THEN 0.47 END) AS litros,
        p.total_linea
 FROM productos p
 JOIN linea_canonica lc ON lc.linea_id = p.id

@@ -247,9 +247,25 @@ def test_los_nombres_canonicos_tambien_viajan():
 def test_la_nube_arma_la_vista_de_lineas_con_el_mismo_nombre():
     sql = (_RAIZ / "scripts" / "migrate_nube_views.sql").read_text(encoding="utf-8")
     assert "CREATE TABLE IF NOT EXISTS linea_canonica" in sql
-    assert "CREATE OR REPLACE VIEW v_lineas_producto" in sql
+    # DROP + CREATE, no CREATE OR REPLACE: la vista cambio de columnas (entro
+    # `litros_unidad` y `litros` paso a ser el total de la linea), y
+    # CREATE OR REPLACE falla cuando la lista de columnas no calza.
+    assert "DROP VIEW IF EXISTS v_lineas_producto" in sql
+    assert "CREATE VIEW v_lineas_producto" in sql
     # `clase` es lo que reemplaza a los ILIKE repartidos por el codigo.
     assert "lc.clase" in sql
+
+
+def test_la_vista_de_la_nube_trae_los_litros_de_la_LINEA():
+    """`SUM(litros)` tiene que dar el volumen real, en el PC y en la nube.
+
+    Con la definicion anterior -`litros` = tamano del envase- esa consulta daba
+    480 L donde eran 1.080 (ignoraba la cantidad) y 0 para las botellas (el
+    tamano venia NULL). La consulta ingenua tiene que ser la correcta.
+    """
+    sql = (_RAIZ / "scripts" / "migrate_nube_views.sql").read_text(encoding="utf-8")
+    assert "p.cantidad * COALESCE(lc.litros" in sql
+    assert "AS litros_unidad" in sql
 
 
 def test_la_nube_expone_la_atribucion_con_el_mismo_nombre_que_el_pc():
