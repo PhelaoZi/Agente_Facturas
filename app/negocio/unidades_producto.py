@@ -19,6 +19,7 @@ se pueda repartir entre formatos.
 
 Sigue el contrato de `app/negocio/`: recibe un cursor, no maneja conexión.
 """
+from app.negocio import clasificacion_lineas as cl
 
 # Las notas de crédito devuelven mercadería: restan unidades. Sumarlas dejaría
 # el volumen inflado con lo que volvió a la bodega.
@@ -50,7 +51,10 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
         "clase = 'cerveza'",
         f"tipo_documento != {TIPO_NOTA_CREDITO}",
     ]
-    params = []
+    # Los litros de un barril vienen en su nombre; los de una botella o una lata
+    # salen del formato. Van parametrizados y desde `clasificacion_lineas`, que
+    # es donde vive el conocimiento de formatos.
+    params = [cl.LITROS_POR_UNIDAD["botella"], cl.LITROS_POR_UNIDAD["lata"]]
     if desde:
         condiciones.append("fecha >= %s")
         params.append(desde)
@@ -65,12 +69,16 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
         SELECT cerveza,
                formato,
                SUM(cantidad)         AS unidades,
+               SUM(cantidad * COALESCE(litros,
+                     CASE formato WHEN 'botella' THEN %s
+                                  WHEN 'lata'    THEN %s
+                                  ELSE 0 END))  AS litros,
                COUNT(DISTINCT folio) AS documentos,
                MAX(fecha)            AS ultima
         FROM v_lineas_producto
         WHERE {' AND '.join(condiciones)}
         GROUP BY cerveza, formato
-        ORDER BY unidades DESC
+        ORDER BY litros DESC
         LIMIT %s
     """, params + [limite])
 
@@ -78,6 +86,7 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
         {"cerveza": f["cerveza"],
          "formato": f["formato"],
          "unidades": float(f["unidades"] or 0),
+         "litros": round(float(f["litros"] or 0), 1),
          "documentos": int(f["documentos"] or 0),
          "ultima": f["ultima"]}
         for f in cur.fetchall()
@@ -89,4 +98,5 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, limite=50):
         "hasta": hasta,
         "alcance": _alcance(desde, hasta, cerveza),
         "total_unidades": sum(p["unidades"] for p in productos),
+        "total_litros": round(sum(p["litros"] for p in productos), 1),
     }

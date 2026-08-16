@@ -128,6 +128,20 @@ LITROS_BARRIL_ESTANDAR = 30
 RE_BOTELLA = re.compile(r'\bbotella\b', re.IGNORECASE)
 RE_LATA = re.compile(r'\blata\b', re.IGNORECASE)
 
+# Cuántos litros lleva una unidad de cada formato. Sirve para responder "cuánta
+# cerveza vendí": sumar botellas y barriles como si fueran la misma cosa da un
+# número sin sentido — 120 botellas son 39,6 litros y 36 barriles son 1.080, y
+# medido en unidades el ranking de julio-2026 ponía Scotch Ale (94) sobre Stout
+# Café (25) cuando en litros es al revés (327 contra 394).
+#
+# Todas las botellas del catálogo son de 330cc y todas las latas de 470cc
+# (verificado sobre las 125 descripciones de `productos`). El barril varía y sus
+# litros vienen en el nombre, así que ese no está acá.
+LITROS_POR_UNIDAD = {
+    "botella": 0.33,
+    "lata": 0.47,
+}
+
 # Pass-through
 RE_PET = re.compile(r'\bpet\b', re.IGNORECASE)
 RE_CO2 = re.compile(r'\bco\s*2\b', re.IGNORECASE)

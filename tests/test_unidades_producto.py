@@ -66,15 +66,48 @@ def test_las_notas_de_credito_restan_unidades():
     assert "tipo_documento" in cur.sql and "61" in cur.sql
 
 
+# ─── Litros: unidades de formatos distintos no se suman ──────────────────────
+# Medido el 2026-08-16: el agente respondió "Cream Ale 156 unidades (120
+# botellas + 36 barriles)" y "Scotch Ale 94". Las cifras eran correctas y la
+# conclusión no: en litros Stout Café (394) le gana a Scotch Ale (327), o sea el
+# ranking se da vuelta. Sumar botellas con barriles es aritmética válida sobre
+# cosas que no son comparables.
+
+def test_trae_los_litros_ademas_de_las_unidades():
+    cur = FakeCursor([
+        {"cerveza": "Cream Ale", "formato": "barril", "unidades": 36,
+         "litros": 1080.0, "documentos": 16, "ultima": "2026-07-31"},
+        {"cerveza": "Cream Ale", "formato": "botella", "unidades": 120,
+         "litros": 39.6, "documentos": 4, "ultima": "2026-07-28"},
+    ])
+
+    r = up.ranking(cur)
+
+    assert r["productos"][0]["litros"] == 1080.0
+    assert r["productos"][1]["litros"] == 39.6
+    assert r["total_litros"] == 1119.6
+
+
+def test_el_barril_aporta_sus_litros_y_la_botella_los_suyos():
+    """El SQL tiene que usar los litros del barril cuando los hay, y el volumen
+    del formato cuando no (una botella no trae litros en el nombre)."""
+    cur = FakeCursor()
+    up.ranking(cur)
+
+    assert "litros" in cur.sql
+    # El volumen de botella y lata viaja parametrizado, no interpolado.
+    assert 0.33 in cur.params and 0.47 in cur.params
+
+
 # ─── Lo que devuelve ─────────────────────────────────────────────────────────
 
 def test_junta_las_erratas_en_una_sola_fila():
     """Las 96 + 24 unidades que el chat mostraba en dos filas son 120."""
     cur = FakeCursor([
         {"cerveza": "Cream Ale", "formato": "botella", "unidades": 120,
-         "documentos": 8, "ultima": "2026-07-28"},
+         "litros": 39.6, "documentos": 8, "ultima": "2026-07-28"},
         {"cerveza": "Cream Ale", "formato": "barril", "unidades": 36,
-         "documentos": 30, "ultima": "2026-07-31"},
+         "litros": 1080.0, "documentos": 30, "ultima": "2026-07-31"},
     ])
 
     r = up.ranking(cur, desde="2026-07-01", hasta="2026-07-31")

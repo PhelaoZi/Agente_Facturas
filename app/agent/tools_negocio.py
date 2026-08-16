@@ -39,6 +39,16 @@ def _pesos(n):
     return f"${int(round(float(n))):,}".replace(",", ".")
 
 
+def _litros(n):
+    """Litros en formato chileno: miles con punto, decimal con coma.
+
+    No sirve un `.replace(",", ".")` sobre la línea entera como hace `_pesos`:
+    acá el texto trae comas propias ("36 unidades, 16 facturas") y se las come.
+    """
+    entero, decimal = f"{float(n or 0):,.1f}".split(".")
+    return f"{entero.replace(',', '.')},{decimal}"
+
+
 def _texto(s):
     return {"content": [{"type": "text", "text": s}]}
 
@@ -309,8 +319,8 @@ def build_negocio_server(collector=None):
                       + "\n".join(lineas))
 
     @tool("unidades_producto",
-          "UNIDADES vendidas por cerveza y formato (barriles, botellas, latas). "
-          "Úsala para volumen, cuántos barriles/botellas se vendieron y "
+          "Volumen vendido por cerveza y formato, en LITROS y en unidades. "
+          "Úsala para cuánta cerveza se vendió, cuántos barriles/botellas y "
           "comparaciones entre períodos. Ya agrupa las erratas del nombre y "
           "excluye logística, envases PET y CO2. Para PESOS usa "
           "ingreso_producto. Opcionales: desde, hasta (YYYY-MM-DD), cerveza.",
@@ -326,17 +336,27 @@ def build_negocio_server(collector=None):
         como dos productos, y "Barril 30L APA" dos veces. Prohibirlo en el
         prompt no alcanza — mientras la pregunta no tenga herramienta, el modelo
         improvisa.
+
+        Devuelve litros PRIMERO y ordena por litros: con la versión anterior el
+        modelo sumó 120 botellas + 36 barriles = "156 unidades" y concluyó que
+        Scotch Ale (94) vendió más que Stout Café (25). En litros es al revés
+        —327 contra 394— porque esas botellas son 39,6 litros y los barriles
+        1.080. La aritmética estaba bien; el ranking, dado vuelta.
         """
         r = _con_cursor(unidades_data.ranking, args.get("desde"),
                         args.get("hasta"), args.get("cerveza"))
         if not r["productos"]:
             return _texto(f"Sin ventas de cerveza ({r['alcance']}).")
         lineas = [f"- {p['cerveza']} · {p['formato'] or 's/formato'}: "
-                  f"{p['unidades']:.0f} unidades en {p['documentos']} facturas"
+                  f"{_litros(p['litros'])} L ({p['unidades']:.0f} unidades, "
+                  f"{p['documentos']} facturas)"
                   for p in r["productos"]]
-        return _texto(f"{r['alcance']}\n"
-                      f"Total: {r['total_unidades']:.0f} unidades.\n"
-                      + "\n".join(lineas))
+        return _texto(
+            f"{r['alcance']}\n"
+            f"Total: {_litros(r['total_litros'])} litros.\n"
+            + "\n".join(lineas)
+            + "\n[Compara por LITROS. Las unidades de formatos distintos no se "
+              "suman entre sí: una botella es 0,33 L y un barril 30 L.]")
 
     @tool("flujo_caja", "Proyección de caja a 4 semanas (ingresos esperados − gastos). "
                         "Opcional: saldo_inicial.", {"saldo_inicial": float},
