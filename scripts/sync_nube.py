@@ -50,6 +50,12 @@ VISTAS_REPLICADAS = {
                   ["codigo", "nombre_cerveza", "formato",
                    "costo_liquido_unitario", "costo_envasado_unitario",
                    "costo_total_unitario"]),
+    # Traduccion nombre-escrito -> cerveza. Sin esto el chat del telefono agrupa
+    # por el nombre crudo y parte las unidades de cada cerveza entre sus erratas
+    # ("Barril 30L APA" y "Barril 30L  APA" son dos filas para Postgres).
+    "linea_canonica": ("linea_canonica",
+                       ["linea_id", "tipo_documento", "folio", "nombre_producto",
+                        "cerveza", "formato", "litros", "clase"]),
     # Dinero por cerveza (producto + la logistica que le toca). `calidad` viaja
     # si o si: sin ella el telefono no puede decir que parte del monto es
     # estimada, y una cifra de plata por producto no sale sola.

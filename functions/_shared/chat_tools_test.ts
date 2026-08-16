@@ -118,6 +118,22 @@ Deno.test("ingreso_producto sin datos lo dice, no devuelve $0", async () => {
   assertStringIncludes(r.toLowerCase(), "sin ventas");
 });
 
+Deno.test("ventas_producto agrupa por cerveza, no por como se escribio", async () => {
+  // "Barril 30L APA" y "Barril 30L  APA" (doble espacio) son dos filas para
+  // Postgres: agrupando por el nombre crudo, la misma cerveza sale dos veces y
+  // sus unidades quedan partidas.
+  const sqls: string[] = [];
+  const sql = fakeSqlEspia(sqls, [
+    { cerveza: "Cream Ale", formato: "botella", unidades: 120, fecha: "2026-07-28" },
+  ]);
+  const r = await ejecutarTool(sql, "ventas_producto", { nombre: "cream" }, HOY);
+
+  assertStringIncludes(sqls[0], "v_lineas_producto");
+  assertStringIncludes(sqls[0], "clase");        // excluye logistica/PET/CO2
+  assertStringIncludes(r, "Cream Ale");
+  assertStringIncludes(r, "120");
+});
+
 Deno.test("ventas_producto no promete dinero en su descripcion", () => {
   // La descripcion es lo unico que el modelo lee antes de elegir la tool.
   const t = TOOLS.find((x) => (x as { name: string }).name === "ventas_producto");

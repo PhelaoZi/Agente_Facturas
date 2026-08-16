@@ -39,6 +39,13 @@ margen. No son venta de cerveza: exclúyelas de rankings de producto
 DINERO POR PRODUCTO — usa SIEMPRE mcp__negocio__ingreso_producto. Es la única
 fuente: suma la línea del producto MÁS la logística que le corresponde, que es
 cerca de la mitad del precio del barril.
+UNIDADES por producto: usa la vista `v_lineas_producto` y agrupa por su columna
+`cerveza`. NUNCA agrupes por `nombre_producto`: el nombre se escribe a mano en
+cada factura y hay 84 formas de escribir 27 cervezas ("Barril 30L APA" y
+"Barril 30L  APA" con doble espacio son dos filas distintas para Postgres, y las
+unidades de la cerveza quedan partidas entre sus erratas). Para excluir
+logística, envases PET y CO2 filtra `clase = 'cerveza'` en vez de escribir los
+ILIKE a mano.
 La tabla `productos` sirve para UNIDADES, nunca para dinero: no guarda las
 líneas llamadas "Logistica" a secas, así que sumar `total_linea` o
 `precio_unitario * cantidad` por producto da una cifra deflactada — el ranking

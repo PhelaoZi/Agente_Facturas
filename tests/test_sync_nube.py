@@ -235,6 +235,23 @@ def test_la_atribucion_viaja_a_la_nube():
     assert "ingreso_producto" not in sync_nube.TABLAS_ORDEN
 
 
+def test_los_nombres_canonicos_tambien_viajan():
+    """Sin esto el chat del telefono sigue agrupando por el nombre crudo y
+    partiendo las unidades de cada cerveza entre sus erratas."""
+    fuente, columnas = sync_nube.VISTAS_REPLICADAS["linea_canonica"]
+    assert fuente == "linea_canonica"
+    for imprescindible in ["linea_id", "cerveza", "formato", "clase"]:
+        assert imprescindible in columnas
+
+
+def test_la_nube_arma_la_vista_de_lineas_con_el_mismo_nombre():
+    sql = (_RAIZ / "scripts" / "migrate_nube_views.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS linea_canonica" in sql
+    assert "CREATE OR REPLACE VIEW v_lineas_producto" in sql
+    # `clase` es lo que reemplaza a los ILIKE repartidos por el codigo.
+    assert "lc.clase" in sql
+
+
 def test_la_nube_expone_la_atribucion_con_el_mismo_nombre_que_el_pc():
     """El SQL que sirve en el PC tiene que servir en la nube.
 

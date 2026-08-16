@@ -297,15 +297,24 @@ export async function ejecutarTool(
         `Ultimas:\n${ultimas.join("\n")}`;
     }
     case "ventas_producto": {
+      // Agrupa por el nombre CANONICO: el productor escribe el nombre a mano y
+      // hay 84 formas de escribir 27 cervezas. Por el nombre crudo, "Barril 30L
+      // APA" y "Barril 30L  APA" (doble espacio) salen como dos productos.
       const q = `%${String(input.nombre ?? "")}%`;
       const filas = await sql`
-        SELECT nombre_producto, cantidad, fecha
-        FROM v_ventas_producto WHERE nombre_producto ILIKE ${q}
-        ORDER BY fecha DESC`;
+        SELECT cerveza, formato, SUM(cantidad) AS unidades, MAX(fecha) AS fecha
+        FROM v_lineas_producto
+        WHERE clase = 'cerveza' AND tipo_documento != 61
+          AND (cerveza ILIKE ${q} OR nombre_producto ILIKE ${q})
+        GROUP BY cerveza, formato
+        ORDER BY unidades DESC`;
       if (!filas.length) return `Sin ventas que coincidan con '${input.nombre}'.`;
-      const unidades = filas.reduce((s, f) => s + num(f.cantidad), 0);
-      return `'${input.nombre}': ${filas.length} lineas de venta, ${unidades} unidades ` +
-        `(ultima el ${String(filas[0].fecha).slice(0, 10)}).`;
+      const total = filas.reduce((s, f) => s + num(f.unidades), 0);
+      const detalle = filas.map((f) =>
+        `- ${f.cerveza} · ${f.formato ?? "s/formato"}: ${num(f.unidades)} unidades ` +
+        `(ultima el ${String(f.fecha).slice(0, 10)})`);
+      return `'${input.nombre}': ${total} unidades en ${filas.length} formato(s).\n` +
+        detalle.join("\n");
     }
     case "ingreso_producto": {
       const cerveza = input.cerveza ? String(input.cerveza) : null;

@@ -72,19 +72,29 @@ def por_cliente(cur, nombre):
 
 
 def por_producto(cur, nombre):
-    """Líneas de detalle que coinciden con un producto (excluye NC)."""
+    """Líneas de detalle que coinciden con un producto (excluye NC).
+
+    Busca por el nombre canónico Y por el escrito: "Stout Café" tiene que
+    encontrar las líneas escritas "Sout Cafe". El detalle sigue mostrando el
+    nombre crudo —es lo que dice la factura— pero la búsqueda no puede depender
+    de que el usuario adivine la errata.
+    """
+    patron = f"%{nombre}%"
     cur.execute("""
         SELECT p.folio, v.fecha, c.razon_social, p.nombre_producto,
-               p.cantidad, p.precio_unitario
+               lc.cerveza, lc.formato, p.cantidad, p.precio_unitario
         FROM productos p
         JOIN ventas v ON v.folio = p.folio
         JOIN clientes c ON c.rut_cliente = v.rut_cliente
-        WHERE p.nombre_producto ILIKE %s AND v.tipo_documento != 61
+        LEFT JOIN linea_canonica lc ON lc.linea_id = p.id
+        WHERE (lc.cerveza ILIKE %s OR p.nombre_producto ILIKE %s)
+          AND v.tipo_documento != 61
         ORDER BY v.fecha DESC
-    """, (f"%{nombre}%",))
+    """, (patron, patron))
     return [
         {"folio": r["folio"], "fecha": r["fecha"], "cliente": r["razon_social"],
-         "producto": r["nombre_producto"], "cantidad": r["cantidad"],
+         "producto": r["nombre_producto"], "cerveza": r.get("cerveza"),
+         "formato": r.get("formato"), "cantidad": r["cantidad"],
          "precio_unitario": (float(r["precio_unitario"])
                              if r["precio_unitario"] is not None else None)}
         for r in cur.fetchall()

@@ -7,9 +7,10 @@ class FakeCursor:
 
     def __init__(self, rows):
         self._rows = rows
+        self.sql = ""
 
     def execute(self, sql, params=None):
-        pass
+        self.sql = sql
 
     def fetchall(self):
         return self._rows
@@ -59,9 +60,26 @@ def test_por_producto_mapea():
     # La columna real de la tabla productos es `nombre_producto` (no `descripcion`).
     rows = [
         {"folio": 10, "fecha": "2026-06-01", "razon_social": "Bar Uno",
-         "nombre_producto": "Barril 30L Cream Ale", "cantidad": 2, "precio_unitario": 20000},
+         "nombre_producto": "Barril 30L Cream Ale", "cerveza": "Cream Ale",
+         "formato": "barril", "cantidad": 2, "precio_unitario": 20000},
     ]
     r = ventas.por_producto(FakeCursor(rows), "Cream")
-    assert r[0]["producto"] == "Barril 30L Cream Ale"
+    assert r[0]["producto"] == "Barril 30L Cream Ale"   # lo que dice la factura
+    assert r[0]["cerveza"] == "Cream Ale"               # el nombre canonico
     assert r[0]["cantidad"] == 2
     assert r[0]["precio_unitario"] == 20000.0
+
+
+def test_por_producto_busca_tambien_por_el_nombre_canonico():
+    """Buscar "Stout Café" tiene que encontrar las lineas escritas "Sout Cafe".
+
+    El detalle sigue mostrando el nombre crudo -es lo que dice la factura- pero
+    la BUSQUEDA no puede depender de que el usuario adivine la errata.
+    """
+    cur = FakeCursor([])
+    ventas.por_producto(cur, "Stout Café")
+
+    sql = " ".join(cur.sql.split())
+    assert "lc.cerveza ILIKE" in sql
+    assert "p.nombre_producto ILIKE" in sql
+    assert sql.count("%s") >= 2, "el patron va parametrizado en ambas columnas"

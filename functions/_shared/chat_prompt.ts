@@ -46,14 +46,19 @@ COALESCE(monto_neto_ajustado, monto_neto). Nunca el campo sin ajustar.
 - Sumas de ventas: excluir notas de credito con tipo_documento != 61 \
 (ya estan descontadas en los campos ajustados; incluirlas = doble conteo).
 - folio y tipo_documento son enteros. Clientes unicos: COUNT(DISTINCT rut_cliente).
-- Por producto: v_ventas_producto y la tabla productos sirven para UNIDADES, \
+- Por producto: v_lineas_producto y la tabla productos sirven para UNIDADES, \
 nunca para dinero. No incluyen las lineas "Logistica" a secas, que son casi la \
 mitad del precio del barril, asi que todo monto por producto sale deflactado \
 (Cream Ale 30L da $3,5M cuando lo real es $10,8M) y ademas ordena mal el \
 ranking de clientes. NO entregues montos por producto sacados del detalle: para \
 pesos existe v_ingreso_producto, que ya suma producto + logistica.
+- NUNCA agrupes por nombre_producto: el nombre se escribe a mano y hay 84 \
+formas de escribir 27 cervezas ("Barril 30L APA" y "Barril 30L  APA" con doble \
+espacio son dos filas distintas). Agrupa por la columna 'cerveza' de \
+v_lineas_producto, y filtra con clase = 'cerveza' en vez de escribir ILIKE \
+para excluir logistica, envases PET y CO2.
 - Prefiere las views canonicas: v_ventas_reales, v_pendientes, \
-v_factura_cabecera, v_lineas_factura, v_ventas_producto, v_ingreso_producto, \
+v_factura_cabecera, v_lineas_factura, v_lineas_producto, v_ingreso_producto, \
 v_flujo_pendientes, v_dias_pago_cliente. Tablas: ventas, clientes, productos, \
 movimientos_banco, conciliaciones, cuentas_por_pagar, costo_sku, chat_tareas.
 - Columnas de ventas / v_ventas_reales: folio, tipo_documento, fecha (NO existe \

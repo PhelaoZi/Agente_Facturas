@@ -76,6 +76,45 @@ CREATE TABLE IF NOT EXISTS costo_sku (
     costo_total_unitario     NUMERIC
 );
 
+-- Traduccion nombre-escrito -> cerveza, replicada del PC. Christian escribe el
+-- nombre a mano en cada factura: 125 formas distintas, 84 de ellas cerveza, que
+-- colapsan en 27. Sin esta tabla cualquier SQL agrupa por el nombre crudo y
+-- parte las unidades de una cerveza entre sus erratas.
+CREATE TABLE IF NOT EXISTS linea_canonica (
+    linea_id            INTEGER PRIMARY KEY,
+    tipo_documento      INTEGER,
+    folio               INTEGER,
+    nombre_producto     TEXT,
+    cerveza             TEXT,
+    formato             TEXT,
+    litros              INTEGER,
+    clase               TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_linea_canonica_cerveza
+    ON linea_canonica (cerveza);
+
+-- Espejo de la vista local: UNIDADES por cerveza con el nombre ya traducido.
+-- `clase` reemplaza a los filtros ILIKE '%logist%' repartidos por el codigo.
+CREATE OR REPLACE VIEW v_lineas_producto AS
+SELECT p.id            AS linea_id,
+       p.folio,
+       p.tipo_documento,
+       v.fecha,
+       v.rut_cliente,
+       c.razon_social,
+       p.nombre_producto,
+       lc.cerveza,
+       lc.formato,
+       lc.litros,
+       lc.clase,
+       p.cantidad,
+       p.total_linea
+FROM productos p
+JOIN linea_canonica lc ON lc.linea_id = p.id
+JOIN ventas v          ON v.folio = p.folio AND v.tipo_documento = p.tipo_documento
+LEFT JOIN clientes c   ON c.rut_cliente = v.rut_cliente;
+
 -- Replica de la capa de atribucion: cuanta plata dejo cada cerveza.
 -- La atribucion NO se recalcula aqui. Se calcula en el PC (scripts/
 -- calcular_atribucion.py, unica fuente de verdad) y viaja ya resuelta, igual

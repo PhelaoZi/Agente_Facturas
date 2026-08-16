@@ -93,10 +93,14 @@ export default async function handler(req: Request): Promise<Response> {
     FROM v_ventas_reales
     WHERE fecha >= CURRENT_DATE - make_interval(months => ${meses})
     GROUP BY 1, 2 ORDER BY total DESC LIMIT 10`;
+  // Por cerveza canonica, no por el nombre escrito: si no, la misma cerveza
+  // aparece varias veces en el ranking con sus unidades repartidas entre las
+  // erratas ("Botella 330cc" y "Botella 330c" son la misma).
   const productos = await sqlClient`
-    SELECT nombre_producto, SUM(cantidad) AS unidades
-    FROM v_ventas_producto
-    WHERE fecha >= CURRENT_DATE - make_interval(months => ${meses})
+    SELECT cerveza AS nombre_producto, SUM(cantidad) AS unidades
+    FROM v_lineas_producto
+    WHERE clase = 'cerveza' AND tipo_documento != 61
+      AND fecha >= CURRENT_DATE - make_interval(months => ${meses})
     GROUP BY 1 ORDER BY unidades DESC LIMIT 10`;
 
   return new Response(
