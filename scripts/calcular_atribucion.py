@@ -31,6 +31,7 @@ except ImportError:
     sys.exit(1)
 
 from app.negocio import atribucion_ingreso as ai
+from app.negocio import clasificacion_lineas as cl
 
 try:
     from _console import force_utf8
@@ -109,12 +110,32 @@ def calcular(documentos):
     No toca la base. Devuelve las filas listas más el informe de cobertura y si
     el lote cuadra contra el neto de `ventas`.
     """
-    filas_documento, filas_linea = [], []
+    filas_documento, filas_linea, filas_canonicas = [], [], []
     neto_total = atribuido = pass_through = sin_atribuir = 0.0
     documentos_atribuidos = 0
 
     for documento in documentos:
         resultado = ai.atribuir(documento)
+
+        # La traducción nombre-escrito → cerveza, para TODAS las líneas y también
+        # las de documentos rechazados: si se perdiera con ellos, tampoco se
+        # podrían contar sus unidades. Va acá y no en otro script porque es la
+        # misma clasificación que el motor ya hizo — separarlas sería tener dos
+        # cosas que recordar correr, y en el mismo orden.
+        for linea in documento["lineas"]:
+            info = cl.clasificar(linea.get("nombre_producto"),
+                                 fecha=documento.get("fecha"))
+            filas_canonicas.append({
+                "linea_id": linea.get("id"),
+                "tipo_documento": documento["tipo_documento"],
+                "folio": documento["folio"],
+                "nombre_producto": linea.get("nombre_producto"),
+                "cerveza": info["cerveza"],
+                "formato": info["formato"],
+                "litros": info["litros"],
+                "clase": info["clase"],
+                "version_algoritmo": ai.VERSION_ALGORITMO,
+            })
 
         neto_total += documento["monto_neto"]
         atribuido += resultado["monto_atribuido"]
@@ -147,6 +168,7 @@ def calcular(documentos):
     return {
         "documentos": filas_documento,
         "lineas": filas_linea,
+        "canonicos": filas_canonicas,
         "neto_total": neto_total,
         "monto_atribuido": atribuido,
         "monto_pass_through": pass_through,
@@ -171,6 +193,7 @@ def materializar(cur, lote):
 
     cur.execute("DELETE FROM atribucion_ingreso")
     cur.execute("DELETE FROM atribucion_documento")
+    cur.execute("DELETE FROM linea_canonica")
 
     if lote["documentos"]:
         execute_values(cur, """
@@ -198,7 +221,18 @@ def materializar(cur, lote):
                l["ingreso_neto_atribuido"], l["fuente"], l["metodo"],
                l["calidad"], l["version_algoritmo"]) for l in lote["lineas"]])
 
-    return {"documentos": len(lote["documentos"]), "lineas": len(lote["lineas"])}
+    if lote["canonicos"]:
+        execute_values(cur, """
+            INSERT INTO linea_canonica (
+                linea_id, tipo_documento, folio, nombre_producto,
+                cerveza, formato, litros, clase, version_algoritmo
+            ) VALUES %s
+        """, [(c["linea_id"], c["tipo_documento"], c["folio"],
+               c["nombre_producto"], c["cerveza"], c["formato"], c["litros"],
+               c["clase"], c["version_algoritmo"]) for c in lote["canonicos"]])
+
+    return {"documentos": len(lote["documentos"]), "lineas": len(lote["lineas"]),
+            "canonicos": len(lote["canonicos"])}
 
 
 def informe(lote):
@@ -236,6 +270,20 @@ def informe(lote):
         lineas.append("  Sin atribuir, por motivo:")
         for motivo, (n, monto) in sorted(motivos.items(), key=lambda x: -x[1][1]):
             lineas.append(f"    {motivo:<32} {n:>3} docs   ${monto:>12,.0f}")
+
+    # Nombres que el clasificador no supo leer. Una línea desconocida bota el
+    # documento entero —correcto, no se adivina una cerveza— pero en silencio:
+    # "Barril 30L Stcotch Ale" se facturó el 12-ago y se descubrió el 16, de
+    # casualidad. Este informe corre en cada importación, que es el único momento
+    # en que alguien está mirando.
+    nuevos = sorted({c["nombre_producto"] for c in lote.get("canonicos", [])
+                     if c["clase"] == "desconocida" and c["nombre_producto"]})
+    if nuevos:
+        lineas.append("")
+        lineas.append(f"  ⚠ Nombres que NO reconozco ({len(nuevos)}). "
+                      "Agrégalos a CERVEZAS en app/negocio/clasificacion_lineas.py:")
+        for nombre in nuevos:
+            lineas.append(f"    · {nombre}")
     return "\n".join(lineas)
 
 
@@ -260,7 +308,8 @@ def main():
         with conn, conn.cursor() as cur:
             escrito = materializar(cur, lote)
         print(f"\n  Materializado: {escrito['documentos']} documentos, "
-              f"{escrito['lineas']} líneas de atribución.")
+              f"{escrito['lineas']} líneas de atribución, "
+              f"{escrito['canonicos']} nombres traducidos.")
     except ValueError as e:
         print(f"\n  ERROR: {e}")
         return 1

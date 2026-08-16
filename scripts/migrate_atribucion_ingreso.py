@@ -96,6 +96,32 @@ CREATE TABLE IF NOT EXISTS atribucion_ingreso (
     calculado_en            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ── Traducción nombre-escrito → cerveza, para TODAS las líneas ───────────────
+-- Christian escribe el nombre a mano en cada factura: 125 formas distintas, de
+-- las cuales 84 son cerveza y colapsan en 27. `clasificacion_lineas.py` ya lo
+-- resuelve, pero vive en Python, así que cualquier SQL vuelve al nombre crudo y
+-- agrupa `Barril 30L APA` y `Barril 30L  APA` (doble espacio) por separado.
+--
+-- NO corrige `productos`: esa tabla es lo que dice el documento tributario y
+-- reescribirla sería falsificar la evidencia. Se traduce al consultar.
+CREATE TABLE IF NOT EXISTS linea_canonica (
+    linea_id            INTEGER PRIMARY KEY,   -- productos.id
+    tipo_documento      INTEGER NOT NULL,
+    folio               INTEGER NOT NULL,
+    nombre_producto     TEXT,                  -- tal como se escribió
+    cerveza             TEXT,                  -- NULL si la línea no es cerveza
+    formato             TEXT,                  -- barril / botella / lata
+    litros              INTEGER,
+    clase               TEXT NOT NULL,         -- cerveza/logistica/envase/co2/…
+    version_algoritmo   TEXT NOT NULL,
+    calculado_en        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_linea_canonica_cerveza
+    ON linea_canonica (cerveza);
+CREATE INDEX IF NOT EXISTS idx_linea_canonica_clase
+    ON linea_canonica (clase);
+
 CREATE INDEX IF NOT EXISTS idx_atribucion_documento_fk
     ON atribucion_ingreso (tipo_documento, folio);
 CREATE INDEX IF NOT EXISTS idx_atribucion_cerveza
@@ -108,6 +134,30 @@ CREATE INDEX IF NOT EXISTS idx_atribucion_linea
 # que se elimina primero. No hay datos que perder — es una vista.
 SQL_VISTA = """
 DROP VIEW IF EXISTS v_ingreso_producto;
+DROP VIEW IF EXISTS v_lineas_producto;
+
+-- ── Las líneas de venta con el nombre ya traducido ───────────────────────────
+-- Para UNIDADES por cerveza (para dinero está `v_ingreso_producto`). `clase`
+-- reemplaza a los filtros con ILIKE '%logist%' repartidos por todo el código:
+-- una columna, no una expresión que hay que acordarse de escribir bien.
+CREATE VIEW v_lineas_producto AS
+SELECT p.id            AS linea_id,
+       p.folio,
+       p.tipo_documento,
+       v.fecha,
+       v.rut_cliente,
+       c.razon_social,
+       p.nombre_producto,          -- lo que dice la factura, sin tocar
+       lc.cerveza,                 -- el nombre canónico
+       lc.formato,
+       lc.litros,
+       lc.clase,
+       p.cantidad,
+       p.total_linea
+FROM productos p
+JOIN linea_canonica lc ON lc.linea_id = p.id
+JOIN ventas v          ON v.folio = p.folio AND v.tipo_documento = p.tipo_documento
+LEFT JOIN clientes c   ON c.rut_cliente = v.rut_cliente;
 
 -- ── Vista canónica: la ÚNICA fuente de dinero por producto ───────────────────
 -- Modelo de eventos: las facturas suman y las notas de crédito restan, cada una
@@ -136,7 +186,7 @@ JOIN ventas v   ON v.folio = a.folio AND v.tipo_documento = a.tipo_documento
 LEFT JOIN clientes c ON c.rut_cliente = v.rut_cliente;
 """
 
-TABLAS = ["atribucion_documento", "atribucion_ingreso"]
+TABLAS = ["atribucion_documento", "atribucion_ingreso", "linea_canonica"]
 
 
 def main():
@@ -148,8 +198,9 @@ def main():
             for tabla in TABLAS:
                 cur.execute(f"SELECT COUNT(*) FROM {tabla}")
                 print(f"OK: {tabla} lista ({cur.fetchone()[0]} filas).")
-            cur.execute("SELECT COUNT(*) FROM v_ingreso_producto")
-            print(f"OK: v_ingreso_producto lista ({cur.fetchone()[0]} filas).")
+            for vista in ("v_ingreso_producto", "v_lineas_producto"):
+                cur.execute(f"SELECT COUNT(*) FROM {vista}")
+                print(f"OK: {vista} lista ({cur.fetchone()[0]} filas).")
     finally:
         conn.close()
     return 0
