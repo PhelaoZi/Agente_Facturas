@@ -105,6 +105,23 @@ def ranking(cur, desde=None, hasta=None, cerveza=None, por_mes=False, limite=200
         "hasta": hasta,
         "por_mes": por_mes,
         "alcance": _alcance(desde, hasta, cerveza),
+        "totales_por_mes": _totales_por_mes(productos) if por_mes else [],
         "total_unidades": sum(p["unidades"] for p in productos),
         "total_litros": round(sum(p["litros"] for p in productos), 1),
     }
+
+
+def _totales_por_mes(productos):
+    """Suma cada mes acá, para que el modelo no sume la columna a mano.
+
+    Medido: entregó una tabla de 70 celdas exacta y erró la fila de totales —
+    escribió 1.947 para mayo cuando sus propias cifras sumaban 1.967. Es la
+    regla de `app/CLAUDE.md`: lo que cruza un LLM se puede transcribir mal.
+    """
+    acumulado = {}
+    for p in productos:
+        mes = acumulado.setdefault(p["mes"], {"litros": 0.0, "unidades": 0.0})
+        mes["litros"] += p["litros"]
+        mes["unidades"] += p["unidades"]
+    return [{"mes": mes, "litros": round(v["litros"], 1), "unidades": v["unidades"]}
+            for mes, v in sorted(acumulado.items())]

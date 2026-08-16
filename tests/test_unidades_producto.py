@@ -181,6 +181,36 @@ def test_por_mes_ordena_cronologicamente_y_devuelve_el_mes():
     assert r["total_litros"] == 1890.0
 
 
+def test_por_mes_trae_el_total_de_cada_mes_ya_sumado():
+    """El modelo no debe sumar columnas a mano.
+
+    Medido el 2026-08-16: entregó una tabla de 70 celdas EXACTA —verificada
+    contra la base, cero diferencias— y se equivocó en la fila de totales:
+    escribió 1.947 para mayo cuando sus propias cifras suman 1.967. Es la regla
+    que ya está en app/CLAUDE.md: cada cifra que cruza un LLM se puede
+    transcribir mal, así que la que se puede calcular acá se calcula acá.
+    """
+    cur = FakeCursor([
+        {"mes": "2026-05", "cerveza": "Cream Ale", "formato": "barril",
+         "unidades": 26, "litros": 780.0, "documentos": 12, "ultima": "2026-05-30"},
+        {"mes": "2026-05", "cerveza": "Scotch Ale", "formato": "barril",
+         "unidades": 16, "litros": 486.0, "documentos": 12, "ultima": "2026-05-28"},
+        {"mes": "2026-06", "cerveza": "Cream Ale", "formato": "barril",
+         "unidades": 27, "litros": 810.0, "documentos": 13, "ultima": "2026-06-30"},
+    ])
+
+    r = up.ranking(cur, por_mes=True)
+
+    assert r["totales_por_mes"] == [
+        {"mes": "2026-05", "litros": 1266.0, "unidades": 42.0},
+        {"mes": "2026-06", "litros": 810.0, "unidades": 27.0},
+    ]
+
+
+def test_sin_por_mes_no_hay_totales_mensuales():
+    assert up.ranking(FakeCursor())["totales_por_mes"] == []
+
+
 @pytest.mark.parametrize("valor", [None, 0, ""])
 def test_sin_filtros_no_agrega_condiciones_de_mas(valor):
     """Un filtro vacío no puede convertirse en `WHERE cerveza ILIKE '%%'`

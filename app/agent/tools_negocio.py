@@ -355,10 +355,17 @@ def build_negocio_server(collector=None):
                   f"{_litros(p['litros'])} L ({p['unidades']:.0f} unidades, "
                   f"{p['documentos']} facturas)"
                   for p in r["productos"]]
+        # Los totales por mes van ya sumados: el modelo no debe sumar columnas.
+        # Entregó una tabla de 70 celdas exacta y erró la fila de totales.
+        por_mes = "".join(
+            f"\n- {m['mes']}: {_litros(m['litros'])} L ({m['unidades']:.0f} unidades)"
+            for m in r["totales_por_mes"])
+        resumen = f"\nTotal por mes (ya sumado, NO lo recalcules):{por_mes}" if por_mes else ""
+
         return _texto(
             f"{r['alcance']}\n"
             f"Total: {_litros(r['total_litros'])} litros.\n"
-            + "\n".join(lineas)
+            + "\n".join(lineas) + resumen
             + "\n[Compara por LITROS. Las unidades de formatos distintos no se "
               "suman entre sí: una botella es 0,33 L y un barril 30 L.]")
 
