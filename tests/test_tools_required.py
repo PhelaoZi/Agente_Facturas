@@ -35,6 +35,9 @@ REQUIRED_ESPERADO = {
     # Todos opcionales: "cuánto dejó cada cerveza" no tiene por qué traer
     # filtros. Obligar uno haría que el modelo invente un rango de fechas.
     "mcp__negocio__ingreso_producto": [],
+    # Igual que la de arriba: "cuántas unidades vendí" no tiene por qué traer
+    # filtros, y obligar uno hace que el modelo invente un período.
+    "mcp__negocio__unidades_producto": [],
     "mcp__negocio__flujo_caja": [],
     "mcp__negocio__costos_sku": [],
     "mcp__negocio__margenes": [],

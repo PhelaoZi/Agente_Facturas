@@ -2,13 +2,43 @@
 from app.agent.tools_negocio import build_negocio_server
 
 
+def test_toda_tool_declarada_queda_registrada():
+    """El `Registro` recibe una lista escrita a mano al final de
+    `build_negocio_server`. Declarar la tool con `@tool` NO la registra.
+
+    Medido el 2026-08-16: `unidades_producto` se declaró, se probó, y no quedó
+    en esa lista. La suite completa pasó en verde -691 tests- con la tool
+    inalcanzable para el agente. El test de abajo tampoco lo vio, porque fija un
+    número y una lista de nombres esperados: una tool NUEVA que falte no rompe
+    nada.
+
+    Este cuenta los `@tool(` del archivo y los compara con el registro, así una
+    tool declarada y no registrada no puede volver a pasar callada.
+    """
+    from pathlib import Path
+    import re
+
+    fuente = (Path(__file__).resolve().parent.parent / "app" / "agent"
+              / "tools_negocio.py").read_text(encoding="utf-8")
+    declaradas = set(re.findall(r'@tool\(\s*"([a-z_]+)"', fuente))
+
+    _server, names = build_negocio_server()
+    registradas = {n.replace("mcp__negocio__", "") for n in names}
+
+    faltan = declaradas - registradas
+    assert not faltan, f"declaradas con @tool pero NO registradas: {sorted(faltan)}"
+
+
 def test_negocio_server_registra_los_tools():
     server, names = build_negocio_server()
     assert server is not None
-    assert len(names) == 17
+    assert len(names) == 18
     # Es la única fuente de dinero por producto: si desaparece del registro, el
     # agente vuelve a sumar `productos` y a responder un tercio de lo real.
     assert "mcp__negocio__ingreso_producto" in names
+    # Sin esta, el modelo improvisa SQL para "cuántas unidades vendí" y agrupa
+    # por `nombre_producto`, que parte cada cerveza entre sus erratas.
+    assert "mcp__negocio__unidades_producto" in names
     assert len(set(names)) == len(names), "hay nombres de tool duplicados"
     for esperado in [
         "mcp__negocio__margen_cliente",

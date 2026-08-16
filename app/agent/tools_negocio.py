@@ -15,6 +15,7 @@ from app.config import DB_URL
 from app.briefing import data as deuda_data
 from app.negocio import ventas as ventas_data
 from app.negocio import ingreso_producto as ingreso_data
+from app.negocio import unidades_producto as unidades_data
 from app.negocio import costos as costos_data
 from app.negocio import flujo as flujo_data
 from app.negocio import gastos as gastos_data
@@ -307,6 +308,36 @@ def build_negocio_server(collector=None):
         return _texto(f"{r['alcance']}\nCobertura: {r['cobertura']}\n"
                       + "\n".join(lineas))
 
+    @tool("unidades_producto",
+          "UNIDADES vendidas por cerveza y formato (barriles, botellas, latas). "
+          "Úsala para volumen, cuántos barriles/botellas se vendieron y "
+          "comparaciones entre períodos. Ya agrupa las erratas del nombre y "
+          "excluye logística, envases PET y CO2. Para PESOS usa "
+          "ingreso_producto. Opcionales: desde, hasta (YYYY-MM-DD), cerveza.",
+          {"desde": str, "hasta": str, "cerveza": str},
+          opcionales=("desde", "hasta", "cerveza"))
+    @_tool_seguro
+    async def unidades_producto(args):
+        """Existe para que el modelo NO tenga que escribir SQL para esto.
+
+        Sin esta tool, ante "unidades por producto en julio vs junio" el modelo
+        improvisaba SQL sobre `productos` y agrupaba por `nombre_producto`:
+        devolvía "Botella 330cc Cream Ale" (96) y "Botella 330c Cream Ale" (24)
+        como dos productos, y "Barril 30L APA" dos veces. Prohibirlo en el
+        prompt no alcanza — mientras la pregunta no tenga herramienta, el modelo
+        improvisa.
+        """
+        r = _con_cursor(unidades_data.ranking, args.get("desde"),
+                        args.get("hasta"), args.get("cerveza"))
+        if not r["productos"]:
+            return _texto(f"Sin ventas de cerveza ({r['alcance']}).")
+        lineas = [f"- {p['cerveza']} · {p['formato'] or 's/formato'}: "
+                  f"{p['unidades']:.0f} unidades en {p['documentos']} facturas"
+                  for p in r["productos"]]
+        return _texto(f"{r['alcance']}\n"
+                      f"Total: {r['total_unidades']:.0f} unidades.\n"
+                      + "\n".join(lineas))
+
     @tool("flujo_caja", "Proyección de caja a 4 semanas (ingresos esperados − gastos). "
                         "Opcional: saldo_inicial.", {"saldo_inicial": float},
           opcionales=("saldo_inicial",))
@@ -496,7 +527,7 @@ def build_negocio_server(collector=None):
     registro = Registro("negocio", [
         deuda_total, deuda_cliente, ranking_deudores, facturas_vencidas,
         ventas_total, ranking_clientes, ventas_cliente, ventas_producto,
-        ingreso_producto,
+        ingreso_producto, unidades_producto,
         flujo_caja, costos_sku, margenes, margen_periodo, margen_cliente,
         listar_gastos,
         clientes_en_riesgo, listar_seguimiento,
