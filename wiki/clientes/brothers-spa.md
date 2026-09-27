@@ -2,7 +2,7 @@
 rut: 76573828-8
 razon_social: "BROTHERS SPA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # BROTHERS SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $1.366.425 |
-| Facturas emitidas | 11 |
-| Facturas pendientes | 1 ($186.375) |
+| Total vendido | $1.460.800 |
+| Facturas emitidas | 12 |
+| Facturas pendientes | 2 ($280.750) |
 | Promedio días de pago | 42 |
 | Último pago | 2026-06-19 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $186.375
+- 2 factura(s) pendiente(s) por $280.750
 - Último pago registrado: 2026-06-19
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-01-22**
-- Frecuencia de compra: ~1 factura cada **51 días**
+- Frecuencia de compra: ~1 factura cada **48 días**
 - Comportamiento de pago: **normal** (42 días promedio)
 - Producto principal: **Stout Café**
 
@@ -45,6 +45,8 @@ Clientes que también compran **Stout Café**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 1 factura(s) vencida(s) (>30 días): #4716 por $186.375.
+- 2026-08-16: 📄 1 factura(s) nueva(s) desde 2026-08-11.
 - 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4716 por $186.375.
 - 2026-07-07: ⚠️ 1 factura(s) vencida(s) (>30 días): #4684 por $188.750.
 - 2026-06-25: ⚠️ 1 factura(s) vencida(s) (>30 días): #4684 por $188.750.

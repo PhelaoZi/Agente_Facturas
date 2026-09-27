@@ -2,7 +2,7 @@
 rut: 77126823-4
 razon_social: "RESTAURANTE MARINA SPA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # RESTAURANTE MARINA SPA
@@ -11,15 +11,15 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $10.998.418 |
-| Facturas emitidas | 87 |
-| Facturas pendientes | 10 ($1.347.667) |
+| Total vendido | $11.208.389 |
+| Facturas emitidas | 88 |
+| Facturas pendientes | 11 ($1.557.638) |
 | Promedio días de pago | 35 |
 | Último pago | 2026-07-03 |
 
 ## Estado de cuenta
 
-- 10 factura(s) pendiente(s) por $1.347.667
+- 11 factura(s) pendiente(s) por $1.557.638
 - Último pago registrado: 2026-07-03
 
 ## Patrón de comportamiento
@@ -45,6 +45,9 @@ Clientes que también compran **Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 8 factura(s) vencida(s) (>30 días): #4706, #4703, #4727, #4712, #4736, #4725, #4491, #4568 por $1.067.705.
+- 2026-08-16: 📄 1 factura(s) nueva(s) desde 2026-08-11.
+- 2026-08-16: 📈 Deuda pendiente aumentó en $209.971.
 - 2026-08-11: ⚠️ 7 factura(s) vencida(s) (>30 días): #4706, #4703, #4727, #4712, #4725, #4491, #4568 por $839.884.
 - 2026-08-02: ⚠️ 6 factura(s) vencida(s) (>30 días): #4706, #4703, #4712, #4725, #4491, #4568 por $629.913.
 - 2026-08-02: 📄 2 factura(s) nueva(s) desde 2026-07-20.

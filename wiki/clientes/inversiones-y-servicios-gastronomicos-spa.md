@@ -2,7 +2,7 @@
 rut: 76701686-7
 razon_social: "INVERSIONES Y SERVICIOS GASTRONOMICOS SPA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # INVERSIONES Y SERVICIOS GASTRONOMICOS SPA
@@ -11,15 +11,15 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $12.739.529 |
-| Facturas emitidas | 75 |
-| Facturas pendientes | 8 ($1.106.006) |
+| Total vendido | $13.540.731 |
+| Facturas emitidas | 78 |
+| Facturas pendientes | 11 ($1.907.208) |
 | Promedio días de pago | 35 |
 | Último pago | 2026-07-07 |
 
 ## Estado de cuenta
 
-- 8 factura(s) pendiente(s) por $1.106.006
+- 11 factura(s) pendiente(s) por $1.907.208
 - Último pago registrado: 2026-07-07
 
 ## Patrón de comportamiento
@@ -45,6 +45,9 @@ Clientes que también compran **Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 7 factura(s) vencida(s) (>30 días): #4705, #4699, #4729, #4715, #4734, #4723, #4537 por $858.004.
+- 2026-08-16: 📄 3 factura(s) nueva(s) desde 2026-08-11.
+- 2026-08-16: 📈 Deuda pendiente aumentó en $801.202.
 - 2026-08-11: ⚠️ 6 factura(s) vencida(s) (>30 días): #4705, #4699, #4729, #4715, #4723, #4537 por $734.004.
 - 2026-07-26: ⚠️ 4 factura(s) vencida(s) (>30 días): #4705, #4699, #4715, #4537 por $548.004.
 - 2026-07-26: 📄 1 factura(s) nueva(s) desde 2026-07-20.

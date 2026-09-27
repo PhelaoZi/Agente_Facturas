@@ -1,13 +1,13 @@
 # Producto: West Coast IPA
 
-Actualizado: 2026-08-11
+Actualizado: 2026-08-16
 
 ## Clientes que lo compran
 
 | Cliente | RUT | Cantidad total |
 | --- | --- | --- |
+| [[INVERSIONES BARDOS SPA]] | 76922048-8 | 22 |
 | [[VDT SPA]] | 77220069-2 | 13 |
-| [[INVERSIONES BARDOS SPA]] | 76922048-8 | 12 |
 | [[SOC COMERCIAL EBANO LIMITADA]] | 77352780-6 | 5 |
 | [[BAR CERVECERÍA ORIGINAL SPA]] | 77042203-5 | 4 |
 | [[RESTOBAR RUBIK LIMITADA]] | 76231880-6 | 4 |

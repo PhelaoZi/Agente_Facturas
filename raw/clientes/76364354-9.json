@@ -1,22 +1,22 @@
 {
-  "_snapshot_fecha": "2026-08-11",
+  "_snapshot_fecha": "2026-08-16",
   "cliente_desde": "2024-01-04",
   "comuna": "SAN MIGUEL",
-  "deuda_pendiente": 2464422.0,
+  "deuda_pendiente": 3299026.0,
   "direccion": "GRAN AVENIDA 5890",
   "estado": "activo",
-  "facturas_emitidas": 88,
-  "facturas_pendientes": 11,
+  "facturas_emitidas": 91,
+  "facturas_pendientes": 14,
   "promedio_dias_pago": 36,
   "razon_social": "A & C SERVICIOS GASTRONOMICOS LIMITADA",
   "rut": "76364354-9",
   "top_productos": [
     {
-      "cantidad": 159.0,
+      "cantidad": 165.0,
       "nombre": "Cream Ale"
     },
     {
-      "cantidad": 107.0,
+      "cantidad": 113.0,
       "nombre": "Scotch Ale"
     },
     {
@@ -24,6 +24,6 @@
       "nombre": "Wee Heavy"
     }
   ],
-  "total_vendido": 17820006.0,
+  "total_vendido": 18654610.0,
   "ultimo_pago": "2026-07-04"
 }

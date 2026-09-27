@@ -2,7 +2,7 @@
 rut: 77352780-6
 razon_social: "SOC COMERCIAL EBANO LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # SOC COMERCIAL EBANO LIMITADA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $6.788.704 |
-| Facturas emitidas | 43 |
-| Facturas pendientes | 1 ($188.750) |
+| Total vendido | $6.928.685 |
+| Facturas emitidas | 44 |
+| Facturas pendientes | 2 ($328.731) |
 | Promedio días de pago | 9 |
 | Último pago | 2026-06-06 |
 
 ## Estado de cuenta
 
-- 1 factura(s) pendiente(s) por $188.750
+- 2 factura(s) pendiente(s) por $328.731
 - Último pago registrado: 2026-06-06
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-24**
-- Frecuencia de compra: ~1 factura cada **22 días**
+- Frecuencia de compra: ~1 factura cada **21 días**
 - Comportamiento de pago: **rápido** (9 días promedio)
 - Producto principal: **Scotch Ale**
 
@@ -45,6 +45,9 @@ Clientes que también compran **Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 1 factura(s) vencida(s) (>30 días): #4730 por $188.750.
+- 2026-08-16: 📄 1 factura(s) nueva(s) desde 2026-08-11.
+- 2026-08-16: 📈 Deuda pendiente aumentó en $139.981.
 - 2026-08-11: ⚠️ 1 factura(s) vencida(s) (>30 días): #4730 por $188.750.
 - 2026-07-20: 📄 1 factura(s) nueva(s) desde 2026-07-07.
 - 2026-07-20: 📈 Deuda pendiente aumentó en $188.750.

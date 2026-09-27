@@ -1,6 +1,6 @@
 # Producto: Sour Piña/Lima
 
-Actualizado: 2026-08-11
+Actualizado: 2026-08-16
 
 ## Clientes que lo compran
 

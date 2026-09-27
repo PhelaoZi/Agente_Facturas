@@ -1,6 +1,6 @@
 # Producto: Milkshake IPA
 
-Actualizado: 2026-08-11
+Actualizado: 2026-08-16
 
 ## Clientes que lo compran
 

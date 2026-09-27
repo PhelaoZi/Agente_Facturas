@@ -2,7 +2,7 @@
 rut: 76364354-9
 razon_social: "A & C SERVICIOS GASTRONOMICOS LIMITADA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # A & C SERVICIOS GASTRONOMICOS LIMITADA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $17.820.006 |
-| Facturas emitidas | 88 |
-| Facturas pendientes | 11 ($2.464.422) |
+| Total vendido | $18.654.610 |
+| Facturas emitidas | 91 |
+| Facturas pendientes | 14 ($3.299.026) |
 | Promedio días de pago | 36 |
 | Último pago | 2026-07-04 |
 
 ## Estado de cuenta
 
-- 11 factura(s) pendiente(s) por $2.464.422
+- 14 factura(s) pendiente(s) por $3.299.026
 - Último pago registrado: 2026-07-04
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-01-04**
-- Frecuencia de compra: ~1 factura cada **11 días**
+- Frecuencia de compra: ~1 factura cada **10 días**
 - Comportamiento de pago: **normal** (36 días promedio)
 - Producto principal: **Cream Ale**
 
@@ -45,6 +45,9 @@ Clientes que también compran **Cream Ale**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 9 factura(s) vencida(s) (>30 días): #4704, #4700, #4728, #4714, #4708, #4735, #4722, #4538, #4691 por $1.968.420.
+- 2026-08-16: 📄 3 factura(s) nueva(s) desde 2026-08-11.
+- 2026-08-16: 📈 Deuda pendiente aumentó en $834.604.
 - 2026-08-11: ⚠️ 8 factura(s) vencida(s) (>30 días): #4704, #4700, #4728, #4714, #4708, #4722, #4538, #4691 por $1.658.420.
 - 2026-08-02: ⚠️ 7 factura(s) vencida(s) (>30 días): #4704, #4700, #4714, #4708, #4722, #4538, #4691 por $1.534.420.
 - 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-26.

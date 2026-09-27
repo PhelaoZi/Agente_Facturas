@@ -2,7 +2,7 @@
 rut: 76407717-2
 razon_social: "COMERCIAL BACO SPA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # COMERCIAL BACO SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $2.040.480 |
-| Facturas emitidas | 9 |
-| Facturas pendientes | 2 ($0) |
+| Total vendido | $2.380.560 |
+| Facturas emitidas | 10 |
+| Facturas pendientes | 3 ($340.080) |
 | Promedio días de pago | 27 |
 | Último pago | 2026-05-22 |
 
 ## Estado de cuenta
 
-- 2 factura(s) pendiente(s) por $0
+- 3 factura(s) pendiente(s) por $340.080
 - Último pago registrado: 2026-05-22
 
 ## Patrón de comportamiento
 
 - Cliente desde **2025-12-12**
-- Frecuencia de compra: ~1 factura cada **27 días**
+- Frecuencia de compra: ~1 factura cada **25 días**
 - Comportamiento de pago: **bueno** (27 días promedio)
 - Producto principal: **Stout Café**
 
@@ -45,6 +45,9 @@ Clientes que también compran **Stout Café**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 2 factura(s) vencida(s) (>30 días): #4529, #4541 por $0.
+- 2026-08-16: 📄 1 factura(s) nueva(s) desde 2026-08-11.
+- 2026-08-16: 📈 Deuda pendiente aumentó en $340.080.
 - 2026-08-11: ⚠️ 2 factura(s) vencida(s) (>30 días): #4529, #4541 por $0.
 - 2026-08-11: ⚠️ Cliente inactivo — 91 días sin nueva factura (última: 2026-05-12).
 - 2026-07-07: ⚠️ 2 factura(s) vencida(s) (>30 días): #4529, #4541 por $0.

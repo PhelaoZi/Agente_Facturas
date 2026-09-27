@@ -2,7 +2,7 @@
 rut: 77290617-K
 razon_social: "ESPACIOS GASTRONOMICOS OCULTO SPA"
 estado: activo
-ultima_actualizacion: 2026-08-11
+ultima_actualizacion: 2026-08-16
 ---
 
 # ESPACIOS GASTRONOMICOS OCULTO SPA
@@ -11,21 +11,21 @@ ultima_actualizacion: 2026-08-11
 
 | Indicador | Valor |
 | --- | --- |
-| Total vendido | $3.255.582 |
-| Facturas emitidas | 31 |
-| Facturas pendientes | 3 ($254.255) |
+| Total vendido | $3.369.857 |
+| Facturas emitidas | 32 |
+| Facturas pendientes | 4 ($368.530) |
 | Promedio días de pago | 14 |
 | Último pago | 2026-05-16 |
 
 ## Estado de cuenta
 
-- 3 factura(s) pendiente(s) por $254.255
+- 4 factura(s) pendiente(s) por $368.530
 - Último pago registrado: 2026-05-16
 
 ## Patrón de comportamiento
 
 - Cliente desde **2024-06-05**
-- Frecuencia de compra: ~1 factura cada **26 días**
+- Frecuencia de compra: ~1 factura cada **25 días**
 - Comportamiento de pago: **rápido** (14 días promedio)
 - Producto principal: **Scotch Ale**
 
@@ -45,6 +45,9 @@ Clientes que también compran **Scotch Ale**:
 
 ## Notas del agente
 
+- 2026-08-16: ⚠️ 2 factura(s) vencida(s) (>30 días): #4697, #4709 por $139.980.
+- 2026-08-16: 📄 1 factura(s) nueva(s) desde 2026-08-11.
+- 2026-08-16: 📈 Deuda pendiente aumentó en $114.275.
 - 2026-08-11: ⚠️ 2 factura(s) vencida(s) (>30 días): #4697, #4709 por $139.980.
 - 2026-08-02: ⚠️ 2 factura(s) vencida(s) (>30 días): #4697, #4709 por $139.980.
 - 2026-08-02: 📄 1 factura(s) nueva(s) desde 2026-07-07.
